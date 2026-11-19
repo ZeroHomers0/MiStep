@@ -3496,7 +3496,10 @@ public final class MiStepHost {
         boolean wallpaper = view.getBackground() instanceof WallpaperCropDrawable;
         // A cold Host still has plain page-color placeholders. They cannot cut
         // out the full-size main task, so keep them hidden until entry fades in.
-        view.setAlpha(hole != null && wallpaper ? 1f : workspaceAlpha);
+        // Route the alpha through the lease: a cell handed to a live task hides
+        // its placeholder by leasing it, and writing the View directly here
+        // resurrected the page-color backing for a frame during that handoff.
+        LiveSwapVisualLease.writeAlpha(view, hole != null && wallpaper ? 1f : workspaceAlpha);
         if (wallpaper)
             ((WallpaperCropDrawable) view.getBackground()).setMainHole(hole);
     }
@@ -7129,8 +7132,12 @@ public final class MiStepHost {
             failPromotion(ticket, "collect wallpaper preparation: " + error);
             return;
         }
-        // Keep the empty-cell affordance until the real task occupies it.
-        ticket.liveVisual = new LiveSwapVisualLease(sideBackingViews[slot.index], null);
+        // Lease the empty-cell affordance as well as the backing. The cell is
+        // about to be filled, and a late updateHint() (TaskView#onInitialized
+        // posts one) still sees occupied == false until the settle completes.
+        // Without the hint lease that pass re-showed the near-white emptyCell
+        // gradient over the incoming task for a frame.
+        ticket.liveVisual = new LiveSwapVisualLease(sideBackingViews[slot.index], slot.hint);
         prepareCellSurface(slot);
         if (!setLiveSwapInputBlocked(true)) {
             failPromotion(ticket, "transition input window unavailable"); return;
@@ -7157,9 +7164,15 @@ public final class MiStepHost {
                             throw new IllegalStateException("collect Home identity changed");
                         ticket.liveMainUserId = XposedHelpers.getIntField(homeInfo, "userId");
                         resetIdleTaskView(slot);
+                        // Do not reveal the destination placeholder inside the settle
+                        // transaction. The cell is empty here, so a stale backing from a
+                        // previous occupant would flash its page colour under the incoming
+                        // task before that task's first frame lands. The backing is owned by
+                        // updateHint()/ensureCellBackground() and is rebuilt under the live
+                        // task once the bind completes.
                         accepted = MiStepLiveCollect.start(ctx.getClassLoader(), transitions,
                                 slot.controller, app, ticket.collectionHome.token, candidate.userId, ticket.liveMainUserId,
-                                new Rect(0, 0, width, height), hostSurface, slot.cellBackground,
+                                new Rect(0, 0, width, height), hostSurface, null,
                                 () -> externalPromotionCurrent(ticket) && layout == geometry,
                                 settled -> main.post(() -> prepareCollectHandoff(ticket, settled)),
                                 result -> finishLiveResult(ticket, result), MiStepHost::log);
@@ -7414,7 +7427,10 @@ public final class MiStepHost {
             hostSurface = liveHostRootSurface();
             for (int i = 1; i < CELL_SLOT_COUNT; i++) {
                 Slot peer = slots[i];
-                cellBackgrounds[i - 1] = peer.cellBackground;
+                // The moving cell must not reveal its placeholder inside the settle
+                // transaction: the incoming task has no frame yet, so a stale
+                // page-color backing would flash under it. Peer cells keep theirs.
+                cellBackgrounds[i - 1] = peer == ticket.slot ? null : peer.cellBackground;
                 if (peer == ticket.slot || !peer.occupied) continue;
                 if (peer.parked || peer.frozen || peer.carrier || peer.launching || peer.promoting
                         || peer.windowMode != 6 || peer.taskToken == null || peer.controller == null)
@@ -7632,11 +7648,14 @@ public final class MiStepHost {
                                 }
                             }
                         }
+                        // Same rule as the flip path: the promoted cell's placeholder
+                        // stays out of the settle transaction and is rebuilt by
+                        // updateHint()/ensureCellBackground() once the task is bound.
                         LiveTaskSwapDriver.Home request = new LiveTaskSwapDriver.Home(app,
                                 ticket.homeBeforeCover.id, ticket.homeBeforeCover.token, user, homeUser,
                                 new Rect(0, 0, width, height), hostSurface, zoom,
                                 sideRoots.toArray(new LiveTaskSwapDriver.SideRoot[0]),
-                                new Object[]{ticket.slot.cellBackground}, ticket.liveBackdrop);
+                                new Object[]{null}, ticket.liveBackdrop);
                         accepted = LiveTaskSwapDriver.startHome(ctx.getClassLoader(), transitions,
                                 ticket.slot.controller, request,
                                 () -> externalPromotionCurrent(ticket) && layout == geometry,
