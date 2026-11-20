@@ -13,7 +13,7 @@ def member(signature):
   elif host[i]=='}':d-=1
   i+=1
  return host[a:i]
-methods='\n'.join(member(s) for s in ['    private void beginWorkspaceEntry(', '    private void awaitWorkspaceFrame(', '    private void setWorkspaceAlpha(', '    private android.graphics.RectF workspaceMainHole(', '    private void updateWorkspaceBacking(', '    private void updateWorkspaceBackdropVisibility(', '    private void playWorkspaceFade(', '    private void suspendSession(', '    private void finishPendingSuspend(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility('])
+methods='\n'.join(member(s) for s in ['    private void beginWorkspaceEntry(', '    private void awaitWorkspaceFrame(', '    private void setWorkspaceAlpha(', '    private android.graphics.RectF workspaceMainHole(', '    private void updateWorkspaceBacking(', '    private void updateWorkspaceBackdropVisibility(', '    private void updateChromeClip(', '    private void clipChromeBesideMain(', '    private int[] sideBackingBounds(', '    private int sideSegmentTop(', '    private int sideSegmentHeight(', '    private void playWorkspaceFade(', '    private void suspendSession(', '    private void finishPendingSuspend(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility('])
 files={
 'android/animation/Animator.java':'package android.animation;public class Animator {}',
 'android/animation/AnimatorListenerAdapter.java':'package android.animation;public class AnimatorListenerAdapter {public void onAnimationEnd(Animator a){}}',
@@ -27,6 +27,7 @@ import java.util.*;import java.util.function.*;public class ValueAnimator extend
 }''',
 'android/view/animation/PathInterpolator.java':'package android.view.animation;public class PathInterpolator {public PathInterpolator(float a,float b,float c,float d){}}',
 'android/graphics/RectF.java':'package android.graphics;public class RectF {public float left,top,right,bottom;public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}}',
+'android/graphics/Rect.java':'package android.graphics;public class Rect {public int left,top,right,bottom;public Rect(int a,int b,int c,int d){left=a;top=b;right=c;bottom=d;}public String toString(){return left+","+top+","+right+","+bottom;}}',
 'android/view/SurfaceControl.java':r'''package android.view;
 import java.util.*;public class SurfaceControl {public boolean valid=true,visible=true;public float alpha=1;public boolean isValid(){return valid;}
  public static class Transaction {List<Runnable>ops=new ArrayList<>();public Transaction setAlpha(Object o,float a){ops.add(()->((SurfaceControl)o).alpha=a);return this;}public Transaction show(Object o){ops.add(()->((SurfaceControl)o).visible=true);return this;}public Transaction hide(Object o){ops.add(()->((SurfaceControl)o).visible=false);return this;}public void apply(){ops.forEach(Runnable::run);}public void close(){}}
@@ -34,7 +35,7 @@ import java.util.*;public class SurfaceControl {public boolean valid=true,visibl
 'de/robv/android/xposed/XposedHelpers.java':r'''package de.robv.android.xposed;
 public class XposedHelpers {public static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new IllegalStateException(e);}}}''',
 'com/jiusis/mistep/WorkspaceRegression.java':r'''package com.jiusis.mistep;
-import java.util.*;import android.view.SurfaceControl;import de.robv.android.xposed.XposedHelpers;
+import java.util.*;import android.view.SurfaceControl;import android.graphics.Rect;import de.robv.android.xposed.XposedHelpers;
 public class WorkspaceRegression {
  static class LiveSwapVisualLease {static void writeAlpha(View v,float a){v.setAlpha(a);}}
  static class SideDismiss {boolean isTracking(){return false;}void settle(boolean b){}}
@@ -42,20 +43,20 @@ public class WorkspaceRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  static class Drawable {int alpha=255;void setAlpha(int a){alpha=a;}}
  static class WallpaperCropDrawable extends Drawable {android.graphics.RectF hole;void setMainHole(android.graphics.RectF r){hole=r;}}
- static class View {static final int VISIBLE=0,GONE=8;float alpha=1;int pickerCloses;Drawable background=new WallpaperCropDrawable();Drawable getBackground(){return background;}void setAlpha(float v){alpha=v;}void closeQuickAppPicker(){pickerCloses++;}}
+ static class View {static final int VISIBLE=0,GONE=8;float alpha=1;int pickerCloses;Drawable background=new WallpaperCropDrawable();android.graphics.Rect clip;Drawable getBackground(){return background;}void setAlpha(float v){alpha=v;}void setClipBounds(android.graphics.Rect r){clip=r;}void closeQuickAppPicker(){pickerCloses++;}}
  static class Observer {Runnable frame;void registerFrameCommitCallback(Runnable r){frame=r;}}
  static class FrameLayout extends View {Observer observer=new Observer();boolean attached=true,hardware=true;int invalidates;
   boolean isAttachedToWindow(){return attached;}boolean isHardwareAccelerated(){return hardware;}Observer getViewTreeObserver(){return observer;}void invalidate(){invalidates++;}void draw(){Runnable r=observer.frame;observer.frame=null;if(r!=null)r.run();}}
  static class Queue {List<Runnable>q=new ArrayList<>();void post(Runnable r){q.add(r);}void postDelayed(Runnable r,long d){q.add(r);}void flush(){while(!q.isEmpty())q.remove(0).run();}}
  static class Controller {SurfaceControl surface=new SurfaceControl();Object token=new Object();}
- static class Slot {int index=1,sideRow=-1;int taskId=1;Object taskToken;boolean occupied=true,parked,promoting,launching,sidePrepared;Controller controller=new Controller();View hint=new View(),view=new View();Slot(){taskToken=controller.token;}}
+ static class Slot {int index=1,sideRow=-1;int taskId=1;Object taskToken;boolean occupied=true,parked,promoting,launching,sidePrepared;Controller controller=new Controller();View hint=new View(),view=new View();int[] rect=new int[]{0,508,762,900};Slot(){taskToken=controller.token;}}
  static class Bitmap {void recycle(){}}
  static class StatusBar {void restore(){}}
  static class Clipboard {void close(){}}static class MiStepClipboard {static Clipboard get(Object c){return new Clipboard();}}
  static class SystemClock {static long uptimeMillis(){return 10000;}}
  static class Promotion {boolean nativeSwap,cancelled;}
  static final int ACTIVE=1,RESUMING=2,SUSPENDING=3,SUSPENDED=4,SLOT_COUNT=4,CELL_SLOT_COUNT=4,SLOT_MAIN=0,SLOT_TOP=4;static final long ZOOM_ANIM_MS=300;
- FrameLayout root=new FrameLayout();View topBar=new View(),tabletTools=new View(),topStripBacking=new View(),mainGapBacking=new View(),topTaskPane=new View();boolean topFace,taskCellsCovered;Roll topRoll;View[]sideBackingViews={null,new View(),new View(),new View()};Slot[]slots={new Slot(),new Slot(),new Slot(),new Slot()};
+ FrameLayout root=new FrameLayout();FrameLayout topLiveClip=new FrameLayout();View topBar=new View(),tabletTools=new View(),topStripBacking=new View(),mainGapBacking=new View(),topTaskPane=new View();boolean topFace,taskCellsCovered;Roll topRoll;View[]sideBackingViews={null,new View(),new View(),new View()};Slot[]slots={new Slot(),new Slot(),new Slot(),new Slot()};
  boolean sideArmed,sideCaptured,sideScrolling;Object sideScrollAnimator;
  boolean isSideMotionRunning(){return sideScrollAnimator!=null;}
  void finishSideScroll(){sideCaptured=false;sideScrollAnimator=null;}
@@ -70,7 +71,8 @@ public class WorkspaceRegression {
  static class CellMotion{void finish(){}}
  Queue main=new Queue();Object ctx=new Object();CellMotion cellMotion;StatusBar statusBar=new StatusBar();Promotion promotion;Bitmap mainBackdrop,wallpaperBackdrop=new Bitmap();
   boolean screenOn=true,zoomed=true,suspendRequested,landscapeSuspended,transferBusy,workspaceEntering,keyguardLocked;int scene=ACTIVE,zoomWrites,parks,returns,ready;long sceneEpoch=1,workspaceGeneration,zoomAnimUntil;String pendingSuspendReason;
- static class Layout {boolean tabletLandscape;float mainScale=.7017717f;int mainOffsetX,mainOffsetY=606;}
+ static class Layout {boolean tabletLandscape,mainOnRight;float mainScale=.7017717f;int mainOffsetX,mainOffsetY=606;int mainWidth=2286,sideWidth=762,topStrip=508;
+  int[] cellBounds(int i){return new int[]{0,topStrip+i*400,762,topStrip+(i+1)*400};}}
  Layout layout=new Layout();int screenW=3048,screenH=2032;long workspaceZoomStart=10032;
  Object workspaceBackdrop;int backdropAcquires;void prepareWorkspaceBackdrop(long g,int attempt,Runnable ready){backdropAcquires++;ready.run();}
  android.animation.ValueAnimator workspaceAnimator;float workspaceAlpha=1f;

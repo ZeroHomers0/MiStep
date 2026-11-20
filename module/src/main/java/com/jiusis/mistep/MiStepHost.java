@@ -3479,6 +3479,63 @@ public final class MiStepHost {
             if (tx != null) XposedHelpers.callMethod(tx, "apply");
         } catch (Throwable error) { log("workspace surface fade: " + error); }
         finally { closeSurfaceObject(tx, "close"); }
+        updateChromeClip();
+    }
+
+    /**
+     * Host chrome is excluded from display magnification (HostWindowPolicy), so it
+     * sits at its final position from the first frame while the main task is still
+     * full size. Clip every chrome region to the part the shrinking main task does
+     * not cover, so the two never draw over each other mid-transition. Settled
+     * states restore the full clip, which is what the layout code already sets.
+     */
+    private void updateChromeClip() {
+        if (layout == null || screenW <= 0 || screenH <= 0) return;
+        // Tablet landscape already cuts the main task out of the wallpaper backdrop
+        // and lays its cells around it; only the portrait band needs the cut.
+        android.graphics.RectF main = !layout.tabletLandscape && workspaceAlpha < 1f
+                ? workspaceMainHole() : null;
+        if (topLiveClip != null) {
+            // The strip spans the full width and is always topStrip tall, so only its
+            // bottom edge can overlap the shrinking main task.
+            int height = layout.topStrip;
+            int visible = main == null ? height
+                    : Math.max(0, Math.min(height, Math.round(main.top)));
+            topLiveClip.setClipBounds(new Rect(0, 0, screenW, visible));
+        }
+        for (int i = 1; i < SLOT_COUNT; i++) {
+            int[] bounds = sideBackingBounds(i);
+            if (bounds != null) clipChromeBesideMain(sideBackingViews[i], bounds, main);
+            Slot slot = slots[i];
+            if (slot != null && slot.index != SLOT_TOP && slot.hint != null && slot.rect != null)
+                clipChromeBesideMain(slot.hint,
+                        new int[]{slot.rect[0], slot.rect[1],
+                                slot.rect[2] - slot.rect[0], slot.rect[3] - slot.rect[1]}, main);
+        }
+    }
+
+    /** Side chrome sits beside the main task, so only a horizontal cut is needed. */
+    private void clipChromeBesideMain(View view, int[] bounds, android.graphics.RectF main) {
+        if (view == null || bounds == null || bounds[2] <= 0 || bounds[3] <= 0) return;
+        int left = 0, right = bounds[2];
+        boolean overlaps = main != null
+                && main.bottom > bounds[1] && main.top < bounds[1] + bounds[3];
+        if (overlaps) {
+            if (layout.mainOnRight) right = Math.max(0, Math.min(bounds[2], Math.round(main.left) - bounds[0]));
+            else left = Math.max(0, Math.min(bounds[2], Math.round(main.right) - bounds[0]));
+        }
+        view.setClipBounds(new Rect(left, 0, right, bounds[3]));
+    }
+
+    /** {x, y, width, height} of a side backing placeholder, shared with its creation. */
+    private int[] sideBackingBounds(int index) {
+        if (layout == null || index <= 0 || index >= CELL_SLOT_COUNT) return null;
+        if (layout.tabletLandscape) {
+            int[] cell = layout.cellBounds(index - 1);
+            return new int[]{cell[0], cell[1], cell[2] - cell[0], cell[3] - cell[1]};
+        }
+        return new int[]{layout.mainOnRight ? 0 : layout.mainWidth, sideSegmentTop(index),
+                layout.sideWidth, sideSegmentHeight(index)};
     }
 
     private android.graphics.RectF workspaceMainHole() {
@@ -3511,7 +3568,11 @@ public final class MiStepHost {
         final float from = entering ? 0f : workspaceAlpha;
         android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(from, entering ? 1f : 0f);
         animator.setDuration(ZOOM_ANIM_MS);
-        animator.setInterpolator(new android.view.animation.PathInterpolator(.34f, .69f, .1f, 1f));
+        // Material's emphasized-decelerate spends 88% of its progress in the first 40%
+        // of a 300ms window and then sticks. A 300ms transition needs a real
+        // acceleration phase as well, so both the Host fade and the WM zoom use the
+        // standard ease-in-out curve and therefore share one shape.
+        animator.setInterpolator(new android.view.animation.PathInterpolator(.4f, 0f, .2f, 1f));
         animator.addUpdateListener(value -> {
             if (workspaceAnimator == animator && generation == workspaceGeneration)
                 setWorkspaceAlpha((Float) value.getAnimatedValue());
@@ -3526,10 +3587,12 @@ public final class MiStepHost {
             }
         });
         workspaceAnimator = animator;
-        if (layout.tabletLandscape) animator.setStartDelay(Math.max(0L,
+        // Both sides now publish the same monotonic start, so the Host fade waits for
+        // it on every form factor instead of only on tablet landscape.
+        if (workspaceZoomStart > 0L) animator.setStartDelay(Math.max(0L,
                 workspaceZoomStart - SystemClock.uptimeMillis()));
         animator.start();
-        if (layout.tabletLandscape && SystemClock.uptimeMillis() > workspaceZoomStart)
+        if (workspaceZoomStart > 0L && SystemClock.uptimeMillis() > workspaceZoomStart)
             animator.setCurrentPlayTime(Math.min(ZOOM_ANIM_MS,
                     SystemClock.uptimeMillis() - workspaceZoomStart));
     }
@@ -3545,9 +3608,18 @@ public final class MiStepHost {
         final long generation = ++zoomCommandGeneration;
         final String steady = on ? zoomOnCommand() : "1 0 0";
         zoomAnimUntil = android.os.SystemClock.uptimeMillis() + ZOOM_ANIM_MS + 250L;
-        workspaceZoomStart = layout.tabletLandscape ? SystemClock.uptimeMillis() + 32L : 0L;
+        // Publish one monotonic start for both sides on every form factor. The Host
+        // fade and the WM zoom are driven by different processes; without a shared
+        // start the broadcast latency alone let the chrome lead the application by
+        // several frames, which is exactly the overlap seen during entry.
+        workspaceZoomStart = SystemClock.uptimeMillis() + 32L;
         writeZoomLine("anim " + steady + " " + ZOOM_ANIM_MS
                 + (workspaceZoomStart > 0 ? " at=" + workspaceZoomStart : ""));
+        // The steady rewrite must land after the published start, not after the
+        // moment this method happened to run; otherwise a late broadcast would let
+        // the plain tuple cancel the animation the WM has not begun yet.
+        final long steadyAt = Math.max(0L, workspaceZoomStart - SystemClock.uptimeMillis())
+                + ZOOM_ANIM_MS + 150L;
         main.postDelayed(() -> {
             if (!ZoomLifecyclePolicy.shouldApplyDelayedWrite(generation,
                     zoomCommandGeneration, on, zoomed)) {
@@ -3555,7 +3627,7 @@ public final class MiStepHost {
                 return;
             }
             writeZoomLine(steady);
-        }, ZOOM_ANIM_MS + 150L);
+        }, steadyAt);
     }
 
     private void writeZoom(boolean on) {
@@ -6699,6 +6771,9 @@ public final class MiStepHost {
         }
         root.requestLayout();
         root.invalidate();
+        // A side switch moves the main task to the other edge, so the chrome cut
+        // computed for the previous orientation is stale even at rest.
+        updateChromeClip();
     }
 
     /** Only the top strip / side column receive host input; transitions may cover the display. */

@@ -22,6 +22,15 @@ final class MiStepRetainedWindow {
     private final java.util.Map<Object, Float> heldMain = new java.util.IdentityHashMap<>();
     private long heldUntil;
     private Handler wmHandler;
+    private Object globalLock;
+    /** Invalidates the lock-entry hold once a real retain lease takes over. */
+    private long lockHoldGeneration;
+    /**
+     * How long a lock-entry hold survives without a retain lease. It only has to
+     * cover the frames before the native lockscreen draws; the broadcast-based
+     * retain() then owns the hold for the whole locked period.
+     */
+    private static final long LOCK_HOLD_MS = 500L;
 
     interface Reveal { void apply(Object transaction, long generation, float scale, float x, float y) throws Throwable; }
 
@@ -55,6 +64,10 @@ final class MiStepRetainedWindow {
         if (Boolean.TRUE.equals(XposedHelpers.callMethod(candidate, "isOnScreen"))) return null;
         if (!heldMain.isEmpty()) releaseMain(XposedHelpers.callMethod(display, "getPendingTransaction"));
         window = candidate; generation = next; scale = s; x = ox; y = oy;
+        // The retain lease now owns the hold; the lock-entry hold must not expire
+        // underneath it.
+        lockHoldGeneration++;
+        heldUntil = 0;
         // Native keyguard already hides the Host. Set the canonical main windows
         // before its start transaction can reveal newly recreated client buffers.
         for (Object main : ((Map<?, ?>) XposedHelpers.getObjectField(service, "mWindowMap")).values())
@@ -107,6 +120,37 @@ final class MiStepRetainedWindow {
     }
 
     void setHandler(Handler handler) { wmHandler = handler; }
+
+    void setGlobalLock(Object lock) { globalLock = lock; }
+
+    /**
+     * Lock entry runs inside KeyguardController#setKeyguardShown, i.e. on the WM
+     * thread while it already holds mGlobalLock. The Host only learns about the
+     * lock through a broadcast afterwards, so the opening main task would stay
+     * full screen for those frames. Hide it here, in the same transaction which
+     * restores physical geometry, and let retain() take the hold over.
+     */
+    void holdOpeningMainForLock(Object display) {
+        if (display == null || globalLock == null || !Thread.holdsLock(globalLock)) return;
+        Object service = XposedHelpers.getObjectField(display, "mWmService");
+        long lease = ++lockHoldGeneration;
+        for (Object main : ((Map<?, ?>) XposedHelpers.getObjectField(service, "mWindowMap")).values())
+            holdOpeningMain(main, display, true);
+        if (heldMain.isEmpty()) return;
+        heldUntil = android.os.SystemClock.uptimeMillis() + LOCK_HOLD_MS;
+        Handler handler = wmHandler;
+        if (handler == null) return;
+        handler.postDelayed(() -> {
+            synchronized (globalLock) {
+                // A real retain lease owns the hold from here on; its own watchdog
+                // releases it. Only the lock-entry hold expires on its own.
+                if (lease != lockHoldGeneration || window != null) return;
+                releaseMain(XposedHelpers.callMethod(display, "getPendingTransaction"));
+                XposedHelpers.callMethod(display, "scheduleAnimation");
+                XposedBridge.log("MiStepProbe: lock-entry main hold expired without a retain lease");
+            }
+        }, LOCK_HOLD_MS);
+    }
 
     /** Native keyguard has already chosen these opening windows. Only postpone
      * their visibility; never show a task or touch the physical lockscreen. */

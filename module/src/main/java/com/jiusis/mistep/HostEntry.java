@@ -295,6 +295,10 @@ public class HostEntry implements IXposedHookLoadPackage {
                         cancelZoomAnimation(null);
                         sZoomAnimKey = null;
                         sZoomTarget = new ZoomTarget(HostEntry.this, self, lock, (Handler) handler);
+                        // Lock entry must be able to hide the opening main task in the
+                        // same WM transaction that restores physical geometry, without
+                        // waiting for the Host broadcast round trip.
+                        sRetainedWindow.setGlobalLock(lock);
                         armZoomBridge(service);
                         dispatchCurrentZoom();
                         log("captured DisplayContent(display 0) with WM handler/global lock -> " + self);
@@ -332,6 +336,10 @@ public class HostEntry implements IXposedHookLoadPackage {
                     if (!sLiveSwapZoomSurfaces.begin(target.display, tx))
                         throw new IllegalStateException("native lock-entry surface scope busy");
                     try {
+                        // Hide the opening main task before restoring physical
+                        // geometry: the restore makes it full screen, and the Host
+                        // only learns about the lock through a later broadcast.
+                        sRetainedWindow.holdOpeningMainForLock(target.display);
                         target.owner.applyDisplayZoomLocked(target, 1f, 0f, 0f, null, true);
                         reapplyFinalMagnification(target.display, tx);
                     } finally { sLiveSwapZoomSurfaces.finish(target.display, tx); }
@@ -3723,13 +3731,19 @@ public class HostEntry implements IXposedHookLoadPackage {
         int rawDisplayRotation = (Integer) XposedHelpers.callMethod(dc, "getRotation");
         NativeRawInputBridge.update(scale, offsetY, offsetX,
                 rawDisplayBounds.width(), rawDisplayBounds.height(), rawDisplayRotation);
-        applyGestureSurfacesLocked(target, scale, offsetY, offsetX);
+        // Gesture monitors are input geometry, not per-frame visuals. Rewriting their
+        // crop/matrix/position every animation frame adds a second SF transaction per
+        // frame; the boundary write below keeps them correct at both ends.
+        if (!sZoomFrameApply) applyGestureSurfacesLocked(target, scale, offsetY, offsetX);
 
         // 清掉历史版本遗留的固定 1080x2460 显示裁剪（R2 时代的调试代码）：在 17PM 上会把
         // 窗口层裁成 1080x2460，右侧 120px、底部 148px 变成黑边。每次应用 spec 都显式清空，
         // 能自愈旧版本残留；不再主动设置任何 crop。
+        //
+        // 只在缩放边界做：这是自愈用的清理，不是逐帧几何。动画期间每帧再开一个
+        // SurfaceControl.Transaction 并 apply，会让 SF 每帧多收一次事务，正是掉帧来源。
         Object crop = null;
-        try {
+        if (!sZoomFrameApply) try {
             Object layer = XposedHelpers.callMethod(dc, "getWindowingLayer");
             if (layer != null && Boolean.TRUE.equals(XposedHelpers.callMethod(layer, "isValid"))) {
                 crop = Class.forName("android.view.SurfaceControl$Transaction")
@@ -3754,12 +3768,11 @@ public class HostEntry implements IXposedHookLoadPackage {
 
     /**
      * 整屏缩放动画：从当前生效 spec 插值到目标 spec，每帧仍在 WMS.mH 上、
-     * 持真实 mGlobalLock 应用（与静态缩放同一路径）。R2 的 ZoomAnimController
-     * 也用 ValueAnimator + PathInterpolator(0.34,0.69,0.1,1.0) 在 WMS 动画线程上
-     * 逐帧写 applyZoomedMatrixSmt；这里沿用同一曲线与时长语义。
+     * 持真实 mGlobalLock 应用（与静态缩放同一路径）。
      *
-     * POC 边界：本批只验证“逐帧整屏缩放”在目标机是否平滑、无崩溃；尚未接入
-     * 主副交换动画，也不与宿主桥接动画同步。
+     * 曲线与时长必须和宿主的 playWorkspaceFade 完全一致，否则两条同时开始的
+     * 动画会在中途分离：Host chrome 不参与 display 放大（HostWindowPolicy 的
+     * NOT_MAGNIFIABLE），所以它一旦领先就会直接画在还没缩小的应用画面上。
      */
     private void startZoomAnimation(ZoomTarget target, ZoomAnimCommand.Plan plan, String key) {
         if (target == null || plan == null || key == null) return;
@@ -3783,7 +3796,10 @@ public class HostEntry implements IXposedHookLoadPackage {
         // 动画会改变真实 state；让调度器丢弃旧的 lastAttempt，避免之后“恢复原值”被当成重复请求吞掉。
         target.dispatch.invalidateLastAttempt();
         if (zoomAnimInterpolator == null) {
-            zoomAnimInterpolator = new PathInterpolator(0.34f, 0.69f, 0.1f, 1.0f);
+            // Must stay identical to MiStepHost.playWorkspaceFade: the Host chrome is
+            // excluded from display magnification, so any curve difference shows up
+            // directly as chrome drawn over an application that has not shrunk yet.
+            zoomAnimInterpolator = new PathInterpolator(0.4f, 0f, 0.2f, 1.0f);
         }
         final ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
         animator.setDuration(plan.durationMs);
