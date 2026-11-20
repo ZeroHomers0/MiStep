@@ -13,13 +13,6 @@ package com.jiusis.mistep;
  */
 public final class MiStepLayout {
 
-    /**
-     * 目标机 freeform/multi-window 任务的最小宽度预算（dp）。
-     * v0.8.0 真机实测：格子 273px（≈99dp）时应用 appBounds 被撑到 550px（=200dp@440dpi）导致被裁一半，
-     * 因此格子容器要按"最小宽不超过格子宽"反推密度；实际值在 200–220dp 之间，取 220 保守。
-     */
-    public static final int ASSUMED_MIN_APP_DP = 220;
-
     public static final int CELL_COUNT = 3;
     public static final int MAX_CELL_COUNT = 4;
     public final boolean tabletLandscape;
@@ -196,17 +189,6 @@ public final class MiStepLayout {
                 && mainWidth + sideWidth == width
                 && mainY + mainHeight == height
                 && mainY == topStrip;
-    }
-
-    /**
-     * 让给定像素宽度不触发应用最小宽夹取的最大密度（dpi）。
-     * 例：格子 273px、假定最小 220dp → floor(273×160/220) = 198dpi；
-     * 主区 807px → 586dpi，因此在原密度 440dpi 下主区不受限。
-     */
-    public static int densityForWidth(int widthPx, int nativeDensity) {
-        int max = (int) Math.floor(widthPx * 160f / ASSUMED_MIN_APP_DP);
-        max = Math.max(120, max);
-        return Math.min(nativeDensity, max);
     }
 
     public String describe() {

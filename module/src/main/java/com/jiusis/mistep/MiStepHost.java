@@ -165,11 +165,6 @@ public final class MiStepHost {
     /** 侧栏按格分段的不透明底板；承载格需要把它藏起来让下面的真实任务画面透出来。 */
     private final View[] sideBackingViews = new View[SLOT_COUNT];
     private boolean mainOnRight;
-    private View dragGhost;
-    private boolean dragMoved;
-    private float dragStartRawX;
-    private float dragStartRawY;
-    private Slot dragTarget;
     private volatile boolean keyguardLocked;
     private volatile boolean retainedForLock;
     private boolean lockExitPending;
@@ -1167,50 +1162,6 @@ public final class MiStepHost {
             }
         }
         return null;
-    }
-
-    /** 主区在承载期间没有真实任务可看，用 Home 快照占位并提示返回方式。 */
-    private void showCarrierBackdrop(String pkg, int slotIndex) {
-        if (carrierBackdrop != null || root == null || layout == null) return;
-        try {
-            FrameLayout box = new FrameLayout(ctx);
-            if (mainBackdrop != null && !mainBackdrop.isRecycled()) {
-                android.widget.ImageView image = new android.widget.ImageView(ctx);
-                image.setImageBitmap(mainBackdrop);
-                image.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
-                box.addView(image, new FrameLayout.LayoutParams(-1, -1));
-                View shade = new View(ctx);
-                shade.setBackgroundColor(HyperOsStyle.dark(ctx) ? 0x33000000 : 0x22000000);
-                box.addView(shade, new FrameLayout.LayoutParams(-1, -1));
-            } else {
-                box.setBackgroundColor(HyperOsStyle.page(ctx));
-            }
-            TextView hint = new TextView(ctx);
-            hint.setText(pkg + " 在 " + slotIndex + " 号窗口\n点按返回主区");
-            hint.setTextColor(HyperOsStyle.textPrimary(ctx));
-            hint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15f);
-            hint.setTypeface(android.graphics.Typeface.create(
-                    "sans-serif-medium", android.graphics.Typeface.NORMAL));
-            hint.setGravity(Gravity.CENTER);
-            hint.setBackground(HyperOsStyle.glassSheet(ctx, 22f));
-            hint.setPadding(dp(18), dp(12), dp(18), dp(12));
-            FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(-1, dp(82));
-            hintParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            hintParams.leftMargin = dp(16);
-            hintParams.rightMargin = dp(16);
-            hintParams.bottomMargin = dp(16);
-            box.addView(hint, hintParams);
-            box.setOnClickListener(v -> restoreCarrierToMain());
-            FrameLayout.LayoutParams params =
-                    new FrameLayout.LayoutParams(layout.mainDispWidth, layout.mainDispHeight);
-            params.leftMargin = layout.mainOffsetX;
-            params.topMargin = layout.mainOffsetY;
-            root.addView(box, params);
-            carrierBackdrop = box;
-            log("carrier backdrop added for " + pkg + " slot=" + slotIndex);
-        } catch (Throwable error) {
-            log("carrier backdrop failed: " + error);
-        }
     }
 
     private void removeCarrierBackdrop() {
@@ -6092,26 +6043,6 @@ public final class MiStepHost {
         }
     }
 
-    private void createDragGhost() {
-        TextView ghost = new TextView(ctx);
-        ghost.setText("当前应用");
-        ghost.setTextColor(HyperOsStyle.textPrimary(ctx));
-        ghost.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14f);
-        ghost.setTypeface(android.graphics.Typeface.create(
-                "sans-serif-medium", android.graphics.Typeface.NORMAL));
-        ghost.setGravity(Gravity.CENTER);
-        ghost.setAlpha(0.92f);
-        ghost.setElevation(1600f);
-        ghost.setBackground(HyperOsStyle.glassPill(ctx, 18f, true));
-        int width = dp(120), height = dp(56);
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(width, height);
-        params.leftMargin = Math.round(dragStartRawX - width * 0.5f);
-        params.topMargin = Math.round(dragStartRawY - height * 0.5f);
-        root.addView(ghost, params);
-        dragGhost = ghost;
-        root.requestLayout();
-    }
-
     private void setDropHighlight(Slot slot, boolean active) {
         if (slot == null || slot.hint == null) return;
         slot.hint.setScaleX(1f);
@@ -6136,16 +6067,6 @@ public final class MiStepHost {
         int top = sideSegmentTop(slotIndex);
         int bottom = slotIndex >= CELL_SLOT_COUNT - 1 ? screenH : layout.cellBounds(slotIndex - 1)[3];
         return Math.max(1, bottom - top);
-    }
-
-    private Slot slotAtPoint(float x, float y) {
-        if (layout == null) return null;
-        for (Slot slot : slots) {
-            if (slot.index <= SLOT_MAIN || slot.index >= CELL_SLOT_COUNT || slot.rect == null) continue;
-            if (x >= slot.rect[0] && x < slot.rect[2]
-                    && y >= slot.rect[1] && y < slot.rect[3]) return slot;
-        }
-        return null;
     }
 
     private int dp(float value) {
