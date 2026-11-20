@@ -143,6 +143,8 @@ public final class MiStepHost {
     private final TopTaskState topTaskState = new TopTaskState();
     private final java.util.Map<TopTaskState.Key, Boolean> topDirections = new java.util.HashMap<>();
     private final WideVideoPolicy wideVideoPolicy = new WideVideoPolicy();
+    /** Scratch main hole: every consumer copies it before the next frame. */
+    private final android.graphics.RectF workspaceHole = new android.graphics.RectF();
     private long wideVideoSequence, wideVideoEpoch=-1;
     private Slot topOriginalSlot;
     private TopCandidate tabletCoveredMain;
@@ -3465,7 +3467,8 @@ public final class MiStepHost {
     private android.graphics.RectF workspaceMainHole() {
         float scale = 1f + (layout.mainScale - 1f) * workspaceAlpha;
         float x = layout.mainOffsetX * workspaceAlpha, y = layout.mainOffsetY * workspaceAlpha;
-        return new android.graphics.RectF(x, y, x + screenW * scale, y + screenH * scale);
+        workspaceHole.set(x, y, x + screenW * scale, y + screenH * scale);
+        return workspaceHole;
     }
 
     /** Keep wallpaper opaque outside the moving main task; never fade to the empty display. */

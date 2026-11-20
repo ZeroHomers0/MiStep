@@ -26,7 +26,7 @@ import java.util.*;import java.util.function.*;public class ValueAnimator extend
  public void cancel(){for(var l:listeners)l.onAnimationEnd(this);}public void end(){tick(1f);for(var l:listeners)l.onAnimationEnd(this);}
 }''',
 'android/view/animation/PathInterpolator.java':'package android.view.animation;public class PathInterpolator {public PathInterpolator(float a,float b,float c,float d){}}',
-'android/graphics/RectF.java':'package android.graphics;public class RectF {public float left,top,right,bottom;public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}}',
+'android/graphics/RectF.java':'package android.graphics;public class RectF {public float left,top,right,bottom;public RectF(){}public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}}',
 'android/graphics/Rect.java':'package android.graphics;public class Rect {public int left,top,right,bottom;public Rect(int a,int b,int c,int d){left=a;top=b;right=c;bottom=d;}public boolean isEmpty(){return right<=left||bottom<=top;}public String toString(){return left+","+top+","+right+","+bottom;}}',
 'android/view/SurfaceControl.java':r'''package android.view;
 import java.util.*;public class SurfaceControl {public boolean valid=true,visible=true;public float alpha=1;public android.graphics.Rect crop;public boolean isValid(){return valid;}
@@ -43,7 +43,7 @@ public class WorkspaceRegression {
  SideDismiss sideDismiss;
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  static class Drawable {int alpha=255;void setAlpha(int a){alpha=a;}}
- static class WallpaperCropDrawable extends Drawable {android.graphics.RectF hole;void setMainHole(android.graphics.RectF r){hole=r;}}
+ static class WallpaperCropDrawable extends Drawable {android.graphics.RectF hole;void setMainHole(android.graphics.RectF r){hole=r==null?null:new android.graphics.RectF(r.left,r.top,r.right,r.bottom);}}
  static class View {static final int VISIBLE=0,GONE=8;float alpha=1;int pickerCloses;Drawable background=new WallpaperCropDrawable();android.graphics.Rect clip;Drawable getBackground(){return background;}void setAlpha(float v){alpha=v;}void setClipBounds(android.graphics.Rect r){clip=r;}void invalidate(){}void setWorkspaceMainHole(android.graphics.RectF r){}void closeQuickAppPicker(){pickerCloses++;}}
  static class Observer {Runnable frame;void registerFrameCommitCallback(Runnable r){frame=r;}}
  static class FrameLayout extends View {Observer observer=new Observer();boolean attached=true,hardware=true;int invalidates;
@@ -75,6 +75,7 @@ public class WorkspaceRegression {
  static class Layout {boolean tabletLandscape,mainOnRight;float mainScale=.7017717f;int mainOffsetX,mainOffsetY=606;int mainWidth=2286,sideWidth=762,topStrip=508;
   int[] cellBounds(int i){return new int[]{0,topStrip+i*400,762,topStrip+(i+1)*400};}}
  Layout layout=new Layout();int screenW=3048,screenH=2032;long workspaceZoomStart=10032;
+ final android.graphics.RectF workspaceHole=new android.graphics.RectF();
  Object workspaceBackdrop;int backdropAcquires;void prepareWorkspaceBackdrop(long g,int attempt,Runnable ready){backdropAcquires++;ready.run();}
  android.animation.ValueAnimator workspaceAnimator;float workspaceAlpha=1f;
  void writeZoomAnimated(boolean on){zoomWrites++;}void writeZoom(boolean on){zoomWrites++;}void setZoomState(boolean on){zoomed=on;}void scheduleMainCropClear(long d){}void publishDesktopSideTasks(){}
