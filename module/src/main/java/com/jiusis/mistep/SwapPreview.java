@@ -239,8 +239,8 @@ final class SwapPreview {
         return out;
     }
 
-    private static RectF interpolate(Rect from, Rect to, float fraction) {
-        return new RectF(
+    private static void interpolate(RectF out, Rect from, Rect to, float fraction) {
+        out.set(
                 from.left + (to.left - from.left) * fraction,
                 from.top + (to.top - from.top) * fraction,
                 from.right + (to.right - from.right) * fraction,
@@ -256,6 +256,8 @@ final class SwapPreview {
         private final boolean liveMain;
         private final Bitmap transitionBackdrop;
         private final Rect backgroundRect = new Rect();
+        /** Scratch destination: the bridge paints once per frame. */
+        private final RectF destination = new RectF();
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         private final Paint background = new Paint();
         private float fraction;
@@ -307,7 +309,8 @@ final class SwapPreview {
             int checkpoint = canvas.save();
             if (liveSelected && !sealed) {
                 // The selected TaskView is a real live surface below this overlay.
-                canvas.clipOutRect(interpolate(sideFrom, mainTo, fraction));
+                interpolate(destination, sideFrom, mainTo, fraction);
+                canvas.clipOutRect(destination);
             }
             if (liveMain) {
                 // 真实主任务表面由宿主逐帧缩进格子；整块主区都挖洞：主任务缩走后
@@ -327,18 +330,20 @@ final class SwapPreview {
                 // Official Mi Step flips the side guideline; keep the full column on
                 // that same path rather than snapping or fading individual cells.
                 float left = sideColumnFromX + (sideColumnToX - sideColumnFromX) * fraction;
-                RectF destination = new RectF(left, sideColumnTop,
+                destination.set(left, sideColumnTop,
                         left + sideColumn.getWidth(),
                         sideColumnTop + sideColumnHeight);
                 canvas.drawBitmap(sideColumn, null, destination, paint);
             }
             if (!liveMain && main != null && !main.isRecycled()) {
-                canvas.drawBitmap(main, null, interpolate(mainFrom, sideTo, fraction), paint);
+                interpolate(destination, mainFrom, sideTo, fraction);
+                canvas.drawBitmap(main, null, destination, paint);
             }
             // The growing destination is painted last, matching its role as the new main
             // window and keeping the two live applications distinct throughout the bridge.
             if (side != null && !side.isRecycled() && (!liveSelected || sealed)) {
-                canvas.drawBitmap(side, null, interpolate(sideFrom, mainTo, fraction), paint);
+                interpolate(destination, sideFrom, mainTo, fraction);
+                canvas.drawBitmap(side, null, destination, paint);
             }
             canvas.restoreToCount(checkpoint);
             if (!firstFrameDrawn) {
