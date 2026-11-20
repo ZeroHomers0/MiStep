@@ -21,18 +21,18 @@ public final class PromotionFocusTransferTest {
 
     public static void main(String[] args) throws Exception {
         Service service = new Service();
-        check(transfer(service) == PromotionFocusTransfer.Result.FOCUSED,
+        check(transfer(service) == FocusResult.FOCUSED,
                 "one promotion action focuses the target after backfill stole focus");
         check(service.calls == 1 && service.reads == 2, "request is followed by a fresh system read");
-        check(transfer(service) == PromotionFocusTransfer.Result.FOCUSED && service.calls == 1,
+        check(transfer(service) == FocusResult.FOCUSED && service.calls == 1,
                 "an already focused task is not reordered again");
 
         Service pending = new Service(); pending.delayed = true;
-        check(transfer(pending) == PromotionFocusTransfer.Result.PENDING,
+        check(transfer(pending) == FocusResult.PENDING,
                 "transaction acceptance alone is not focus confirmation");
         pending.state = state(TOKEN, 0, 0, 1, true, true);
         check(PromotionFocusTransfer.observe(pending, 101, TOKEN, 0)
-                == PromotionFocusTransfer.Result.FOCUSED && pending.calls == 1,
+                == FocusResult.FOCUSED && pending.calls == 1,
                 "a later observation confirms focus without submitting twice");
 
         PromotionFocusTransfer.State[] unsafe = {
@@ -43,25 +43,25 @@ public final class PromotionFocusTransferTest {
         };
         for (PromotionFocusTransfer.State value : unsafe) {
             Service invalid = new Service(); invalid.state = value;
-            check(transfer(invalid) == PromotionFocusTransfer.Result.UNAVAILABLE && invalid.calls == 0,
+            check(transfer(invalid) == FocusResult.UNAVAILABLE && invalid.calls == 0,
                     "missing, replaced, hidden, native-freeform, secondary-display/user task is not focused");
             Service invalidRequest = new Service(); invalidRequest.state = value;
             check(PromotionFocusTransfer.request(invalidRequest, 101, TOKEN, 0)
-                    == PromotionFocusTransfer.Result.UNAVAILABLE && invalidRequest.calls == 0,
+                    == FocusResult.UNAVAILABLE && invalidRequest.calls == 0,
                     "live main request rejects stale identity and non-main roles");
         }
         Service live = new Service(); live.delayed = true;
         check(PromotionFocusTransfer.request(live, 101, TOKEN, 0)
-                == PromotionFocusTransfer.Result.REQUESTED && live.calls == 1 && live.reads == 1,
+                == FocusResult.REQUESTED && live.calls == 1 && live.reads == 1,
                 "live main requests once without waiting for another system focus sample");
         live.state = state(TOKEN, 0, 0, 1, true, true);
         check(PromotionFocusTransfer.request(live, 101, TOKEN, 0)
-                == PromotionFocusTransfer.Result.FOCUSED && live.calls == 1,
+                == FocusResult.FOCUSED && live.calls == 1,
                 "already focused main is retained without reordering");
         System.out.println("PromotionFocusTransfer checks=" + checks + " passed");
     }
 
-    private static PromotionFocusTransfer.Result transfer(Service service) throws Exception {
+    private static FocusResult transfer(Service service) throws Exception {
         return PromotionFocusTransfer.transfer(service, 101, TOKEN, 0);
     }
     private static PromotionFocusTransfer.State state(Object token, int display, int user,

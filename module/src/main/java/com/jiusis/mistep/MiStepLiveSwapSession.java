@@ -9,7 +9,6 @@ import de.robv.android.xposed.XposedHelpers;
  * Real-surface driver for the verified task-pair adapter. Each ordinary swap submits one WCT.
  */
 final class MiStepLiveSwapSession {
-    enum State { NEW, WAITING, RUNNING, SETTLING, FINISHED, DECLINED, CONSUMED, FAILED }
 
     interface Finish { void finish(Object windowTransaction); }
     interface Animation { void cancel(); }
@@ -52,7 +51,7 @@ final class MiStepLiveSwapSession {
         /** Keep live leashes in their animation parent until exact external commits are confirmed. */
         default void beforeFinish(boolean failed, Consumer<Throwable> ready) { ready.accept(null); }
         default void cancelFinishing() {}
-        void complete(State state, Throwable error);
+        void complete(SwapSessionState state, Throwable error);
     }
 
     static final class Ready {
@@ -100,7 +99,7 @@ final class MiStepLiveSwapSession {
     private Animation animation;
     private boolean finishCalled, completeCalled;
     private boolean cancellingWaiting, cancelReady, consumedWhileCancelling;
-    private State state = State.NEW;
+    private SwapSessionState state = SwapSessionState.NEW;
 
     MiStepLiveSwapSession(Backend backend, Scene scene, LiveSwapGeometry.Task first,
             LiveSwapGeometry.Task second, long duration) {
@@ -117,58 +116,58 @@ final class MiStepLiveSwapSession {
         this.duration = duration;
     }
 
-    State state() { return state; }
+    SwapSessionState state() { return state; }
 
     /** Shell main only. Accepted pending work is reversed before its temporary owner is released. */
     void cancel() {
         backend.assertShellThread();
-        if (state == State.SETTLING) { scene.cancelFinishing(); return; }
-        if (state == State.RUNNING && !cancellingWaiting) {
+        if (state == SwapSessionState.SETTLING) { scene.cancelFinishing(); return; }
+        if (state == SwapSessionState.RUNNING && !cancellingWaiting) {
             finish(true, new IllegalStateException("live swap cancelled"));
             return;
         }
-        if (state != State.WAITING || cancellingWaiting) return;
+        if (state != SwapSessionState.WAITING || cancellingWaiting) return;
         cancellingWaiting = true;
         try {
             scene.requestWaitingCancel();
             backend.await(scene::waitingCancelReady, 1500L, ready -> {
                 try {
                 if (!ready) {
-                    state = State.FAILED;
+                    state = SwapSessionState.FAILED;
                     complete(new IllegalStateException("original task roles not confirmed after pending cancellation"));
                     return;
                 }
                 cancelReady = true;
                 if (consumedWhileCancelling) {
                     onConsumed(token, true, null);
-                } else if (state == State.RUNNING) {
+                } else if (state == SwapSessionState.RUNNING) {
                     finish(true, new IllegalStateException("pending live swap cancelled"));
-                } else if (state == State.WAITING) {
+                } else if (state == SwapSessionState.WAITING) {
                     if (backend.canAbortWaiting(token)) {
                         backend.abortWaiting(token);
                         // A removed/unknown Shell pending may have no handler notification.
-                        if (state == State.WAITING) onConsumed(token, true, null);
+                        if (state == SwapSessionState.WAITING) onConsumed(token, true, null);
                     } else {
                         // OS2 cannot abort a request before Ready. Keep our handler
                         // until it receives Ready and finishes the confirmed inverse.
-                        backend.await(() -> state != State.WAITING, 1500L, delivered -> {
-                            if (!delivered && state == State.WAITING) {
-                                state = State.FAILED;
+                        backend.await(() -> state != SwapSessionState.WAITING, 1500L, delivered -> {
+                            if (!delivered && state == SwapSessionState.WAITING) {
+                                state = SwapSessionState.FAILED;
                                 complete(new IllegalStateException("native cancellation Ready not delivered"));
                             }
                         });
                     }
                 }
-                } catch (Throwable error) { state = State.FAILED; complete(error); }
+                } catch (Throwable error) { state = SwapSessionState.FAILED; complete(error); }
             });
-        } catch (Throwable error) { state = State.FAILED; complete(error); }
+        } catch (Throwable error) { state = SwapSessionState.FAILED; complete(error); }
     }
 
     /** The supplied WCT must contain both task role changes; old startRootTask is never called here. */
     boolean start(Object oneWct) {
         backend.assertShellThread();
-        if (state != State.NEW || oneWct == null || !scene.mayStart()) return false;
-        state = State.WAITING;
+        if (state != SwapSessionState.NEW || oneWct == null || !scene.mayStart()) return false;
+        state = SwapSessionState.WAITING;
         try {
             token = backend.startTransition(oneWct, new Handler() {
                 @Override public boolean start(Object t, Object info, Object start, Object finish, Finish cb) {
@@ -179,7 +178,7 @@ final class MiStepLiveSwapSession {
             if (token == null) throw new IllegalStateException("Shell rejected transition");
             return true;
         } catch (Throwable error) {
-            state = State.FAILED;
+            state = SwapSessionState.FAILED;
             complete(error);
             return false;
         }
@@ -187,23 +186,23 @@ final class MiStepLiveSwapSession {
 
     private boolean onStart(Object t, Object info, Object start, Object finish, Finish cb) {
         backend.assertShellThread();
-        if (state == State.FAILED && cancellingWaiting && token != null && token.equals(t)
+        if (state == SwapSessionState.FAILED && cancellingWaiting && token != null && token.equals(t)
                 && start != null && finish != null && cb != null) {
             // A late Ready after cancellation timeout still belongs to our original WCT.
             // Retire its Shell lifecycle once; do not launch a competing default animator.
-            state = State.RUNNING;
+            state = SwapSessionState.RUNNING;
             finishTransaction = finish; finishCallback = cb;
             finish(true, new IllegalStateException("late ready after unconfirmed cancellation"));
             return true;
         }
-        if (state != State.WAITING || token == null || !token.equals(t)) return false;
+        if (state != SwapSessionState.WAITING || token == null || !token.equals(t)) return false;
         if (start == null || finish == null || cb == null) {
-            state = State.DECLINED;
+            state = SwapSessionState.DECLINED;
             complete(new IllegalStateException("incomplete native transition callback"));
             return false;
         }
         // Once our WCT was accepted, do not delegate the same task pair to another animator.
-        state = State.RUNNING;
+        state = SwapSessionState.RUNNING;
         finishTransaction = finish; finishCallback = cb;
         if (cancellingWaiting) {
             if (cancelReady) finish(true, new IllegalStateException("pending live swap cancelled"));
@@ -227,7 +226,7 @@ final class MiStepLiveSwapSession {
             paint(start, 0);
             backend.apply(start);
             Animation created = backend.animate(duration, this::onFrame, () -> finish(false, null));
-            if (state == State.RUNNING) animation = created;
+            if (state == SwapSessionState.RUNNING) animation = created;
             else if (created != null) created.cancel();
         } catch (Throwable error) { finish(true, error); }
         return true;
@@ -243,7 +242,7 @@ final class MiStepLiveSwapSession {
 
     private void onFrame(Double fraction) {
         backend.assertShellThread();
-        if (state != State.RUNNING) return;
+        if (state != SwapSessionState.RUNNING) return;
         Object tx = null;
         try {
             tx = backend.newTransaction();
@@ -255,43 +254,43 @@ final class MiStepLiveSwapSession {
 
     private void finish(boolean failed, Throwable error) {
         backend.assertShellThread();
-        if (state != State.RUNNING || finishCalled) return;
+        if (state != SwapSessionState.RUNNING || finishCalled) return;
         finishCalled = true;
-        state = State.SETTLING;
+        state = SwapSessionState.SETTLING;
         if (animation != null) animation.cancel();
         try {
             scene.beforeFinish(failed, gateError -> {
                 backend.assertShellThread();
-                if (state != State.SETTLING) return;
+                if (state != SwapSessionState.SETTLING) return;
                 finishNow(failed || gateError != null, error == null ? gateError : error);
             });
         } catch (Throwable gateError) { finishNow(true, error == null ? gateError : error); }
     }
 
     private void finishNow(boolean failed, Throwable error) {
-        if (state != State.SETTLING) return;
-        state = failed ? State.FAILED : State.FINISHED;
+        if (state != SwapSessionState.SETTLING) return;
+        state = failed ? SwapSessionState.FAILED : SwapSessionState.FINISHED;
         try { scene.finish(finishTransaction, failed); }
-        catch (Throwable recoveryError) { state = State.FAILED; if (error == null) error = recoveryError; }
+        catch (Throwable recoveryError) { state = SwapSessionState.FAILED; if (error == null) error = recoveryError; }
         final Throwable settledError = error;
         try {
             completeAfterCommit(finishTransaction, settledError);
             if (finishCallback != null) finishCallback.finish(scene.finishWindowTransaction());
         } catch (Throwable callbackError) {
-            state = State.FAILED;
+            state = SwapSessionState.FAILED;
             complete(error == null ? callbackError : error);
         }
     }
 
     private void onConsumed(Object t, boolean aborted, Object transaction) {
         backend.assertShellThread();
-        if (token == null || !token.equals(t) || state == State.CONSUMED
-                || state == State.FINISHED || state == State.FAILED) return;
+        if (token == null || !token.equals(t) || state == SwapSessionState.CONSUMED
+                || state == SwapSessionState.FINISHED || state == SwapSessionState.FAILED) return;
         if (cancellingWaiting && !cancelReady) {
             consumedWhileCancelling = true;
             return;
         }
-        state = State.CONSUMED;
+        state = SwapSessionState.CONSUMED;
         if (animation != null) animation.cancel();
         Object tx = transaction;
         boolean owned = tx == null;
@@ -319,7 +318,7 @@ final class MiStepLiveSwapSession {
         backend.committed(tx, () -> { committed[0] = true; complete(error); });
         backend.await(() -> committed[0], 1500L, ready -> {
             if (!ready && !completeCalled) {
-                state = State.FAILED;
+                state = SwapSessionState.FAILED;
                 complete(new IllegalStateException("native finish transaction commit not acknowledged", error));
             }
         });

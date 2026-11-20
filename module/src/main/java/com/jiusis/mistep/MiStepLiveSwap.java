@@ -132,14 +132,14 @@ final class MiStepLiveSwap {
                     ownedPair.recover(transaction, sideScale);
                     background(transaction, true);
                 }
-                @Override public void complete(MiStepLiveSwapSession.State state, Throwable error) {
+                @Override public void complete(SwapSessionState state, Throwable error) {
                     Runnable deliver = () -> {
                         if (delivered) return;
                         delivered = true;
                         synchronized (ACTIVE) { if (ACTIVE.get(controller) == active) ACTIVE.remove(controller); }
                         boolean owned = cleanupError == null && ownedPair.sideOwned();
                         Throwable resultError = error != null ? error : cleanupError;
-                        completed.accept(new Result(state == MiStepLiveSwapSession.State.FINISHED
+                        completed.accept(new Result(state == SwapSessionState.FINISHED
                                 && owned && resultError == null, owned,
                                 owned || ownedPair.originalRoles(), resultError));
                     };
@@ -150,7 +150,7 @@ final class MiStepLiveSwap {
                         completed.accept(new Result(false, false, false, error));
                         return;
                     }
-                    if (state == MiStepLiveSwapSession.State.DECLINED || state == MiStepLiveSwapSession.State.FAILED) {
+                    if (state == SwapSessionState.DECLINED || state == SwapSessionState.FAILED) {
                         Object tx = backend.newTransaction();
                         try {
                             ownedPair.recover(tx, sideScale); background(tx, true);

@@ -331,7 +331,7 @@ final class MiStepLiveSwap64 {
             if (pair != null) pair.recover(tx, oldSideScale); else single.finish(tx, rollback, oldSideScale);
             peersFinish(tx, true); background(tx, true);
         }
-        @Override public void complete(MiStepLiveSwapSession.State state, Throwable error) {
+        @Override public void complete(SwapSessionState state, Throwable error) {
             if (delivered) return; delivered = true;
             if(flip!=null && flip.overlays!=null)flip.overlays.close();
             LiveSwapZoom.closeReplay(finishReplay); finishReplay = null;
@@ -339,7 +339,7 @@ final class MiStepLiveSwap64 {
             boolean side = !uncertain && (pair != null ? pair.sideOwned() : single.sideOwned());
             boolean roles = !uncertain && (pair != null ? side || pair.rollbackRolesReady() : side || single.roles(false));
             if (waitingCancel && !roles && pair != null) pair.releaseOriginalLeaseWhenSeen();
-            boolean success = state == MiStepLiveSwapSession.State.FINISHED && error == null && !rollback
+            boolean success = state == SwapSessionState.FINISHED && error == null && !rollback
                     && roles && (pair != null ? side : !side);
             done.accept(new MiStepLiveSwap.Result(success, side, roles, error != null ? error : settleError));
         }

@@ -195,7 +195,7 @@ final class MiStepLiveCollect implements MiStepLiveSwapSession.Scene {
     }
     @Override public boolean waitingCancelReady() { return task.originalRoles(); }
     @Override public void consumed(Object tx, boolean aborted) { task.settle(tx, scale); background(tx, true); }
-    @Override public void complete(MiStepLiveSwapSession.State state, Throwable error) {
+    @Override public void complete(SwapSessionState state, Throwable error) {
         if (delivered) return;
         for (Throwable cause = error; cause != null;) {
             log.accept("live collect finish cause=" + cause);
@@ -216,7 +216,7 @@ final class MiStepLiveCollect implements MiStepLiveSwapSession.Scene {
         boolean roles = !uncertain && (side || task.originalSettled());
         if (waitingCancel && !roles) task.releaseOriginalWhenSeen();
         synchronized (ACTIVE) { if (ACTIVE.get(controller) == this) ACTIVE.remove(controller); }
-        done.accept(new MiStepLiveSwap.Result(state == MiStepLiveSwapSession.State.FINISHED
+        done.accept(new MiStepLiveSwap.Result(state == SwapSessionState.FINISHED
                 && side && roles && error == null, side, roles, error));
     }
 }

@@ -58,7 +58,7 @@ public final class LiveSwapSessionTest {
         Throwable finalError;
         int prepares, finishes, consumes, completions, waitingCancels;
         boolean failed;
-        MiStepLiveSwapSession.State finalState;
+        SwapSessionState finalState;
         final Object a = new Object(), b = new Object(), parent = new Object();
         @Override public boolean mayStart() { return allowed; }
         @Override public MiStepLiveSwapSession.Ready resolve(Object info) {
@@ -83,7 +83,7 @@ public final class LiveSwapSessionTest {
         @Override public void consumed(Object transaction, boolean aborted) {
             consumes++; ((Tx) transaction).ownership++;
         }
-        @Override public void complete(MiStepLiveSwapSession.State state, Throwable error) {
+        @Override public void complete(SwapSessionState state, Throwable error) {
             completions++; finalState = state; finalError = error;
         }
         @Override public void requestWaitingCancel() { waitingCancels++; }
@@ -121,7 +121,7 @@ public final class LiveSwapSessionTest {
         check(normal.callbacks == 1 && normal.scene.finishes == 1 && normal.scene.completions == 1,
                 "finish was duplicated by cancel/end reentry");
         check(!normal.finish.applied && !normal.finish.closed, "Shell finish transaction ownership stolen");
-        check(normal.finish.ownership == 1 && normal.session.state() == MiStepLiveSwapSession.State.FINISHED,
+        check(normal.finish.ownership == 1 && normal.session.state() == SwapSessionState.FINISHED,
                 "real owner finish missing");
         check(normal.backend.owned.size() == 3, "wrong number of animation frames");
         for (Tx tx : normal.backend.owned) check(tx.applied && tx.closed, "frame transaction leaked");
@@ -137,7 +137,7 @@ public final class LiveSwapSessionTest {
                 "foreign transition swallowed");
         check(!foreign.start.applied && foreign.scene.prepares == 0, "foreign transition mutated");
         foreign.backend.handler.consumed("foreign", true, new Tx());
-        check(foreign.session.state() == MiStepLiveSwapSession.State.WAITING, "foreign consume changed session");
+        check(foreign.session.state() == SwapSessionState.WAITING, "foreign consume changed session");
 
         Fixture missing = new Fixture(); missing.scene.ready = false;
         check(missing.begin(), "accepted WCT delegated competing ownership to default animator");
@@ -187,7 +187,7 @@ public final class LiveSwapSessionTest {
 
         Fixture lostCommit = new Fixture(); lostCommit.holdFinishCommit = true; lostCommit.begin();
         lostCommit.backend.end.run(); lostCommit.backend.awaited.accept(false);
-        check(lostCommit.scene.completions == 1 && lostCommit.session.state() == MiStepLiveSwapSession.State.FAILED,
+        check(lostCommit.scene.completions == 1 && lostCommit.session.state() == SwapSessionState.FAILED,
                 "missing commit acknowledgement held completion forever");
         lostCommit.finish.committed();
         check(lostCommit.scene.completions == 1, "late commit repeated failed completion");
@@ -216,7 +216,7 @@ public final class LiveSwapSessionTest {
         cancelTimeout.session.start(new Object()); cancelTimeout.session.cancel();
         cancelTimeout.backend.awaited.accept(false);
         check(cancelTimeout.scene.completions == 1 && cancelTimeout.backend.aborts == 0
-                && cancelTimeout.session.state() == MiStepLiveSwapSession.State.FAILED,
+                && cancelTimeout.session.state() == SwapSessionState.FAILED,
                 "unconfirmed inverse roles were aborted or held forever");
         check(cancelTimeout.backend.handler.start("ours", new Object(), cancelTimeout.start,
                 cancelTimeout.finish, wct -> { cancelTimeout.callbacks++; cancelTimeout.finish.committed(); }),
@@ -237,7 +237,7 @@ public final class LiveSwapSessionTest {
         legacyTimeout.session.start(new Object()); legacyTimeout.session.cancel();
         legacyTimeout.backend.awaited.accept(false);
         check(legacyTimeout.backend.aborts == 0 && legacyTimeout.scene.completions == 1
-                && legacyTimeout.session.state() == MiStepLiveSwapSession.State.FAILED,
+                && legacyTimeout.session.state() == SwapSessionState.FAILED,
                 "legacy missing Ready held cancellation forever");
         check(legacyTimeout.backend.handler.start("ours", new Object(), legacyTimeout.start,
                 legacyTimeout.finish, wct -> { legacyTimeout.callbacks++; legacyTimeout.finish.committed(); }),

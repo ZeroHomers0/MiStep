@@ -129,5 +129,5 @@ paths=[]
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskHandoffPolicy.java'),*paths],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskHandoffPolicy.java'),str(src/'HandoffOwner.java'),*paths],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.NativeHandoffRegression'],check=True)

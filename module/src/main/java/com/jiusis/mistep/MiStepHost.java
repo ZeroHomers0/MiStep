@@ -366,7 +366,7 @@ public final class MiStepHost {
         volatile boolean nativeCompleting;
         boolean liveMainFocusPrepared;
         int liveMainUserId = -1;
-        PromotionFocusTransfer.Result liveMainFocusResult;
+        FocusResult liveMainFocusResult;
         LiveSwapVisualLease liveVisual;
         MiStepLiveBackdrop liveBackdrop;
         final java.util.List<LiveSwapVisualLease> peerVisuals = new java.util.ArrayList<>();
@@ -7952,7 +7952,7 @@ public final class MiStepHost {
         if (mainReady && externalPromotionCurrent(ticket)) {
             try { ticket.liveMainFocusResult = requestLiveMainFocus(ticket); }
             catch (Throwable error) {
-                ticket.liveMainFocusResult = PromotionFocusTransfer.Result.UNAVAILABLE;
+                ticket.liveMainFocusResult = FocusResult.UNAVAILABLE;
                 log("live main focus request unavailable: " + error);
             }
             ticket.liveMainFocusPrepared = true;
@@ -7968,13 +7968,13 @@ public final class MiStepHost {
         });
     }
 
-    private PromotionFocusTransfer.Result requestLiveMainFocus(Promotion ticket) throws Exception {
+    private FocusResult requestLiveMainFocus(Promotion ticket) throws Exception {
         final LiveTask home = ticket.nativeCollect ? ticket.collectionHome : null;
-        if (ticket.nativeCollect && home == null) return PromotionFocusTransfer.Result.UNAVAILABLE;
+        if (ticket.nativeCollect && home == null) return FocusResult.UNAVAILABLE;
         final int id = home == null ? ticket.taskId : home.id;
         final Object token = home == null ? ticket.token : home.token;
         final int user = ticket.liveMainUserId;
-        if (user < 0) return PromotionFocusTransfer.Result.UNAVAILABLE;
+        if (user < 0) return FocusResult.UNAVAILABLE;
         Object service = XposedHelpers.callStaticMethod(
                 Class.forName("android.app.ActivityTaskManager"), "getService");
         java.util.List<?> roots = (java.util.List<?>) XposedHelpers.callMethod(service, "getAllRootTaskInfos");
@@ -7986,7 +7986,7 @@ public final class MiStepHost {
             // The collected task and other exact side tasks never own main input.
             if (!token.equals(focused) && !ticket.token.equals(focused)
                     && !ticket.otherSideTokens.contains(focused))
-                return PromotionFocusTransfer.Result.UNAVAILABLE;
+                return FocusResult.UNAVAILABLE;
         }
         return PromotionFocusTransfer.request(new PromotionFocusTransfer.Tasks() {
             public PromotionFocusTransfer.State read(int taskId) {
@@ -8301,12 +8301,12 @@ public final class MiStepHost {
             Object assigned = XposedHelpers.callMethod(organizer, "getTaskListener", info, false);
             Object fallback = ((android.util.SparseArray<?>) XposedHelpers.getObjectField(
                     organizer, "mTaskListeners")).get(-2); // target fullscreen listener type
-            TaskHandoffPolicy.Owner owner = TaskHandoffPolicy.owner(
+            HandoffOwner owner = TaskHandoffPolicy.owner(
                     ticket.token, current, assigned, controller, fallback);
             if (ticket.candidateRecovery && assigned == fallback && fallback != null
                     && fallback != controller && !ticket.token.equals(current))
-                owner = TaskHandoffPolicy.Owner.NATIVE_FULLSCREEN;
-            if (owner == TaskHandoffPolicy.Owner.UNAVAILABLE) {
+                owner = HandoffOwner.NATIVE_FULLSCREEN;
+            if (owner == HandoffOwner.UNAVAILABLE) {
                 throw new IllegalStateException("native fullscreen route is unavailable");
             }
             Object area = ShellCompat.rootArea(organizer);
@@ -8317,7 +8317,7 @@ public final class MiStepHost {
             if (areaInfo == null || XposedHelpers.getIntField(areaInfo, "featureId") != 1
                     || XposedHelpers.getIntField(areaInfo, "displayId") != 0
                     || parent == null || canonical == null
-                    || (owner == TaskHandoffPolicy.Owner.OUR_CONTROLLER
+                    || (owner == HandoffOwner.OUR_CONTROLLER
                             && (copy == null || canonical == copy))
                     || !Boolean.TRUE.equals(XposedHelpers.callMethod(parent, "isValid"))
                     || !Boolean.TRUE.equals(XposedHelpers.callMethod(canonical, "isValid"))) {
@@ -8345,7 +8345,7 @@ public final class MiStepHost {
                 XposedHelpers.callMethod(tx, "setAlpha", canonical, 1f);
                 XposedHelpers.callMethod(tx, ticket.background ? "hide" : "show", canonical);
                 ticket.handoffAttempted = true;
-                if (owner == TaskHandoffPolicy.Owner.OUR_CONTROLLER) {
+                if (owner == HandoffOwner.OUR_CONTROLLER) {
                     ShellCompat.call(transitions, "unregisterTaskView", controller);
                     unregistered = true;
                     ShellCompat.call(organizer, "removeListener", controller);
@@ -8356,7 +8356,7 @@ public final class MiStepHost {
                 // Copied handles still name the same native layer. OS2's vanished
                 // callback detaches it, so finish old-owner cleanup before the
                 // final canonical reparent transaction can become visible.
-                if (owner == TaskHandoffPolicy.Owner.OUR_CONTROLLER) {
+                if (owner == HandoffOwner.OUR_CONTROLLER) {
                     XposedHelpers.callMethod(controller, "onTaskVanished", info);
                     ShellCompat.call(transitions, "registerTaskView", controller);
                 }
@@ -8519,7 +8519,7 @@ public final class MiStepHost {
             return;
         }
         if (!executeOnShell(() -> {
-            PromotionFocusTransfer.Result result = PromotionFocusTransfer.Result.UNAVAILABLE;
+            FocusResult result = FocusResult.UNAVAILABLE;
             try {
                 if (promotion == ticket && !ticket.cancelled && sceneEpoch == epoch
                         && scene == ACTIVE && !suspendRequested && screenOn) {
@@ -8560,12 +8560,12 @@ public final class MiStepHost {
             } catch (Throwable error) {
                 log("promotion focus request failed task=" + focusId + ": " + error);
             }
-            final PromotionFocusTransfer.Result observed = result;
+            final FocusResult observed = result;
             main.post(() -> {
                 if (promotion != ticket || ticket.cancelled) return;
                 log("promotion focus task=" + focusId + " attempt=" + attempt
                         + " result=" + observed + " afterBackfill=true");
-                if (observed == PromotionFocusTransfer.Result.PENDING && attempt == 0
+                if (observed == FocusResult.PENDING && attempt == 0
                         && sceneEpoch == epoch && scene == ACTIVE && !suspendRequested && screenOn) {
                     main.postDelayed(() -> finishPromotionFocus(ticket, complete, 1), 120L);
                 } else complete.run();

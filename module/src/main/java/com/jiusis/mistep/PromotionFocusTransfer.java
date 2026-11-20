@@ -2,7 +2,6 @@ package com.jiusis.mistep;
 
 /** Focus a handed-off task only after the old main task has finished backfilling. */
 final class PromotionFocusTransfer {
-    enum Result { FOCUSED, REQUESTED, PENDING, UNAVAILABLE }
 
     interface Tasks {
         State read(int taskId) throws Exception;
@@ -31,28 +30,28 @@ final class PromotionFocusTransfer {
         }
     }
 
-    static Result transfer(Tasks tasks, int id, Object token, int user) throws Exception {
-        Result before = observe(tasks, id, token, user);
-        if (before != Result.PENDING) return before;
+    static FocusResult transfer(Tasks tasks, int id, Object token, int user) throws Exception {
+        FocusResult before = observe(tasks, id, token, user);
+        if (before != FocusResult.PENDING) return before;
         tasks.focus(id);
         return observe(tasks, id, token, user);
     }
 
     /** Request the confirmed live main once, in the existing Shell finish turn. */
-    static Result request(Tasks tasks, int id, Object token, int user) throws Exception {
+    static FocusResult request(Tasks tasks, int id, Object token, int user) throws Exception {
         State state = tasks.read(id);
-        if (state == null || !state.matches(token, user)) return Result.UNAVAILABLE;
-        if (state.focused) return Result.FOCUSED;
+        if (state == null || !state.matches(token, user)) return FocusResult.UNAVAILABLE;
+        if (state.focused) return FocusResult.FOCUSED;
         tasks.focus(id);
         // Acceptance is distinct from observed focus. Do not keep input blocked
         // for a polling read or timer after the real task finish has committed.
-        return Result.REQUESTED;
+        return FocusResult.REQUESTED;
     }
 
-    static Result observe(Tasks tasks, int id, Object token, int user) throws Exception {
+    static FocusResult observe(Tasks tasks, int id, Object token, int user) throws Exception {
         State state = tasks.read(id);
-        if (state == null || !state.matches(token, user)) return Result.UNAVAILABLE;
-        return state.focused ? Result.FOCUSED : Result.PENDING;
+        if (state == null || !state.matches(token, user)) return FocusResult.UNAVAILABLE;
+        return state.focused ? FocusResult.FOCUSED : FocusResult.PENDING;
     }
 
     private PromotionFocusTransfer() {}
