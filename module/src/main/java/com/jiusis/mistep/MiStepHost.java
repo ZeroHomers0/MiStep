@@ -49,10 +49,9 @@ import de.robv.android.xposed.XposedHelpers;
  * 调试广播：com.jiusis.mistep.TOGGLE / com.jiusis.mistep.DEBUG(slot,pkg,swap)。
  */
 public final class MiStepHost {
-    static final String LANDSCAPE_MODE_ACTION = "com.jiusis.mistep.LANDSCAPE_MODE";
+    static final String LANDSCAPE_MODE_ACTION = MiStepActions.LANDSCAPE_MODE;
 
-    private static final String DESKTOP_ICON_LAUNCH_ACTION =
-            "com.jiusis.mistep.DESKTOP_ICON_LAUNCH";
+    private static final String DESKTOP_ICON_LAUNCH_ACTION = MiStepActions.DESKTOP_ICON_LAUNCH;
 
     private static final String TAG = "MiStepProbe";
     private static final int SLOT_MAIN = 0;
@@ -62,7 +61,7 @@ public final class MiStepHost {
     private FrameLayout tabletTools;
     private boolean tabletToolsOpen;
     private boolean taskCellsCovered;
-    static final String TOP_TASK_STATE_ACTION = "com.jiusis.mistep.TOP_TASK_STATE";
+    static final String TOP_TASK_STATE_ACTION = MiStepActions.TOP_TASK_STATE;
     private static final long LAUNCH_TIMEOUT_MS = 4000L;
     private static final long SIDE_PROMOTION_TIMEOUT_MS = 3500L;
 
@@ -3613,7 +3612,7 @@ public final class MiStepHost {
             float scale = Float.parseFloat(parts[0]);
             float offsetY = Float.parseFloat(parts[1]);
             float offsetX = Float.parseFloat(parts[2]);
-            android.content.Intent intent = new android.content.Intent("com.jiusis.mistep.ZOOM");
+            android.content.Intent intent = new android.content.Intent(MiStepActions.ZOOM);
             intent.putExtra("request", encoded);
             intent.putExtra("scale", scale);
             intent.putExtra("offsetY", offsetY);

@@ -224,7 +224,7 @@ public final class HotZoneGesture {
         int valid = mode == WorkspaceOptions.BOTTOM_CENTER_OUTWARD
                 ? mode : WorkspaceOptions.STATUS_BAR_INWARD;
         if (instance != null) instance.context.sendBroadcast(
-                new android.content.Intent("com.jiusis.mistep.BOTTOM_INPUT_OPTIONS")
+                new android.content.Intent(MiStepActions.BOTTOM_INPUT_OPTIONS)
                         .setPackage("android").putExtra("mode", valid));
         if (selectedEntryGesture == valid) return;
         selectedEntryGesture = valid;

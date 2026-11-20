@@ -2,8 +2,8 @@ package com.jiusis.mistep;
 
 /** Exact, permission-protected SystemUI/WMS handshake for one live layout handoff. */
 final class LiveSwapZoomProtocol {
-    static final String APPLY = "com.jiusis.mistep.ZOOM64";
-    static final String ACK = "com.jiusis.mistep.ZOOM64_ACK";
+    static final String APPLY = MiStepActions.ZOOM64;
+    static final String ACK = MiStepActions.ZOOM64_ACK;
     static final String PERMISSION = "android.permission.WRITE_SECURE_SETTINGS";
     static final String GENERATION = "generation";
     static final String SCALE = "scaleBits", X = "xBits", Y = "yBits";

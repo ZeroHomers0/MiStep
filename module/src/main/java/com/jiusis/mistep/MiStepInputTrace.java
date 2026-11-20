@@ -27,7 +27,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** Explicit six-second numeric trace. It neither changes matrices nor dispatches an event. */
 final class MiStepInputTrace {
-    static final String ACTION = "com.jiusis.mistep.TRACE_INPUT";
+    static final String ACTION = MiStepActions.TRACE_INPUT;
     private static final InputTraceGate GATE = new InputTraceGate();
     private static final StringBuilder LINES = new StringBuilder();
     private static final ScheduledExecutorService TIMER = Executors.newSingleThreadScheduledExecutor(r -> {

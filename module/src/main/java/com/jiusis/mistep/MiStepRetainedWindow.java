@@ -15,8 +15,8 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** The native hidden WindowState, rather than a client buffer callback, owns reveal. */
 final class MiStepRetainedWindow {
-    static final String ACTION = "com.jiusis.mistep.RETAINED_WINDOW";
-    static final String READY = "com.jiusis.mistep.RETAINED_READY";
+    static final String ACTION = MiStepActions.RETAINED_WINDOW;
+    static final String READY = MiStepActions.RETAINED_READY;
     private Object window;
     private long generation;
     private float scale, x, y;

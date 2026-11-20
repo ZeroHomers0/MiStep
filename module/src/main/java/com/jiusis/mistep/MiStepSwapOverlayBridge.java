@@ -14,7 +14,7 @@ import de.robv.android.xposed.XposedBridge;
 
 /** One protected request before a flip, no per-frame IPC or second animation clock. */
 final class MiStepSwapOverlayBridge {
-    static final String ACTION="com.jiusis.mistep.SWAP_OVERLAY_SURFACES";
+    static final String ACTION=MiStepActions.SWAP_OVERLAY_SURFACES;
     static Bundle capture(Object display,Intent intent) {
         Bundle out=new Bundle();
         LiveSwapZoom.Zoom old=new LiveSwapZoom.Zoom(intent.getLongExtra("generation",0L),

@@ -18,7 +18,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** OS3's native penetration replays into global monitors after cancelling spy windows. */
 final class MiStepBottomReplayInput {
-    static final String ACTION = "com.jiusis.mistep.BOTTOM_INPUT_OPTIONS";
+    static final String ACTION = MiStepActions.BOTTOM_INPUT_OPTIONS;
     private static MiStepBottomReplayInput instance;
     private final Context context;
     private final ClassLoader loader;
@@ -139,7 +139,7 @@ final class MiStepBottomReplayInput {
             } else if (e.action == MotionEvent.ACTION_MOVE || e.action == MotionEvent.ACTION_UP) {
                 if (swipe.move(e.pointer, e.count, e.x, e.y, e.time, size.x, size.y, rotation,
                         Math.round(58f * density), Math.round(24f * density))) {
-                    context.sendBroadcast(new Intent("com.jiusis.mistep.DEBUG")
+                    context.sendBroadcast(new Intent(MiStepActions.DEBUG)
                             .setPackage("com.android.systemui")
                             .putExtra("legacyBottomSign", swipe.sign())
                             .putExtra("legacyBottomDown", downTime)

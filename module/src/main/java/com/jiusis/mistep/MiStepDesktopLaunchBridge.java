@@ -13,9 +13,9 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** Exact scene-scoped routing from Launcher to the existing live promotion. */
 final class MiStepDesktopLaunchBridge {
-    static final String ACTION = "com.jiusis.mistep.DESKTOP_SIDE_TASKS";
-    static final String LAUNCH = "com.jiusis.mistep.DESKTOP_ICON_LAUNCH";
-    static final String PREPARE_TOP = "com.jiusis.mistep.PREPARE_TOP_VIEWPORT";
+    static final String ACTION = MiStepActions.DESKTOP_SIDE_TASKS;
+    static final String LAUNCH = MiStepActions.DESKTOP_ICON_LAUNCH;
+    static final String PREPARE_TOP = MiStepActions.PREPARE_TOP_VIEWPORT;
     private static Registry current;
     private static PendingTop pendingTop;
 

@@ -137,6 +137,6 @@ def run(root, out, jdk, trace_source=None):
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(folder),
                     *(str(folder / name) for name in files),
                     str(trace_source or production / 'MiStepInputTrace.java'),
-                    *(str(production / name) for name in ('InputTraceGate.java', 'TopTaskSwipe.java', 'TopEdgeBackSwipe.java'))], check=True)
+                    *(str(production / name) for name in ('InputTraceGate.java', 'TopTaskSwipe.java', 'TopEdgeBackSwipe.java', 'MiStepActions.java'))], check=True)
     subprocess.run([str(jdk / 'java.exe'), '-Dtrace.output=' + str(folder), '-cp', str(folder),
                     'com.jiusis.mistep.RuntimeTraceRegression'], check=True)

@@ -53,8 +53,7 @@ public class HostEntry implements IXposedHookLoadPackage {
 
     private static final String TAG = "MiStepProbe";
     private static final String SYSTEMUI = "com.android.systemui";
-    private static final String DESKTOP_ICON_LAUNCH_ACTION =
-            "com.jiusis.mistep.DESKTOP_ICON_LAUNCH";
+    private static final String DESKTOP_ICON_LAUNCH_ACTION = MiStepActions.DESKTOP_ICON_LAUNCH;
     private static final long LAUNCH_DELAY_MS = 12_000L;   // 等开机稳定
     private static final long AFTER_ADD_MS = 2_500L;       // 等 TaskView 表面就绪再启动
 
@@ -756,7 +755,7 @@ public class HostEntry implements IXposedHookLoadPackage {
                         }
                         return;
                     }
-                    if ("com.jiusis.mistep.TRANSFER_TOUCH".equals(intent.getAction())) {
+                    if (MiStepActions.TRANSFER_TOUCH.equals(intent.getAction())) {
                         transferSideTouch(intent);
                         return;
                     }
@@ -780,12 +779,12 @@ public class HostEntry implements IXposedHookLoadPackage {
                     }
                 }
             };
-            IntentFilter filter = new IntentFilter("com.jiusis.mistep.ZOOM");
+            IntentFilter filter = new IntentFilter(MiStepActions.ZOOM);
             filter.addAction(LiveSwapZoomProtocol.APPLY);
             filter.addAction(MiStepUnlockHandoff.RELEASE);
             filter.addAction(MiStepRetainedWindow.ACTION);
             filter.addAction(MiStepSwapOverlayBridge.ACTION);
-            filter.addAction("com.jiusis.mistep.TRANSFER_TOUCH");
+            filter.addAction(MiStepActions.TRANSFER_TOUCH);
             filter.addAction(MiStepInputTrace.ACTION);
             filter.addAction(MiStepBottomReplayInput.ACTION);
             filter.addAction(MiStepDesktopLaunchBridge.ACTION);
@@ -4230,7 +4229,7 @@ public class HostEntry implements IXposedHookLoadPackage {
                 @Override
                 public void onReceive(android.content.Context context, android.content.Intent intent) {
                     String action = intent.getAction();
-                    if ("com.jiusis.mistep.DEBUG".equals(action)) {
+                    if (MiStepActions.DEBUG.equals(action)) {
                         handleDebugBroadcast(intent);
                         return;
                     }
@@ -4249,8 +4248,8 @@ public class HostEntry implements IXposedHookLoadPackage {
                 }
             };
             android.content.IntentFilter filter = new android.content.IntentFilter();
-            filter.addAction("com.jiusis.mistep.TOGGLE");
-            filter.addAction("com.jiusis.mistep.DEBUG");
+            filter.addAction(MiStepActions.TOGGLE);
+            filter.addAction(MiStepActions.DEBUG);
             filter.addAction(MiStepHost.LANDSCAPE_MODE_ACTION);
             filter.addAction(MiStepHost.TOP_TASK_STATE_ACTION);
             filter.addAction(MiStepRetainedWindow.READY);

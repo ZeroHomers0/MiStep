@@ -17,8 +17,8 @@ import de.robv.android.xposed.*;
 
 /** Dock an existing native PiP/video overlay surface. Never resize or move an application task. */
 final class MiStepVideoDock {
-    static final String HOST="com.jiusis.mistep.VIDEO_HOST", STATE="com.jiusis.mistep.VIDEO_STATE",
-            COMMAND="com.jiusis.mistep.VIDEO_COMMAND";
+    static final String HOST=MiStepActions.VIDEO_HOST, STATE=MiStepActions.VIDEO_STATE,
+            COMMAND=MiStepActions.VIDEO_COMMAND;
     private static final String PERMISSION=android.Manifest.permission.WRITE_SECURE_SETTINGS;
     private static MiStepVideoDock instance;
     private final Object service,lock;

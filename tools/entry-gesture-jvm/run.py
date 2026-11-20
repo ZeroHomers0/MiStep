@@ -349,7 +349,7 @@ paths=[]
 for name, text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
 paths += [str(src/n) for n in ['CornerSwipe.java','BottomCenterSwipe.java','WorkspaceOptions.java',
-          'EntryGesturePolicy.java','EntryGestureSettings.java','TopTaskSwipe.java','TopEdgeBackSwipe.java','HotZoneGesture.java']]
+          'EntryGesturePolicy.java','EntryGestureSettings.java','TopTaskSwipe.java','TopEdgeBackSwipe.java','HotZoneGesture.java','MiStepActions.java']]
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),*paths],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.EntryGestureRegression'],check=True)
 subprocess.run([str(jdk/'java.exe'),'-Dmistep.legacyReceiver=true','-cp',str(out),'com.jiusis.mistep.EntryGestureRegression'],check=True)

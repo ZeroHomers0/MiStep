@@ -140,7 +140,7 @@ public class MiStepHost {
 paths=[]
 for rel,body in files.items():
  p=out/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8');paths.append(str(p))
-for name in ['MiStepUnlockHandoff','LiveSwapZoom','LiveSwapZoomProtocol']:paths.append(str(src/(name+'.java')))
+for name in ['MiStepUnlockHandoff','LiveSwapZoom','LiveSwapZoomProtocol','MiStepActions']:paths.append(str(src/(name+'.java')))
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.UnlockHandoffRegression'],check=True)

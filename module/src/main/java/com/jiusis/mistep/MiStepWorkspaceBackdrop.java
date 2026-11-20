@@ -17,7 +17,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** Physical wallpaper backing below the native wallpaper and real tasks. */
 final class MiStepWorkspaceBackdrop {
-    static final String ACTION = "com.jiusis.mistep.WORKSPACE_WALLPAPER_PARENT";
+    static final String ACTION = MiStepActions.WORKSPACE_WALLPAPER_PARENT;
 
     /** Caller holds WM's lock. Only the live SystemUI Host can acquire this parent. */
     static Bundle capture(Object display, Intent intent) {

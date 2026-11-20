@@ -63,6 +63,6 @@ target.write_text(wrapper, encoding='utf8')
 jdk = Path(os.environ["MISTEP_JAVA_BIN"])
 android = Path(os.environ["MISTEP_ANDROID_JAR"])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', str(android),
-                '-d', str(out), str(src / 'LiveSwapZoom.java'), str(src / 'LiveSwapZoomProtocol.java'), str(target)], check=True)
+                '-d', str(out), str(src / 'LiveSwapZoom.java'), str(src / 'LiveSwapZoomProtocol.java'), str(src / 'MiStepActions.java'), str(target)], check=True)
 subprocess.run([str(jdk / 'java.exe'), '-cp', str(out) + ';' + str(android),
                 'com.jiusis.mistep.ZoomAckRegression'], check=True)

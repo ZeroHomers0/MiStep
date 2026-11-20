@@ -11,7 +11,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** Deliver the main environment through Android's native process configuration path. */
 final class MiStepMainUiConfiguration {
-    static final String ACTION = "com.jiusis.mistep.MAIN_UI_CONFIGURATION";
+    static final String ACTION = MiStepActions.MAIN_UI_CONFIGURATION;
     private static Configuration main;
     private static Configuration physical;
     private static boolean delivering;

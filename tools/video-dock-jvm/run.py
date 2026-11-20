@@ -77,5 +77,5 @@ for name,body in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
 assert 'setWindowingMode' not in (src/'MiStepVideoDock.java').read_text(encoding='utf-8')
 assert 'setScreenSizeDp' not in (src/'MiStepVideoDock.java').read_text(encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(src/'MiStepVideoDock.java')],check=True)
+jdk=Path(os.environ['MISTEP_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(src/'MiStepVideoDock.java'),str(src/'MiStepActions.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.VideoDockRegression'],check=True)

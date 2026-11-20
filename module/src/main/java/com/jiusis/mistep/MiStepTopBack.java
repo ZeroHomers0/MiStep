@@ -10,7 +10,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 /** A leased pane can request Back only for its exact currently focused app UID. */
 final class MiStepTopBack {
-    static final String ACTION = "com.jiusis.mistep.TOP_EDGE_BACK";
+    static final String ACTION = MiStepActions.TOP_EDGE_BACK;
 
     static void request(Context context, Object token) {
         IBinder binder = (IBinder) XposedHelpers.callMethod(token, "asBinder");

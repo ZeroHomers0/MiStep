@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 final class MiStepUnlockHandoff {
     static final String PHYSICAL_KEYGUARD = "retainedPhysicalKeyguard";
     static final String COMPLETED="retainedRevealCompleted";
-    static final String RELEASE = "com.jiusis.mistep.UNLOCK_HANDOFF_RELEASE";
+    static final String RELEASE = MiStepActions.UNLOCK_HANDOFF_RELEASE;
     private static long nextGeneration = System.currentTimeMillis();
     private final Context context;
     private final Handler main;

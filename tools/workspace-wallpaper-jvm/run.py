@@ -71,7 +71,7 @@ public class WallpaperLeaseRegression {
 paths=[]
 for n,t in files.items():
  p=out/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(t,encoding='utf-8');paths.append(str(p))
-paths.extend(str(root/'module/src/main/java/com/jiusis/mistep'/n) for n in ['MiStepWorkspaceBackdrop.java','MiStepWindowIdentity.java'])
+paths.extend(str(root/'module/src/main/java/com/jiusis/mistep'/n) for n in ['MiStepWorkspaceBackdrop.java','MiStepWindowIdentity.java','MiStepActions.java'])
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WallpaperLeaseRegression'],check=True)
