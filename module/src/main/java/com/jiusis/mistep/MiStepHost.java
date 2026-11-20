@@ -66,6 +66,8 @@ public final class MiStepHost {
     private static final long SIDE_PROMOTION_TIMEOUT_MS = 3500L;
 
     private static volatile MiStepHost sInstance;
+    /** Resolved once: the leash POC builds a transaction on every animation frame. */
+    private static volatile java.lang.reflect.Constructor<?> surfaceTransactionConstructor;
 
     private final Context ctx;
     private final Executor executor;
@@ -1438,10 +1440,18 @@ public final class MiStepHost {
         log("leash anim POC restored task=" + taskId);
     }
 
+    private static Object newSurfaceTransaction() throws Exception {
+        java.lang.reflect.Constructor<?> cached = surfaceTransactionConstructor;
+        if (cached == null) {
+            cached = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor();
+            surfaceTransactionConstructor = cached;
+        }
+        return cached.newInstance();
+    }
+
     private void applyLeashTransform(Object leash, float x, float y, float sx, float sy) {
         try {
-            Object tx = Class.forName("android.view.SurfaceControl$Transaction")
-                    .getDeclaredConstructor().newInstance();
+            Object tx = newSurfaceTransaction();
             try {
                 XposedHelpers.callMethod(tx, "setPosition", leash, x, y);
                 XposedHelpers.callMethod(tx, "setMatrix", leash, sx, 0f, 0f, sy);
