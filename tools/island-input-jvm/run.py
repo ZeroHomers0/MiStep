@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Exercise the actual production Xposed callback against small Android/Xposed fakes."""
 from pathlib import Path
 import subprocess
@@ -109,7 +110,7 @@ for name, content in sources.items():
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding='utf8')
     paths.append(str(p))
-prod = ROOT / 'module/src/main/java/com/jiusis/mistep'
+prod=package_dir(ROOT)
 paths += [str(prod / n) for n in ['IslandMonitorInputPolicy.java', 'MiStepIslandMonitorInput.java']]
 CLASSES.mkdir(parents=True, exist_ok=True)
 compile_result = subprocess.run([str(JDK / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17',

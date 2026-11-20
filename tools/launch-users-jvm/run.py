@@ -1,7 +1,8 @@
 """Exercise production Host quick-entry and desktop continuation with same-package users."""
 from pathlib import Path
 import os, subprocess, sys
-root=Path(__file__).resolve().parents[2];src=root/'module/src/main/java/com/jiusis/mistep'
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
+root=Path(__file__).resolve().parents[2];src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
 def member(sig):

@@ -1,6 +1,7 @@
 """Exercise the actual shade surface-region crop against the captured modal overreach."""
 from pathlib import Path
 import os,subprocess,sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 files={
  'android/graphics/Rect.java':'''package android.graphics;
@@ -39,5 +40,5 @@ public class MainPanelTouchRegression {
 for n,s in files.items():
  f=out/n;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(s,encoding='utf-8')
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(root/'module/src/main/java/com/jiusis/mistep/MiStepMainPanelTouchRegion.java'),*[str(out/n) for n in files]],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(package_dir(root)/'MiStepMainPanelTouchRegion.java'),*[str(out/n) for n in files]],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.MainPanelTouchRegression'],check=True)

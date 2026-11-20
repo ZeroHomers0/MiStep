@@ -1,6 +1,7 @@
 """Exercise actual TOP state isolation, physical sources, IME retention and stale leases."""
 import ast, os, subprocess, sys
 from pathlib import Path
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 ROOT=Path(__file__).resolve().parents[2]
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/tests/top-insets-jvm'
 JDK=Path(os.environ['MISTEP_JAVA_BIN'])
@@ -79,6 +80,6 @@ sources=[]
 for name,body in FILES.items():
  p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8');sources.append(str(p))
 sources.append(str(ROOT/'tools/test-stubs/android/graphics/Rect.java'))
-for n in ['MiStepTopInsets','MiStepSideRoleChange']:sources.append(str(ROOT/f'module/src/main/java/com/jiusis/mistep/{n}.java'))
+for n in ['MiStepTopInsets','MiStepSideRoleChange']:sources.append(str(package_dir(ROOT)/f'{n}.java'))
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),*sources],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.TopInsetsTest'],check=True)

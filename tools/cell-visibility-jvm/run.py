@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run the actual Host visibility/preparation methods across native ownership handoffs."""
 from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2]
-host=(root/'module/src/main/java/com/jiusis/mistep/MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 def method(signature):
     a=host.index(signature);b=host.index('{',a)+1;depth=1

@@ -1,5 +1,6 @@
 """Exercise production trace callbacks with passive Android/Xposed JVM fixtures."""
 import subprocess
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 
 def run(root, out, jdk, trace_source=None):
@@ -133,7 +134,7 @@ def run(root, out, jdk, trace_source=None):
         target = folder / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(data, encoding='utf-8')
-    production = root / 'module/src/main/java/com/jiusis/mistep'
+    production=package_dir(root)
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(folder),
                     *(str(folder / name) for name in files),
                     str(trace_source or production / 'MiStepInputTrace.java'),

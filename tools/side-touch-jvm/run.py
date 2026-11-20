@@ -1,8 +1,9 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Execute real side-cell gesture arbitration and the scoped TaskView insets hook."""
 from pathlib import Path
 import subprocess,sys
-root=Path(__file__).resolve().parents[2];src=root/'module/src/main/java/com/jiusis/mistep'
+root=Path(__file__).resolve().parents[2];src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 host=(src/'MiStepHost.java').read_text(encoding='utf8')
 def method(signature):

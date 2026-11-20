@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run the actual host selection and side-surface admission methods with deterministic roots."""
 from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2]
-src=root/'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root)
 out=Path(sys.argv[1]) if len(sys.argv)>1 else root/'build/tests/standalone'
 out.mkdir(parents=True,exist_ok=True)
 def method(text,signature):

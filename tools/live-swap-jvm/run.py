@@ -1,11 +1,12 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Compile the actual pair ownership class against bounded, source-shaped Android/Shell fakes."""
 from pathlib import Path
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / 'module/src/main/java/com/jiusis/mistep'
+SRC=package_dir(ROOT)
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/standalone'
 OUT.mkdir(parents=True, exist_ok=True)
 JDK = Path(os.environ["MISTEP_JAVA_BIN"])

@@ -1,6 +1,7 @@
 """Actual portrait carrier -> owned landscape Activity configuration regression."""
 import ast,os,subprocess,sys
 from pathlib import Path
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 tree=ast.parse((root/'tools/phone-rotation-jvm/run.py').read_text(encoding='utf-8-sig'))
 files=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='FILES' for t in n.targets)) if False else {}
@@ -23,5 +24,5 @@ public class SideConfigurationRegression {
  for(int mode:new int[]{1,5}){t.mode=mode;check(!MiStepSideConfiguration.apply(a,t,local),"other window mode excluded");}t.mode=6;t.force=false;check(!MiStepSideConfiguration.apply(a,t,local),"unowned mode6 excluded");t.force=true;local.orientation=1;check(!MiStepSideConfiguration.apply(a,t,local),"portrait remains native");
  }System.out.println("Production side landscape configuration: "+checks+" checks passed");}
 }''',encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(p),str(root/'module/src/main/java/com/jiusis/mistep/MiStepSideConfiguration.java'),str(test)],check=True)
+jdk=Path(os.environ['MISTEP_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(p),str(package_dir(root)/'MiStepSideConfiguration.java'),str(test)],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideConfigurationRegression'],check=True)

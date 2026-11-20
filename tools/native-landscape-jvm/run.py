@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/native-landscape-jvm'
@@ -101,7 +102,7 @@ subprocess.run(
         "-d",
         str(OUT),
         str(test),
-        str(ROOT / "module/src/main/java/com/jiusis/mistep/NativeLandscapePolicy.java"),
+        str(package_dir(ROOT)/"NativeLandscapePolicy.java"),
     ],
     check=True,
 )

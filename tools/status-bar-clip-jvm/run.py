@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run the production clip owner against traced geometry and WM lifecycle fakes."""
 from pathlib import Path
 import ast
@@ -25,7 +26,7 @@ public final class Rect {
  public int hashCode(){return left+31*top+961*right+29791*bottom;}
  public String toString(){return left+","+top+","+right+","+bottom;}
 }''', encoding='utf8')
-source = ROOT / 'module/src/main/java/com/jiusis/mistep/MiStepStatusBarClip.java'
+source = package_dir(ROOT)/'MiStepStatusBarClip.java'
 test = Path(__file__).with_name('StatusBarClipRegression.java')
 subprocess.run([str(JDK / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT),
                 str(fake), str(rect), str(source), str(test)], check=True)

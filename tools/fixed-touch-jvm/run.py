@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Exercise the actual scoped WindowState crop hook against the recorded 17PM geometry."""
 from pathlib import Path
 import subprocess
@@ -7,7 +8,7 @@ import sys
 root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-source = (root/'module/src/main/java/com/jiusis/mistep/HostEntry.java').read_text(encoding='utf-8-sig')
+source = (package_dir(root)/'HostEntry.java').read_text(encoding='utf-8-sig')
 start = source.index('    private static boolean cropFixedMainTouchableRegion(')
 brace = source.index('{', start)
 depth, end = 1, brace+1

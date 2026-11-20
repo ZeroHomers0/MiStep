@@ -5,16 +5,17 @@ import os
 import shutil
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 jdk = Path(os.environ['MISTEP_JAVA_BIN'])
-sources = [root / 'module/src/main/java/com/jiusis/mistep' / name for name in
+sources = [package_dir(root) / name for name in
            ('RuntimeLogText.java', 'RuntimeDiagnosticBundle.java', 'RuntimeDiagnosticSources.java', 'RuntimeTraceFormat.java')]
 tests = [root / 'tests/RuntimeDiagnosticBundleTest.java', root / 'tests/RuntimeLogTextTest.java',
          root / 'tests/InputTraceGateTest.java',root / 'tests/RuntimeTraceFormatTest.java']
-sources.append(root / 'module/src/main/java/com/jiusis/mistep/InputTraceGate.java')
+sources.append(package_dir(root)/'InputTraceGate.java')
 correlation = root / 'tests/RuntimeDiagnosticCorrelationTest.java'
 if correlation.exists():
     tests.append(correlation)

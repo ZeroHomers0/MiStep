@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Exercise the production process lease, hook, routing, and restoration together."""
 from pathlib import Path
 import ast, subprocess, sys
@@ -73,6 +74,6 @@ FILES['de/robv/android/xposed/XposedHelpers.java']=helper[:pos]+r'''
 sources=[]
 for name,body in FILES.items():
     p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8');sources.append(str(p))
-sources.extend(str(ROOT/'module/src/main/java/com/jiusis/mistep'/name) for name in ['ShellCompat.java','MiStepImeProcessConfiguration.java','MiStepImeWindow.java'])
+sources.extend(str(package_dir(ROOT)/name) for name in ['ShellCompat.java','MiStepImeProcessConfiguration.java','MiStepImeWindow.java'])
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),*sources],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.ImeProcessConfigurationTest'],check=True)

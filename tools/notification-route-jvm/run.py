@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Compile actual notification hook and Host entry/continuation with bounded native stubs."""
 from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-source=root/'module/src/main/java/com/jiusis/mistep'
+source=package_dir(root)
 host=(source/'MiStepHost.java').read_text(encoding='utf-8-sig')
 def method(sig):
     a=host.index(sig);b=host.index('{',a)+1;d=1

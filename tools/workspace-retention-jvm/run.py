@@ -2,10 +2,11 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 
 root = Path(__file__).resolve().parents[2]
-src = root / "module/src/main/java/com/jiusis/mistep/MiStepHost.java"
+src = package_dir(root)/"MiStepHost.java"
 source = src.read_text(encoding="utf-8-sig")
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)

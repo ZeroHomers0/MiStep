@@ -1,9 +1,10 @@
 """Replay the real spy and native status observer; count pointer claims and openings."""
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root = Path(__file__).resolve().parents[2]
-src = Path(sys.argv[2]) if len(sys.argv) > 2 else root/'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root,sys.argv[2] if len(sys.argv)>2 else None)
 out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
 jdk = Path(os.environ['MISTEP_JAVA_BIN'])
 subprocess.run([sys.executable, '-X', 'utf8', str(root/'tools/status-fade-jvm/run.py'), str(out), str(src)], check=True)

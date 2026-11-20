@@ -1,10 +1,11 @@
 """Replay actual Host handoff against OS2's copied-handle native detach contract."""
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-src=root/'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root)
 source=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
 start=source.index('    private void handoffPromotedTask(')
 brace=source.index('{',start);end=brace+1;depth=1

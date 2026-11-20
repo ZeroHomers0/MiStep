@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Focused admission and real-hook scope checks; no Android device needed."""
 from pathlib import Path
 import subprocess, tempfile
@@ -82,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix='mistep-native-coordinates-') as folder:
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(content, encoding='utf-8')
         files.append(str(file))
-    files += [str(root / 'module/src/main/java/com/jiusis/mistep' / (name + '.java'))
+    files += [str(package_dir(root) / (name + '.java'))
               for name in ('NativeFreeformPolicy', 'NativeFreeformCoordinates')]
     files.append(str(root / 'tests/NativeFreeformPolicyTest.java'))
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(work), *files], check=True)

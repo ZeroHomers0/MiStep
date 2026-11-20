@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Exercise the real wallpaper lease and start/finish visibility with owned fake surfaces."""
 from pathlib import Path
 import subprocess
@@ -8,7 +9,7 @@ import re
 root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-src = root / 'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root)
 run = (src / 'MiStepLiveSwap64.java').read_text(encoding='utf8')
 background = run[run.index('        void background('):run.index('        @Override public void prepare(')]
 host = (src / 'MiStepHost.java').read_text(encoding='utf8')

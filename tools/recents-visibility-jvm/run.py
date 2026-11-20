@@ -1,7 +1,8 @@
 """Exercise the actual RecentTasks hook and protected task-token registry without task mutation."""
 import ast,os,subprocess,sys
 from pathlib import Path
-root=Path(__file__).resolve().parents[2];src=root/'module/src/main/java/com/jiusis/mistep';out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
+root=Path(__file__).resolve().parents[2];src=package_dir(root);out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 tree=ast.parse((root/'tools/desktop-route-jvm/run.py').read_text(encoding='utf-8-sig'))
 files=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='files' for t in n.targets))
 files['android/os/Bundle.java']=files['android/os/Bundle.java'].replace('Map<String,Object>m=', 'public void putBundle(String k,Bundle v){m.put(k,v);}public Bundle getBundle(String k){return (Bundle)m.get(k);}public float getFloat(String k,float d){return m.containsKey(k)?(Float)m.get(k):d;}Map<String,Object>m=')

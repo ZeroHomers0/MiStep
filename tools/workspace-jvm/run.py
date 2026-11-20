@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Execute actual Host entry/exit methods with real-surface and deterministic animator doubles."""
 from pathlib import Path
 import subprocess
 import sys
-root=Path(__file__).resolve().parents[2]; src=root/'module/src/main/java/com/jiusis/mistep'
+root=Path(__file__).resolve().parents[2]; src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
 def member(signature):
@@ -214,6 +215,6 @@ files['com/jiusis/mistep/WorkspaceRegression.java']=files['com/jiusis/mistep/Wor
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(root/'module/src/main/java/com/jiusis/mistep/WorkspaceCellReveal.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(package_dir(root)/'WorkspaceCellReveal.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WorkspaceRegression'],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopControlsCreationRegression'],check=True)

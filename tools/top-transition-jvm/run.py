@@ -1,8 +1,9 @@
 """Run the actual center bridge with controllable draw, animation and native callbacks."""
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
-src=Path(os.environ.get('MISTEP_TRANSITION_SOURCE_ROOT',str(root)))/'module/src/main/java/com/jiusis/mistep'
+src=package_dir(os.environ.get('MISTEP_TRANSITION_SOURCE_ROOT',str(root)))
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 files={
 'android/content/Context.java':'''package android.content;public class Context {

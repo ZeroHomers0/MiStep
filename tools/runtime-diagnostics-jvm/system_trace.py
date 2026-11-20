@@ -1,6 +1,7 @@
 """Execute actual capture cleanup on root-denied/missing files, independent of Android."""
 from pathlib import Path
 import subprocess
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 def run(root,out,jdk):
     folder=out/'native-capture-failure'
     files={
@@ -33,7 +34,7 @@ System.out.println("Production native capture missing/root-denied/rotated-log/id
     folder.mkdir(parents=True,exist_ok=True)
     for name,data in files.items():
         p=folder/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(data,encoding='utf8')
-    source=root/'module/src/main/java/com/jiusis/mistep'
+    source=package_dir(root)
     subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(folder),
         *[str(folder/name)for name in files],
         *[str(source/name)for name in ['RuntimeSystemTrace.java','RuntimeTraceFormat.java','RuntimeDiagnosticBundle.java','RuntimeLogText.java']]],check=True)

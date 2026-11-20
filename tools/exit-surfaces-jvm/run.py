@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run actual HostEntry surface ownership/identity cleanup against late-finish replay."""
 from pathlib import Path
 import subprocess
@@ -6,7 +7,7 @@ import sys
 
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-text=(root/'module/src/main/java/com/jiusis/mistep/HostEntry.java').read_text(encoding='utf-8-sig')
+text=(package_dir(root)/'HostEntry.java').read_text(encoding='utf-8-sig')
 def member(signature):
     start=text.index(signature);brace=text.index('{',start);depth,end=1,brace+1
     while depth:

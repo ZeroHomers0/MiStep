@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Actual role scope against the target ROM's mode-before-translucency ordering."""
 from pathlib import Path
 import ast,subprocess,sys
@@ -34,6 +35,6 @@ public class SideRoleRegression {
   System.out.println("actual native side-role ordering/scope checks="+checks+" passed");
  }
 }''',encoding='utf8')
-source=ROOT/'module/src/main/java/com/jiusis/mistep/MiStepSideRoleChange.java'
+source=package_dir(ROOT)/'MiStepSideRoleChange.java'
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(test),str(source)],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.SideRoleRegression'],check=True)

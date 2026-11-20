@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]); out.mkdir(parents=True,exist_ok=True)
@@ -74,7 +75,7 @@ public class PassiveInputRegression {
 }
 for path,text in files.items():
     dest=out/path; dest.parent.mkdir(parents=True,exist_ok=True); dest.write_text(text,encoding='utf8')
-source=root/'module/src/main/java/com/jiusis/mistep/MiStepPassiveInputChannel.java'
+source=package_dir(root)/'MiStepPassiveInputChannel.java'
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),
                 *[str(out/p) for p in files],str(source)],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.PassiveInputRegression'],check=True)

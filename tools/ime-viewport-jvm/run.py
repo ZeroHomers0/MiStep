@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "build/tests/ime-viewport-jvm"
@@ -91,7 +92,7 @@ for name, content in FILES.items():
     sources.append(str(path))
 for name in ["MiStepImeViewport", "MiStepImePolicy", "MiStepSideRoleChange",
              "ZoomChannelState", "ZoomCommand", "ZoomAnimCommand"]:
-    sources.append(str(ROOT / f"module/src/main/java/com/jiusis/mistep/{name}.java"))
+    sources.append(str(package_dir(ROOT)/f"{name}.java"))
 subprocess.run([str(JDK / "javac.exe"), "-encoding", "UTF-8", "--release", "17",
                 "-d", str(OUT), *sources], check=True)
 subprocess.run([str(JDK / "java.exe"), "-cp", str(OUT),

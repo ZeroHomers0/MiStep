@@ -4,9 +4,10 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / 'module/src/main/java/com/jiusis/mistep'
+SRC=package_dir(ROOT)
 OUT = Path(sys.argv[1])
 OUT.mkdir(parents=True, exist_ok=True)
 tree = ast.parse((ROOT / 'tools/desktop-route-jvm/run.py').read_text(encoding='utf-8-sig'))

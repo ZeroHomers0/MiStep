@@ -1,7 +1,8 @@
 """Run the actual two-phase side switch, including cancellation before and after native geometry changes."""
 from pathlib import Path
 import os,subprocess,sys
-root=Path(__file__).resolve().parents[2];src=root/'module/src/main/java/com/jiusis/mistep';out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
+root=Path(__file__).resolve().parents[2];src=package_dir(root);out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 s=(src/'MiStepHost.java').read_text(encoding='utf-8')
 def member(n):
  a=s.index('    private void '+n+'(');i=s.index('{',a)+1;d=1

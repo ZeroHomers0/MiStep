@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Execute the actual collection owner against the existing bounded Shell fakes."""
 from pathlib import Path
 import subprocess
@@ -103,5 +104,5 @@ public class LiveCollectRegression {
  }
 }''', encoding='utf8')
 subprocess.run([str(JDK/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', str(OUT), '-d', str(OUT),
-                str(ROOT/'module/src/main/java/com/jiusis/mistep/ShellCompat.java'),str(ROOT/'module/src/main/java/com/jiusis/mistep/MiStepLiveCollectTask.java'), str(ROOT/'module/src/main/java/com/jiusis/mistep/MiStepIdleTaskView.java'), str(source)], check=True)
+                str(package_dir(ROOT)/'ShellCompat.java'),str(package_dir(ROOT)/'MiStepLiveCollectTask.java'), str(package_dir(ROOT)/'MiStepIdleTaskView.java'), str(source)], check=True)
 subprocess.run([str(JDK/'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.LiveCollectRegression'], check=True)

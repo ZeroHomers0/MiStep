@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run real View-motion and transition-input classes against deterministic Android frame queues."""
 from pathlib import Path
 import subprocess, sys
 root=Path(__file__).resolve().parents[2]
-src=root/'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root)
 out=Path(sys.argv[1]); out.mkdir(parents=True,exist_ok=True)
 files={
 'android/view/MotionEvent.java': r"""package android.view;public class MotionEvent {public static final int ACTION_DOWN=0,ACTION_UP=1,ACTION_MOVE=2,ACTION_CANCEL=3;}""",

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 sources={
@@ -85,7 +86,7 @@ files=[]
 for rel,text in sources.items():
  p=out/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding="utf-8");files.append(str(p))
 j=Path(os.environ["MISTEP_JAVA_BIN"])
-production=root/"module/src/main/java/com/jiusis/mistep"
+production=package_dir(root)
 subprocess.run([str(j/"javac.exe"),"-encoding","UTF-8","-d",str(out),*files,
  str(production/"MiStepBiometricWindow.java"),str(production/"InputMagnificationPolicy.java")],check=True)
 subprocess.run([str(j/"java.exe"),"-cp",str(out),"com.jiusis.mistep.BiometricWindowRegression"],check=True)

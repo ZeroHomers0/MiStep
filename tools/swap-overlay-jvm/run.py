@@ -1,7 +1,8 @@
 """Replay actual native overlay selection and same-frame matrix/finish/release."""
 from pathlib import Path
 import os,subprocess,sys
-root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);src=root/'module/src/main/java/com/jiusis/mistep'
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
+root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);src=package_dir(root)
 files={
 'android/view/WindowManager.java':r'''package android.view;public interface WindowManager{class LayoutParams{public String packageName;public int type;public String title;public CharSequence getTitle(){return title;}}}''',
 'de/robv/android/xposed/XposedHelpers.java':r'''package de.robv.android.xposed;import java.lang.reflect.*;public class XposedHelpers{

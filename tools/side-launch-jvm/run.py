@@ -3,11 +3,12 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/side-launch-jvm'
 SOURCE_ROOT = Path(os.environ.get('MISTEP_LAUNCH_SOURCE_ROOT', ROOT))
-text = (SOURCE_ROOT / 'module/src/main/java/com/jiusis/mistep/MiStepHost.java').read_text(encoding='utf-8')
+text = (package_dir(SOURCE_ROOT)/'MiStepHost.java').read_text(encoding='utf-8')
 start = text.index('    private void startSlot(final Slot slot, Intent launch, String label)')
 end = text.index('    private static void callHidden(', start)
 method = text[start:end]

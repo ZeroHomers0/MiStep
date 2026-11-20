@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Real closing-leash lifecycle against bounded Shell transaction/frame fakes."""
 from pathlib import Path
 import subprocess,sys
@@ -31,5 +32,5 @@ public class SideCloseRegression {
  }
 }''',encoding='utf8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(src),str(root/'module/src/main/java/com/jiusis/mistep/MiStepSideClose.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(src),str(package_dir(root)/'MiStepSideClose.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideCloseRegression'],check=True)

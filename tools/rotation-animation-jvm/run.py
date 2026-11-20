@@ -1,6 +1,7 @@
 """Native-shaped contracts for the production live-window animation bridge, not visual acceptance."""
 import os, subprocess, sys
 from pathlib import Path
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1])
@@ -53,7 +54,7 @@ for name, text in FILES.items():
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text, encoding='utf-8')
     sources.append(str(p))
-sources.append(str(ROOT/'module/src/main/java/com/jiusis/mistep/MiStepRotationAnimation.java'))
+sources.append(str(package_dir(ROOT)/'MiStepRotationAnimation.java'))
 cp = os.pathsep.join([str(OUT), os.environ['MISTEP_CLASSES'], os.environ['MISTEP_ANDROID_JAR'],
                       str(ROOT/'libs/xposed-api-82.jar')])
 subprocess.run([str(JDK/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', cp,

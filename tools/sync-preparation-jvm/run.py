@@ -3,11 +3,12 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-entry = (root / 'module/src/main/java/com/jiusis/mistep/HostEntry.java').read_text(encoding='utf-8')
+entry = (package_dir(root)/'HostEntry.java').read_text(encoding='utf-8')
 provider_start = entry.index('Object[] args = param.args;', entry.index('else if ("provideTaskViewFactoryController".equals(n))'))
 provider_end = entry.index('} else if ("provideTaskViewFactory".equals(n)', provider_start)
 provider_capture = entry[provider_start:provider_end]
@@ -141,7 +142,7 @@ for name, text in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding='utf-8')
     paths.append(str(path))
-paths.append(str(root / 'module/src/main/java/com/jiusis/mistep/MiStepSyncPreparation.java'))
+paths.append(str(package_dir(root)/'MiStepSyncPreparation.java'))
 jdk = Path(os.environ['MISTEP_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
 subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.SyncPreparationRegression'], check=True)

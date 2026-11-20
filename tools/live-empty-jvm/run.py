@@ -1,11 +1,12 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run the actual Host empty-cell painter at both layout orientations and buffer scales."""
 from pathlib import Path
 import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[2]
-src = root / 'module/src/main/java/com/jiusis/mistep'
+src=package_dir(root)
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 source = (src / 'MiStepHost.java').read_text(encoding='utf-8-sig')

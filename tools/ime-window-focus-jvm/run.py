@@ -4,9 +4,10 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = Path(os.environ.get('MISTEP_FOCUS_SOURCE', ROOT / 'module/src/main/java/com/jiusis/mistep'))
+SRC=package_dir(os.environ.get('MISTEP_FOCUS_SOURCE',ROOT))
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/ime-window-focus-jvm'
 JDK = Path(os.environ['MISTEP_JAVA_BIN'])
 host = (SRC / 'HostEntry.java').read_text(encoding='utf-8-sig')

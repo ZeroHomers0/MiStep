@@ -1,6 +1,7 @@
 """Exercise the real scene-scale hook against a ROM with no DisplayContent.isAodShowing."""
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
@@ -60,7 +61,7 @@ public class WallpaperScaleRegression {
 paths=[]
 for name,content in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content,encoding='utf-8');paths.append(str(p))
-paths.append(str(root/'module/src/main/java/com/jiusis/mistep/MiStepWallpaperScale.java'))
+paths.append(str(package_dir(root)/'MiStepWallpaperScale.java'))
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WallpaperScaleRegression'],check=True)

@@ -1,6 +1,7 @@
 """Replay actual WM signature adapter against both ROM transaction shapes."""
 from pathlib import Path
 import os, shutil, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 sources=[]
@@ -8,7 +9,7 @@ def put(name,text):
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');sources.append(str(p))
 for name in ['TransitionMagnificationCompat','TransitionMagnificationReplay']:
     p=out/f'com/jiusis/mistep/{name}.java';p.parent.mkdir(parents=True,exist_ok=True)
-    shutil.copyfile(root/f'module/src/main/java/com/jiusis/mistep/{name}.java',p);sources.append(str(p))
+    shutil.copyfile(package_dir(root)/f'{name}.java',p);sources.append(str(p))
 put('de/robv/android/xposed/XposedHelpers.java','''package de.robv.android.xposed;
 public class XposedHelpers {
  public static Object getObjectField(Object o,String n){try{return o.getClass().getField(n).get(o);}catch(Exception e){throw new IllegalStateException(e);}}

@@ -1,9 +1,10 @@
 """Exercise the production native target-argument adapter for both actual signatures."""
 from pathlib import Path
 import os, subprocess, sys
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-source=(root/'module/src/main/java/com/jiusis/mistep/MiStepRecentsWallpaper.java').read_text(encoding='utf-8-sig')
+source=(package_dir(root)/'MiStepRecentsWallpaper.java').read_text(encoding='utf-8-sig')
 start=source.index('    static int argumentOffset(');end=source.index('{',start)+1;depth=1
 while depth:
     if source[end]=='{':depth+=1

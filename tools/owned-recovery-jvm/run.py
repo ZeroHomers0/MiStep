@@ -1,9 +1,10 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Verify extracted Host recovery of an A task not yet bound to any visible slot."""
 from pathlib import Path
 import subprocess
 root=Path(__file__).resolve().parents[2]
-source=(root/'module/src/main/java/com/jiusis/mistep/MiStepHost.java').read_text(encoding='utf-8-sig')
+source=(package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
 out=root/'build/tests/standalone';out.mkdir(parents=True,exist_ok=True)
 def method(signature):
  start=source.index(signature);brace=source.index('{',start);depth=1;end=brace+1

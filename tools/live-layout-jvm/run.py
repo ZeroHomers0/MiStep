@@ -1,11 +1,12 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Run the actual Host-only layout commit without issuing a WMS zoom write."""
 from pathlib import Path
 import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[2]
-source = (root / 'module/src/main/java/com/jiusis/mistep/MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/standalone'
 out.mkdir(parents=True, exist_ok=True)
 
@@ -149,7 +150,7 @@ java = out / 'LiveLayoutRegression.java'
 java.write_text(body, encoding='utf8')
 jdk = Path(os.environ["MISTEP_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-               str(root/'module/src/main/java/com/jiusis/mistep/MiStepLayout.java'),
-               str(root/'module/src/main/java/com/jiusis/mistep/WorkspaceOptions.java'),
-               str(root/'module/src/main/java/com/jiusis/mistep/LiveSwapGeometry.java'), str(java)], check=True)
+               str(package_dir(root)/'MiStepLayout.java'),
+               str(package_dir(root)/'WorkspaceOptions.java'),
+               str(package_dir(root)/'LiveSwapGeometry.java'), str(java)], check=True)
 subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.LiveLayoutRegression'], check=True)

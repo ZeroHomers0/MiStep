@@ -1,4 +1,5 @@
 import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Exercise the actual native-token owner with independent WM fakes and real role changes."""
 from pathlib import Path
 import ast, subprocess, sys
@@ -175,9 +176,9 @@ public class SystemUiRotationRegression {
 }''',encoding='utf8')
 area=OUT/'com/android/server/wm/DisplayArea.java';area.parent.mkdir(parents=True,exist_ok=True)
 area.write_text('''package com.android.server.wm;public class DisplayArea {public static class Tokens extends com.jiusis.mistep.SystemUiRotationRegression.Node {public Tokens(Object display){super(display,null);}}}''',encoding='utf8')
-source=ROOT/'module/src/main/java/com/jiusis/mistep/MiStepSystemUiRotation.java'
+source=package_dir(ROOT)/'MiStepSystemUiRotation.java'
 rect=ROOT/'tools/test-stubs/android/graphics/Rect.java'
-extra=[ROOT/f"module/src/main/java/com/jiusis/mistep/{n}.java" for n in
+extra=[package_dir(ROOT)/f"{n}.java" for n in
        ["ZoomChannelState","ZoomCommand","ZoomAnimCommand"]]
-subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(rect),str(test),str(area),str(source),str(ROOT/'module/src/main/java/com/jiusis/mistep/MiStepImePolicy.java'),str(ROOT/'module/src/main/java/com/jiusis/mistep/MiStepSideRoleChange.java'),*map(str,extra)],check=True)
+subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(rect),str(test),str(area),str(source),str(package_dir(ROOT)/'MiStepImePolicy.java'),str(package_dir(ROOT)/'MiStepSideRoleChange.java'),*map(str,extra)],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.SystemUiRotationRegression'],check=True)
