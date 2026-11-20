@@ -1,7 +1,6 @@
 package com.jiusis.mistep;
 
 import android.view.WindowManager;
-
 import de.robv.android.xposed.XposedHelpers;
 
 /** Keep only our host windows in physical screen coordinates. */

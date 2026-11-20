@@ -2,7 +2,6 @@ package com.jiusis.mistep;
 
 import java.util.List;
 import java.util.function.Supplier;
-
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;

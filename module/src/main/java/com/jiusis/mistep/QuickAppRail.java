@@ -8,7 +8,6 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.OverScroller;
 import java.util.Collections;
 import java.util.List;

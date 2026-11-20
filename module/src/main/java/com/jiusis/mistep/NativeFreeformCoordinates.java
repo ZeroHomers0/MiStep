@@ -1,8 +1,6 @@
 package com.jiusis.mistep;
 
 import android.view.MotionEvent;
-
-
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;

@@ -12,7 +12,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
-import android.view.View;
 
 /* JADX INFO: loaded from: classes.dex */
 final class HyperOsStyle {

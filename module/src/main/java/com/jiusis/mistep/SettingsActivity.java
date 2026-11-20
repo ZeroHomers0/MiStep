@@ -8,12 +8,12 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.TypedValue;
-import android.view.MenuItem;
 import android.view.Gravity;
+import android.view.MenuItem;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
-import android.widget.LinearLayout;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toolbar;
 

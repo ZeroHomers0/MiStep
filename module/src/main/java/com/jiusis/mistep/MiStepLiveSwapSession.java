@@ -1,9 +1,8 @@
 package com.jiusis.mistep;
 
 import java.lang.reflect.Proxy;
-import java.util.function.Consumer;
 import java.util.function.BooleanSupplier;
-
+import java.util.function.Consumer;
 import de.robv.android.xposed.XposedHelpers;
 
 /**

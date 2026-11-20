@@ -3,7 +3,6 @@ package com.jiusis.mistep;
 import android.animation.ValueAnimator;
 import android.graphics.Rect;
 import android.view.animation.AccelerateDecelerateInterpolator;
-
 import de.robv.android.xposed.XposedHelpers;
 
 /** Animate a real TaskView surface; no screenshot is enlarged for the promoted task. */

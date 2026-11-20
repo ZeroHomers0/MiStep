@@ -1,10 +1,8 @@
 package com.jiusis.mistep;
 
 import android.os.Build;
-
 import java.io.FileInputStream;
 import java.security.MessageDigest;
-
 import de.robv.android.xposed.XposedBridge;
 
 /** System-server-only raw-input bridge for the inspected arm64 ROM profiles. */

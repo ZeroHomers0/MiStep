@@ -1,7 +1,7 @@
 package com.jiusis.mistep;
 
-import java.util.function.Predicate;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import de.robv.android.xposed.XposedHelpers;
 
 /** Publish real TOP focus changes to native task listeners, including Launcher's front cache. */

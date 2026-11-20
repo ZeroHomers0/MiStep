@@ -1,9 +1,9 @@
 package com.jiusis.mistep;
 
 import android.graphics.Rect;
+import java.util.IdentityHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.IdentityHashMap;
 import de.robv.android.xposed.XposedHelpers;
 
 /** One WCT swaps two existing ordinary tasks in the current, fixed main/side layout. */

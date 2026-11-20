@@ -9,10 +9,10 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Transformation;
-import de.robv.android.xposed.XposedHelpers;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.WeakHashMap;
+import de.robv.android.xposed.XposedHelpers;
 
 /** Native WM timing on a live rotation carrier, clipped in its physical task coordinates. */
 final class MiStepRotationAnimation {
