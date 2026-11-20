@@ -26,29 +26,6 @@ final class HomeTransitionMagnification {
     static boolean hasInfo(Object info) { return info != null && info == activeInfo; }
     static boolean activeOn(Object display) { return activeInfo != null && activeDisplay == display; }
 
-    /** A WM pending transaction can predate prepare() and still contain the old scale. */
-    static int appendPendingGeometry(Object display, Object transaction) {
-        if (nativeReturn || transaction == null || !activeOn(display)
-                || !Boolean.TRUE.equals(XposedHelpers.callMethod(activeRoot, "isValid"))) return 0;
-        int count = 0;
-        for (Object owner : activeOwners) {
-            Object surface = activeSurfaces.get(owner);
-            if (XposedHelpers.callMethod(owner, "getDisplayContent") != display
-                    || XposedHelpers.getObjectField(owner, "mSurfaceControl") != surface
-                    || !Boolean.TRUE.equals(XposedHelpers.callMethod(surface, "isValid"))) continue;
-            Object task = XposedHelpers.callMethod(owner, "asTask");
-            if (task != null && !Integer.valueOf(1).equals(
-                    XposedHelpers.callMethod(task, "getWindowingMode"))) continue;
-            Object position = XposedHelpers.getObjectField(owner, "mLastSurfacePosition");
-            XposedHelpers.callMethod(transaction, "setMatrix", surface, 1f, 0f, 0f, 1f);
-            XposedHelpers.callMethod(transaction, "setPosition", surface,
-                    (float) XposedHelpers.getIntField(position, "x"),
-                    (float) XposedHelpers.getIntField(position, "y"));
-            count++;
-        }
-        return count;
-    }
-
     static void finish(Object info) {
         if (!hasInfo(info)) return;
         activeInfo = null; activeDisplay = null; activeRoot = null; activeOwners.clear(); activeSurfaces.clear();

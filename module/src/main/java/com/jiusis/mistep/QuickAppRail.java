@@ -89,49 +89,6 @@ final class QuickAppRail extends View {
         });
     }
 
-    void stepAndLaunch(int direction) {
-        if (apps.isEmpty() || listener == null) return;
-        int step = direction < 0 ? -1 : 1;
-        int target = selectedIndex < 0
-                ? (step > 0 ? 0 : apps.size() - 1)
-                : Math.floorMod(selectedIndex + step, apps.size());
-        if (selectedIndex == target) {
-            listener.onLaunch(apps.get(target));
-            return;
-        }
-        int generation = ++stackGeneration;
-        if (stackAnimator != null) stackAnimator.cancel();
-        stackFromIndex = selectedIndex < 0
-                ? Math.floorMod(target - step, apps.size()) : selectedIndex;
-        stackToIndex = target;
-        stackDirection = step;
-        selectedIndex = target;
-        activeIndex = -1;
-        scroller.forceFinished(true);
-        float left = tileCenter(target) - tileWidth * .5f;
-        if (left < scrollOffset) setOffset(left);
-        else if (left + tileWidth > scrollOffset + getWidth())
-            setOffset(left + tileWidth - getWidth());
-        stackProgress = 0f;
-        stackAnimator = ValueAnimator.ofFloat(0f, 1f);
-        stackAnimator.setDuration(230L);
-        stackAnimator.setInterpolator(new DecelerateInterpolator(1.3f));
-        stackAnimator.addUpdateListener(animator -> {
-            stackProgress = (Float) animator.getAnimatedValue();
-            invalidate();
-        });
-        stackAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-            @Override public void onAnimationEnd(android.animation.Animator animation) {
-                if (generation != stackGeneration) return;
-                stackProgress = 1f;
-                stackFromIndex = stackToIndex = -1;
-                listener.onLaunch(apps.get(target));
-                invalidate();
-            }
-        });
-        stackAnimator.start();
-    }
-
     void setApps(List<QuickApp> next) {
         ++stackGeneration;
         if (stackAnimator != null) stackAnimator.cancel();

@@ -4619,25 +4619,6 @@ public class HostEntry implements IXposedHookLoadPackage {
         }
     }
 
-    // 保留：字段探查工具，后续看状态用
-    @SuppressWarnings("unused")
-    private static Object readField(Object target, String name) {
-        try {
-            Field f = target.getClass().getDeclaredField(name);
-            f.setAccessible(true);
-            return f.get(target);
-        } catch (Throwable t) {
-            return "unreadable: " + t;
-        }
-    }
-
-    @SuppressWarnings("unused")
-    private static String sig(Method m) {
-        return Modifier.toString(m.getModifiers()) + ' ' + m.getReturnType().getSimpleName() + ' ' + m.getName();
-    }
-
-    @SuppressWarnings("unused")
-    private static final Map<String, String> NOTES = new LinkedHashMap<>();
 }
 
 

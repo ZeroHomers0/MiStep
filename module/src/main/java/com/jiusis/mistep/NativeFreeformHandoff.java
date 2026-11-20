@@ -7,18 +7,6 @@ final class NativeFreeformHandoff {
     private static final java.util.Map<Object, Boolean> prepared = new java.util.WeakHashMap<>();
     private NativeFreeformHandoff() {}
 
-    static boolean keepMainTransform(Object task, boolean finalSnapshot) {
-        if (task == null || finalSnapshot) return false;
-        Object controller = XposedHelpers.getObjectField(task, "mTransitionController");
-        if (controller == null) return false;
-        if (wasVisibleFullscreen(XposedHelpers.getObjectField(controller,
-                "mCollectingTransition"), task)) return true;
-        for (Object transition : (Iterable<?>) XposedHelpers.getObjectField(controller,
-                "mPlayingTransitions"))
-            if (wasVisibleFullscreen(transition, task)) return true;
-        return false;
-    }
-
     static boolean keepNativeTransform(Object task, boolean finalSnapshot) {
         if (task == null || finalSnapshot) return false;
         Object controller = XposedHelpers.getObjectField(task, "mTransitionController");

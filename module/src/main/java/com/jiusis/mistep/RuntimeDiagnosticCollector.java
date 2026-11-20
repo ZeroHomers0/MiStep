@@ -106,23 +106,6 @@ final class RuntimeDiagnosticCollector {
         parts.add(RuntimeDiagnosticBundle.analyze(parts));
         return new RuntimeDiagnosticBundle(now, parts, attachments).withDescription(description);
     }
-    static RuntimeDiagnosticBundle.Part startRecording() {
-        return command("03-recording-request.txt", "主动请求6秒数值追踪；记录boot/PID/墙钟/elapsed以核对ARM身份", """
-                [ "$(id -u)" = 0 ] || exit 1
-                dumpsys window policy | grep -q 'inputRestricted=false' || exit 2
-                date -u '+request UTC %Y-%m-%dT%H:%M:%SZ'
-                date '+requestEpoch=%s'
-                printf 'requestBootId='; cat /proc/sys/kernel/random/boot_id
-                printf 'requestElapsedSeconds='; cut -d ' ' -f 1 /proc/uptime
-                printf 'requestServerPID='; pidof system_server
-                printf 'requestSystemUiPID='; pidof com.android.systemui
-                am broadcast -a com.jiusis.mistep.DEBUG --ez traceInput true -p com.android.systemui
-                """, 25);
-    }
-    static RuntimeDiagnosticBundle.Part stopRecording() {
-        return command("03-recording-stop.txt", "显式结束短时追踪",
-                "am broadcast -a com.jiusis.mistep.DEBUG --ez stopInputTrace true -p com.android.systemui", 7);
-    }
     private static String header(Context context) {
         String version;
         try { PackageInfo p = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);

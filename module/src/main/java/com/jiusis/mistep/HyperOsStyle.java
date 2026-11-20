@@ -18,11 +18,9 @@ import android.view.View;
 final class HyperOsStyle {
     static final int CONTROL_ACCENT = 0xff3482ff;
     private static final int DARK_PAGE = -15592682;
-    private static final int DARK_TEXT = -657672;
     private static final int DARK_TEXT_SECONDARY = -5657163;
     private static final int FALLBACK_ACCENT_DARK = -8800001;
     private static final int FALLBACK_ACCENT_LIGHT = -13664019;
-    private static final int LIGHT_PAGE = -657672;
     private static final int LIGHT_TEXT = -15263717;
     private static final int LIGHT_TEXT_SECONDARY = -8946814;
 
@@ -31,11 +29,6 @@ final class HyperOsStyle {
 
     static int controlFill(Context context, boolean selected) {
         return selected ? CONTROL_ACCENT : dark(context) ? 0xff363940 : 0xffe5e8ee;
-    }
-
-    static int nativeGlyphFill(Context context, boolean selected) {
-        // OEM QS artwork and the two code symbols use white foreground strokes.
-        return selected ? CONTROL_ACCENT : dark(context) ? 0xff454a54 : 0xff68717e;
     }
 
     /** Shared tonal surface and bounded ripple for workspace and settings actions. */
@@ -72,10 +65,6 @@ final class HyperOsStyle {
         return -657672;
     }
 
-    static int scrim(Context context) {
-        return dark(context) ? -1946157056 : 1376785176;
-    }
-
     static int stroke(Context context) {
         return dark(context) ? 620756991 : 603979776;
     }
@@ -105,10 +94,6 @@ final class HyperOsStyle {
         boolean zDark = dark(context);
         int i = zDark ? -652600544 : -956564739;
         return new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{withAlpha(blend(i, zDark ? -12371120 : -729880, zDark ? 0.07f : 0.1f), 168), withAlpha(blend(i, accent(context), zDark ? 0.12f : 0.085f), 168), withAlpha(blend(i, zDark ? -14857392 : -2493713, zDark ? 0.06f : 0.1f), 168)});
-    }
-
-    static int wallpaperTint(Context context) {
-        return dark(context) ? 1107296256 : 922746879;
     }
 
     static int topWallpaperTint(Context context) {
@@ -235,17 +220,6 @@ final class HyperOsStyle {
         return new RippleDrawable(ColorStateList.valueOf(accentSoft(context, dark(context) ? 102 : 56)), gradientDrawable, gradientDrawable2);
     }
 
-    static Drawable softButton(Context context, int i, float f) {
-        GradientDrawable gradientDrawable = new GradientDrawable();
-        gradientDrawable.setCornerRadius(dp(context, f));
-        gradientDrawable.setColor(i);
-        gradientDrawable.setStroke(Math.max(1, dp(context, 0.75f)), stroke(context));
-        GradientDrawable gradientDrawable2 = new GradientDrawable();
-        gradientDrawable2.setCornerRadius(dp(context, f));
-        gradientDrawable2.setColor(-1);
-        return new RippleDrawable(ColorStateList.valueOf(accentSoft(context, dark(context) ? 85 : 48)), gradientDrawable, gradientDrawable2);
-    }
-
     static Drawable emptyCell(Context context) {
         int[] iArr;
         boolean zDark = dark(context);
@@ -260,22 +234,8 @@ final class HyperOsStyle {
         return gradientDrawable;
     }
 
-    static int transitionBackground(Context context) {
-        return dark(context) ? -15395045 : -789000;
-    }
-
     static int dp(Context context, float f) {
         return Math.round(f * context.getResources().getDisplayMetrics().density);
-    }
-
-    static void pressScale(View view, float f) {
-        view.animate().cancel();
-        view.animate().scaleX(f).scaleY(f).setDuration(80L).start();
-    }
-
-    static void releaseScale(View view) {
-        view.animate().cancel();
-        view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150L).start();
     }
 
     private static int withAlpha(int i, int i2) {

@@ -34,12 +34,6 @@ final class MiStepIconButton extends View {
         setContentDescription(description);
     }
 
-    void setExitLeft(boolean left) {
-        exitLeft = left;
-        setContentDescription(left ? "退出 Mi Step，方向朝左上" : "退出 Mi Step，方向朝右上");
-        invalidate();
-    }
-
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         int save = canvas.save();

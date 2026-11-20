@@ -13,12 +13,6 @@ package com.jiusis.mistep;
  */
 public final class MiStepLayout {
 
-    /** 官方量测出的主区占比（= MODE_RIGHT_PERCENT = WIDTH_SCALE = 0.7472）。 */
-    public static final float RATIO_MAIN = 0.7472f;
-
-    /** 官方间隔 6px；2026-10-17 用户要求"稍微有点缝隙区分窗口"，恢复启用。 */
-    public static final int GAP = 6;
-
     /**
      * 目标机 freeform/multi-window 任务的最小宽度预算（dp）。
      * v0.8.0 真机实测：格子 273px（≈99dp）时应用 appBounds 被撑到 550px（=200dp@440dpi）导致被裁一半，
@@ -31,17 +25,6 @@ public final class MiStepLayout {
     public final boolean tabletLandscape;
     public final int cellCount;
     public final int toolHeight;
-
-    public static final float TOPBAR_HEADER_TOP_DP = 88f;
-    public static final float TOPBAR_HEADER_HEIGHT_DP = 48f;
-    public static final float TOPBAR_RAIL_TOP_DP = 142f;
-    public static final float TOPBAR_RAIL_HEIGHT_DP = 56f;
-    public static final float TOPBAR_CONTROL_BUTTON_DP = 48f;
-    public static final float TOPBAR_CONTROL_SAFE_DP = 20f;
-
-    public static float topBarTitleInsetDp(int buttonCount) {
-        return TOPBAR_CONTROL_SAFE_DP + TOPBAR_CONTROL_BUTTON_DP * Math.max(0, buttonCount);
-    }
 
     public final float mainRatio;
     public final int width;
@@ -154,12 +137,6 @@ public final class MiStepLayout {
         return of(width, height, false);
     }
 
-    /** Fit the existing 200dp toolbar design inside the space above the tasks. */
-    static float topBarScale(int height, int inset, float density) {
-        return Math.min(1f, Math.max(1, height - Math.max(0, inset))
-                / (200f * (density > 0f ? density : 2.75f)));
-    }
-
     /** 设计基准间隔 2.18dp（R2 440dpi 下 6px）。 */
     public static final float DESIGN_GAP_DP = 2.18f;
 
@@ -230,16 +207,6 @@ public final class MiStepLayout {
         int max = (int) Math.floor(widthPx * 160f / ASSUMED_MIN_APP_DP);
         max = Math.max(120, max);
         return Math.min(nativeDensity, max);
-    }
-
-    /** 副格容器密度（用于 WCT setDensityDpi）。 */
-    public int cellDensityFor(int nativeDensity) {
-        return densityForWidth(cellWidth, nativeDensity);
-    }
-
-    /** 主区容器密度；当前屏幕尺寸下等于原生密度（不需要改）。 */
-    public int mainDensityFor(int nativeDensity) {
-        return densityForWidth(mainWidth, nativeDensity);
     }
 
     public String describe() {

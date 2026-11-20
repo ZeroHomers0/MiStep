@@ -103,7 +103,6 @@ public final class MiStepHost {
     private boolean geometryRefreshQueued;
     private int geometryRefreshDeferrals;
     private boolean geometryRefreshAfterLive;
-    private int lpY = 0;
     private boolean zoomed;
     private String lastBroadcastZoom;
     private volatile int screenW = 1080;
@@ -136,7 +135,6 @@ public final class MiStepHost {
     private LiveZoomRequest pendingLiveZoom;
     private MiStepUnlockHandoff unlockHandoff;
     private final FinishTransactions<Long> keyguardTransactions = new FinishTransactions<>(16);
-    private boolean mainBackdropRequested;
     /** mirror 承载时主区显示的桌面/上一主区快照（避免隐藏任务后主区全黑）。 */
     private View carrierBackdrop;
     private int carrierSlotIndex = -1;
@@ -167,7 +165,6 @@ public final class MiStepHost {
             this.task=task; this.key=key; this.source=source; this.landscape=landscape;
         }
     }
-    private View sideBacking;
     /** 侧栏按格分段的不透明底板；承载格需要把它藏起来让下面的真实任务画面透出来。 */
     private final View[] sideBackingViews = new View[SLOT_COUNT];
     private boolean mainOnRight;
@@ -1175,87 +1172,6 @@ public final class MiStepHost {
         return null;
     }
 
-    /**
-     * 把 fullscreen-only 应用（相机等）放进副格：
-     * 任务保持满屏前台（预览继续刷新），直接把任务 leash 变换成格子的大小/位置；
-     * 主区显示桌面快照。此形态真机验证宿主仍能收到触摸（mirror 形态会被 CLONE 输入窗口挡住）。
-     */
-    private boolean attachMirrorCarrier(Slot slot, LiveTask task) {
-        if (slot == null || task == null || scene != ACTIVE || carrierSlotIndex >= 0) return false;
-        if (slot.rect == null) return false;
-        try {
-            Object organizer = shellOrganizer();
-            Object leash = organizer == null ? null
-                    : ShellCompat.taskLeash(organizer, task.id);
-            if (leash == null || !Boolean.TRUE.equals(XposedHelpers.callMethod(leash, "isValid"))) {
-                log("carrier: no task leash for task=" + task.id);
-                return false;
-            }
-            final Rect dest = new Rect(slot.rect[0], slot.rect[1], slot.rect[2], slot.rect[3]);
-            // 不用 mirror：直接把原任务 leash 变换进格子。真机验证这种形态下宿主仍能收到
-            // 触摸（mirror 形态会被 MIUI 的 CLONE 输入窗口挡住），且任务仍是前台、预览继续。
-            if (!applyDirectCarrier(leash, dest, true)) {
-                log("carrier: direct transform failed task=" + task.id);
-                return false;
-            }
-            slot.carrier = true;
-            slot.carrierTaskId = task.id;
-            slot.carrierLeash = leash;
-            slot.carrierMirror = null;
-            slot.taskId = task.id;
-            slot.taskToken = null;
-            slot.pkg = task.pkg;
-            slot.occupied = true;
-            slot.parked = false;
-            slot.frozen = false;
-            slot.taskVisible = true;
-            slot.launching = false;
-            // 底板/hint 是不透明的宿主 View，会盖住下面的真实任务画面：承载格必须让位。
-            View backing = sideBackingViews[slot.index];
-            if (backing != null) backing.setVisibility(View.GONE);
-            if (slot.hint != null) slot.hint.setVisibility(View.GONE);
-            // 格子的 SF 纯色底也是宿主层的子 surface，同样会挡住真实任务画面。
-            removeCellBackground(slot);
-            carrierSlotIndex = slot.index;
-            showCarrierBackdrop(task.pkg, slot.index);
-            // 承载格没有 TaskView 可点：在格子上放一个透明点击层，点它把任务放回主区。
-            try {
-                final View tap = new View(ctx);
-                tap.setBackgroundColor(0x01000000);
-                tap.setOnClickListener(v -> {
-                    log("carrier tap layer clicked slot=" + slot.index);
-                    restoreCarrierToMain();
-                });
-                root.setOnTouchListener((v, event) -> {
-                    if (carrierSlotIndex >= 0 && event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                        log("carrier root touch down " + event.getRawX() + "," + event.getRawY());
-                    }
-                    return false;
-                });
-                FrameLayout.LayoutParams tapParams =
-                        new FrameLayout.LayoutParams(dest.width(), dest.height());
-                tapParams.leftMargin = dest.left;
-                tapParams.topMargin = dest.top;
-                root.addView(tap, tapParams);
-                slot.carrierTapView = tap;
-            } catch (Throwable error) {
-                log("carrier tap layer failed: " + error);
-            }
-            root.requestLayout();
-            root.invalidate();
-            log("carrier attached (direct) task=" + task.id + " slot=" + slot.index
-                    + " dest=" + dest + " leash=" + leash);
-            android.widget.Toast.makeText(ctx, "已放入副格",
-                    android.widget.Toast.LENGTH_SHORT).show();
-            return true;
-        } catch (Throwable error) {
-            log("carrier attach failed: " + error);
-            XposedBridge.log(error);
-            restoreCarrierToMain();
-            return false;
-        }
-    }
-
     /** 主区在承载期间没有真实任务可看，用 Home 快照占位并提示返回方式。 */
     private void showCarrierBackdrop(String pkg, int slotIndex) {
         if (carrierBackdrop != null || root == null || layout == null) return;
@@ -1573,45 +1489,6 @@ public final class MiStepHost {
         log("leash anim POC restored task=" + taskId);
     }
 
-    /**
-     * view 级主窗动画：把真实主任务 leash 在桥的洞内从主区矩形缩进目标格。
-     * 与 SwapPreview 同时长、同曲线，桥只画侧栏/背景，主窗画面是真实任务表面。
-     */
-    private void startLiveMainShrink(Promotion ticket) {
-        Object leash = ticket.mainLeash;
-        if (leash == null || ticket.slot == null || ticket.slot.rect == null) return;
-        int[] rect = ticket.slot.rect;
-        final Rect dest = new Rect(rect[0], rect[1], rect[2], rect[3]);
-        final float ratio = layout.mainScale;
-        final float endScaleX = dest.width() / (ratio * screenW);
-        final float endScaleY = dest.height() / (ratio * screenH);
-        final float endX = (dest.left - layout.mainOffsetX) / ratio;
-        final float endY = (dest.top - layout.mainOffsetY) / ratio;
-        try {
-            ValueAnimator anim = ValueAnimator.ofFloat(0f, 1f);
-            anim.setDuration(SwapPreview.DURATION_MS);
-            anim.setInterpolator(new PathInterpolator(0.34f, 0.69f, 0.1f, 1f));
-            anim.addUpdateListener(a -> {
-                float f = (float) a.getAnimatedValue();
-                applyLeashTransform(leash, endX * f, endY * f,
-                        1f + (endScaleX - 1f) * f, 1f + (endScaleY - 1f) * f);
-            });
-            anim.addListener(new AnimatorListenerAdapter() {
-                @Override public void onAnimationEnd(Animator a) {
-                    applyLeashTransform(leash, endX, endY, endScaleX, endScaleY);
-                    log("live main shrink finished task=" + ticket.taskId
-                            + " dest=" + dest + " frames=" + leashAnimFrames);
-                }
-            });
-            leashAnimFrames = 0;
-            anim.start();
-            log("live main shrink start task=" + ticket.taskId + " dest=" + dest
-                    + " duration=" + SwapPreview.DURATION_MS);
-        } catch (Throwable error) {
-            log("live main shrink failed: " + error);
-        }
-    }
-
     private void applyLeashTransform(Object leash, float x, float y, float sx, float sy) {
         try {
             Object tx = Class.forName("android.view.SurfaceControl$Transaction")
@@ -1645,24 +1522,6 @@ public final class MiStepHost {
                 || h.promotion != null || h.transferBusy || h.keyguardLocked) return null;
         MiStepLayout current = h.layout;
         return new float[]{current.mainScale, current.mainOffsetY, current.mainOffsetX};
-    }
-
-    static Rect nativeFreeformAnimationStart(Object change) {
-        MiStepHost h = sInstance;
-        float[] transform = activeMainTransform();
-        if (h == null || transform == null || change == null) return null;
-        try {
-            Object task = XposedHelpers.callMethod(change, "getTaskInfo");
-            if (task == null || windowModeOf(task) != 5
-                    || XposedHelpers.getIntField(task, "displayId") != 0
-                    || h.isSideToken(XposedHelpers.getObjectField(task, "token"))) return null;
-            int startRotation = (Integer) XposedHelpers.callMethod(change, "getStartRotation");
-            int endRotation = (Integer) XposedHelpers.callMethod(change, "getEndRotation");
-            if (startRotation < 0 || startRotation != endRotation) return null;
-            return NativeFreeformAnimation.startBounds(
-                    (Rect) XposedHelpers.callMethod(change, "getStartAbsBounds"),
-                    h.layout.width, h.layout.height, transform);
-        } catch (Throwable error) { return null; }
     }
 
     static float[] activeStatusBarTransform() {
@@ -3466,7 +3325,6 @@ public final class MiStepHost {
         if (count > 0) log("native keyguard transaction retained hidden parents=" + count);
     }
 
-
     private void setZoomState(boolean on) {
         on = on && !keyguardLocked && screenOn && !lockExitPending;
         zoomed = on;
@@ -3784,7 +3642,6 @@ public final class MiStepHost {
         }
     }
 
-
     /** 广播直投：绕过 system_server 读 SystemUI 私有文件的权限/SELinux 限制。 */
     private void broadcastZoom(String command, long issuedAt) {
         try {
@@ -3964,8 +3821,6 @@ public final class MiStepHost {
                             && promotion == null && !transferBusy
                             && (!topFace || layout.tabletLandscape && tabletToolsOpen);
                 }
-
-
 
                 @Override public void onOpenLandscape() { openTopFace(true); }
                 @Override public void onTaskCellsCovered(boolean covered) { setTaskCellsCovered(covered); }
@@ -4591,13 +4446,6 @@ public final class MiStepHost {
             log("upper return cannot confirm main task: "+unavailable);
             return null;
         }
-    }
-
-    private void replaceTopTask(TopCandidate candidate) {
-        if(!topReady())return;
-        if(candidate.key.equals(topTaskState.owner())) {topTaskPane.occupied(true);root.requestLayout();return;}
-        if(slots[SLOT_TOP].occupied)releaseTopTask(false,true,()->claimTopTask(candidate,true));
-        else claimTopTask(candidate,true);
     }
 
     private void claimTopTask(TopCandidate selected, boolean manual) {
@@ -5584,7 +5432,6 @@ public final class MiStepHost {
         finally { closeSurfaceObject(tx, "close"); }
     }
 
-
     /** 只取桌面壁纸做高斯模糊底（不使用应用内容），供顶栏/侧栏格子的液态玻璃使用。 */
     private void loadWallpaperBackdrop() {
         if (wallpaperBackdropRequested) return;
@@ -6125,12 +5972,10 @@ public final class MiStepHost {
         }
     }
 
-
     private MiStepLayout makeAdaptiveLayout(boolean right) {
         android.util.DisplayMetrics metrics = ctx.getResources().getDisplayMetrics();
         return MiStepLayout.of(screenW, screenH, right, metrics.density, DeviceProfile.isTablet(ctx));
     }
-
 
     /** 调试广播入口：打印宿主 View 树（定位残带/残留视图）。 */
     public static void debugDumpViews() {
@@ -6165,7 +6010,6 @@ public final class MiStepHost {
             }
         }
     }
-
 
     /** 交换确认后把新主任务 leash 完全复位：position/matrix/alpha/crop，避免副格残留变换把画面顶到主区上方。 */
     private void resetMainTaskLeash(int taskId) {
@@ -6249,56 +6093,6 @@ public final class MiStepHost {
             android.widget.Toast.makeText(ctx, "无法打开系统设置",
                     android.widget.Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void beginWindowDrag(MotionEvent event) {
-        dragMoved = false;
-        dragStartRawX = event.getRawX();
-        dragStartRawY = event.getRawY();
-        dragTarget = null;
-    }
-
-    private void updateWindowDrag(MotionEvent event) {
-        float dx = event.getRawX() - dragStartRawX;
-        float dy = event.getRawY() - dragStartRawY;
-        if (!dragMoved && dx * dx + dy * dy < dp(10) * dp(10)) return;
-        dragMoved = true;
-        if (dragGhost == null) createDragGhost();
-        if (dragGhost != null) {
-            dragGhost.setX(event.getRawX() - dragGhost.getWidth() * 0.5f);
-            dragGhost.setY(event.getRawY() - dragGhost.getHeight() * 0.5f);
-        }
-        Slot target = slotAtPoint(event.getRawX(), event.getRawY());
-        if (target != dragTarget) {
-            setDropHighlight(dragTarget, false);
-            dragTarget = target;
-            setDropHighlight(dragTarget, true);
-        }
-    }
-
-    private void finishWindowDrag(MotionEvent event) {
-        boolean cancelled = event.getActionMasked() == MotionEvent.ACTION_CANCEL;
-        boolean moved = dragMoved;
-        Slot target = slotAtPoint(event.getRawX(), event.getRawY());
-        setDropHighlight(dragTarget, false);
-        if (dragGhost != null) {
-            root.removeView(dragGhost);
-            dragGhost = null;
-        }
-        dragTarget = null;
-        if (!moved || cancelled) return;
-        if (target == null) {
-            log("window drag ended outside side cells");
-            return;
-        }
-        if (target.occupied) {
-            log("window drag target occupied slot=" + target.index);
-            android.widget.Toast.makeText(ctx, "请拖到空白副槽",
-                    android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        log("window drag collect main into slot=" + target.index);
-        captureMainIntoEmptySlot(target);
     }
 
     private void createDragGhost() {
@@ -7388,38 +7182,6 @@ public final class MiStepHost {
         }
     }
 
-    /** Keep tap-to-swap, transfer a drag to its real window without reinjecting coordinates. */
-    private void transferTouchToTask(Slot slot, long eventTime) {
-        if (root == null || slot.taskToken == null || !controllerOwns(slot, slot.taskId, slot.taskToken)) return;
-        try {
-            android.os.Bundle tokens = new android.os.Bundle();
-            tokens.putBinder("host", root.getWindowToken());
-            tokens.putBinder("task", (android.os.IBinder) XposedHelpers.callMethod(slot.taskToken, "asBinder"));
-            Intent request = new Intent("com.jiusis.mistep.TRANSFER_TOUCH");
-            request.setPackage("android");
-            request.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-            request.putExtra("tokens", tokens);
-            request.putExtra("taskId", slot.taskId);
-            request.putExtra("eventTime", eventTime);
-            ctx.sendBroadcast(request);
-            log("side touch transfer requested slot=" + slot.index + " task=" + slot.taskId);
-        } catch (Throwable t) {
-            log("side touch transfer request failed slot=" + slot.index + ": " + t);
-        }
-    }
-
-    private int uidOf(String pkg) {
-        if (pkg == null) {
-            return 0;
-        }
-        try {
-            return ctx.getPackageManager().getApplicationInfo(pkg, 0).uid;
-        } catch (Throwable t) {
-            log("uidOf " + pkg + " failed: " + t);
-            return 0;
-        }
-    }
-
     // ---------------------------------------------------------------- 点击 / 交换
 
     private void onSlotTapped(int slotIndex) {
@@ -8450,30 +8212,6 @@ public final class MiStepHost {
         resumeNotificationLaunch(ticket);
     }
 
-    private void enqueuePromotion(Promotion ticket) {
-        if (promotion != ticket || ticket.cancelled) return;
-        if (!executeOnShell(() -> {
-            NativeObservation observation = null;
-            try {
-                if (ticket.cancelled) return;
-                Object wct = fullscreenExitTransaction(ticket);
-                traceSwapEvent("before-fullscreen-enqueue");
-                // Our independent root is not a BubbleHelper child. Use the native queue with
-                // the verified non-bubble transaction, without changing the global helper.
-                // Keep the side matrix until the native mode change has settled. The actual
-                // parent/matrix handoff is one atomic surface transaction in checkPromotion.
-                observation = observeNativeCommit(ticket.token, () -> checkPromotion(ticket, 0));
-                ShellCompat.call(transitions, "lambda$moveTaskViewToFullscreen$5",
-                        wct, ticket.slot.controller);
-            } catch (Throwable t) {
-                cancelNativeObservation(observation);
-                main.post(() -> failPromotion(ticket, "enqueue: " + t));
-            }
-        })) {
-            failPromotion(ticket, "Shell executor unavailable");
-        }
-    }
-
     private void closeSwapPreview() {
         closeSwapPreview(null);
     }
@@ -8599,21 +8337,6 @@ public final class MiStepHost {
         if (owner != null) {
             XposedHelpers.callMethod(wct, "removeInsetsSource", token, owner, 0,
                     android.view.WindowInsets.Type.captionBar());
-        }
-    }
-
-    private void resetTaskMatrix(Object leash) throws Exception {
-        if (leash == null) return;
-        if (!Boolean.TRUE.equals(XposedHelpers.callMethod(leash, "isValid"))) return;
-        Object tx = Class.forName("android.view.SurfaceControl$Transaction")
-                .getDeclaredConstructor().newInstance();
-        try {
-            XposedHelpers.callMethod(tx, "setMatrix", leash, 1f, 0f, 0f, 1f);
-            XposedHelpers.callMethod(tx, "setPosition", leash, 0f, 0f);
-            XposedHelpers.callMethod(tx, "setWindowCrop", leash, new Rect(0, 0, screenW, screenH));
-            XposedHelpers.callMethod(tx, "apply");
-        } finally {
-            closeSurfaceObject(tx, "close");
         }
     }
 
@@ -9209,27 +8932,6 @@ public final class MiStepHost {
     }
 
     /**
-     * TaskInfo 的多窗口能力标记：不支持的（例如相机）不是拒绝，而是走 mirror 承载。
-     * 普通应用仍按原路线进 TaskView。
-     */
-    /** 规则：除桌面外都可进副格；系统标志不预拒绝，交给 native adoption 结果。 */
-    private boolean launchActivitySupportsSide(Intent launch) {
-        return true;
-    }
-
-    private void keepUnsupportedInMain(Slot slot, String pkg, String reason) {
-        if (slot != null) {
-            slot.launching = false;
-            updateHint(slot);
-            updateTouchRegion(slot);
-        }
-        log("side launch rejected slot=" + (slot == null ? -1 : slot.index)
-                + " pkg=" + pkg + ": " + reason + "; task remains in main");
-        android.widget.Toast.makeText(ctx, "该应用不支持副格，已在主区打开",
-                android.widget.Toast.LENGTH_SHORT).show();
-    }
-
-    /**
      * TaskViewTaskController keeps mTaskNotFound after an idle task vanished without a token.
      * Reusing that controller otherwise makes the framework remove the next task immediately.
      */
@@ -9398,13 +9100,6 @@ public final class MiStepHost {
             return;
         }
         launchIntoSlot(slotIndex, i, pkg);
-    }
-
-    private void launchComponent(int slotIndex, ComponentName cn) {
-        Intent i = new Intent(Intent.ACTION_MAIN);
-        i.addCategory(Intent.CATEGORY_LAUNCHER);
-        i.setComponent(cn);
-        launchIntoSlot(slotIndex, i, cn.flattenToShortString());
     }
 
     private void launchIntoSlot(final int slotIndex, Intent launch, String label) {
@@ -10466,9 +10161,4 @@ public final class MiStepHost {
         }
     }
 }
-
-
-
-
-
 

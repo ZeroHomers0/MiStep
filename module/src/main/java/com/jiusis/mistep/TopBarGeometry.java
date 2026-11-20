@@ -2,7 +2,6 @@ package com.jiusis.mistep;
 
 /** Dense visible rows: preserve the 10px main gap and remove internal toolbar whitespace. */
 final class TopBarGeometry {
-    static final int MAIN_GAP_PX = 10;
     final int headerTop, headerHeight, railTop, railHeight;
     final int edge, buttonWidth, titleInset;
     final int blankTop, blankBottom;

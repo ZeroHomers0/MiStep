@@ -202,13 +202,6 @@ final class SwapPreview {
         });
     }
 
-    /** Start only after the opaque bridge has actually reached the screen. */
-    void runAfterFirstFrame(Runnable action) {
-        if (closed) return;
-        if (firstFrameDrawn) overlayRoot.post(action);
-        else firstFrameAction = action;
-    }
-
     void start() {
         if (!closed && !started) {
             started = true;
