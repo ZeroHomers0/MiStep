@@ -11,6 +11,8 @@ import android.view.View;
 final class VideoModeDiagram extends View {
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path arrow=new Path();
+    /** Scratch rectangles; the diagram paints once per frame. */
+    private final RectF frame=new RectF(),header=new RectF(),main=new RectF(),cell=new RectF();
     private final int mode,outline,empty,accent;
     VideoModeDiagram(Context context,int mode,int outline,int empty,int accent) {
         super(context);this.mode=mode;this.outline=outline;this.empty=empty;this.accent=accent;
@@ -22,24 +24,24 @@ final class VideoModeDiagram extends View {
         int save=canvas.save();canvas.translate((getWidth()-56*scale)/2,(getHeight()-80*scale)/2);
         canvas.scale(scale,scale);
         boolean fullscreen=mode==WorkspaceOptions.VIDEO_FULLSCREEN;
-        RectF frame=fullscreen?new RectF(2,28,54,52):new RectF(11,3,45,77);
+        if(fullscreen)frame.set(2,28,54,52);else frame.set(11,3,45,77);
         paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(1.5f);paint.setColor(outline);
         canvas.drawRoundRect(frame,4,4,paint);paint.setStyle(Paint.Style.FILL);
         frame.inset(3,3);
         if(fullscreen) {block(canvas,frame,accent);play(canvas,frame,false);}
         else {
-            RectF header=new RectF(frame.left,frame.top,frame.right,
+            header.set(frame.left,frame.top,frame.right,
                     frame.top+frame.height()*(mode==WorkspaceOptions.VIDEO_TOP?.30f:.16f));
             block(canvas,header,mode==WorkspaceOptions.VIDEO_TOP?accent:empty);
             if(mode==WorkspaceOptions.VIDEO_TOP)play(canvas,header,false);
             float side=frame.right-frame.width()*.24f, gap=1.5f;
-            RectF main=new RectF(frame.left,header.bottom+gap,side-gap,frame.bottom);
+            main.set(frame.left,header.bottom+gap,side-gap,frame.bottom);
             block(canvas,main,mode==WorkspaceOptions.VIDEO_TURNED?accent:empty);
             if(mode==WorkspaceOptions.VIDEO_TURNED)play(canvas,main,true);
             float height=(main.height()-2*gap)/3f;
             for(int i=0;i<3;i++) {
                 float top=main.top+i*(height+gap);
-                block(canvas,new RectF(side,top,frame.right,top+height),empty);
+                cell.set(side,top,frame.right,top+height);block(canvas,cell,empty);
             }
         }
         canvas.restoreToCount(save);

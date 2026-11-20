@@ -85,6 +85,8 @@ final class MiStepVideoPane extends FrameLayout implements SurfaceHolder.Callbac
     private final class FrostWell extends android.graphics.drawable.Drawable {
         final View owner;final android.graphics.Paint paint=new android.graphics.Paint(3);
         final android.graphics.Path circle=new android.graphics.Path();final int[] origin=new int[2];
+        /** Scratch source/destination rects; the well paints once per frame. */
+        final android.graphics.Rect src=new android.graphics.Rect();final android.graphics.RectF dst=new android.graphics.RectF();
         FrostWell(View owner){this.owner=owner;}
         @Override public void draw(android.graphics.Canvas canvas){
             android.graphics.Rect b=getBounds();float radius=Math.min(b.width(),b.height())*.5f-dp(2);

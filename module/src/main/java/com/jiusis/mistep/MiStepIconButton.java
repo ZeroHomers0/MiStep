@@ -14,6 +14,8 @@ final class MiStepIconButton extends View {
             TOOLS = 11, PORTRAIT_TASK = 12, SIDE_LEFT = 13, SIDE_RIGHT = 14, EXPAND = 15, PLAY = 16, PAUSE = 17, VIDEO_RETURN = 18;
     private int icon;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** One scratch path: a button paints exactly one glyph per frame. */
+    private final Path glyph = new Path();
     private boolean exitLeft;
     private int foreground;
 
@@ -44,7 +46,7 @@ final class MiStepIconButton extends View {
         paint.setColor(foreground == 0 ? HyperOsStyle.textPrimary(getContext()) : foreground);
         paint.setStrokeWidth(2.1f);
         if (icon == PLAY) {
-            Path triangle=new Path();triangle.moveTo(8,5);triangle.lineTo(19,12);triangle.lineTo(8,19);triangle.close();canvas.drawPath(triangle,paint);
+            Path triangle=glyph;triangle.reset();triangle.moveTo(8,5);triangle.lineTo(19,12);triangle.lineTo(8,19);triangle.close();canvas.drawPath(triangle,paint);
         } else if (icon == PAUSE) {
             canvas.drawLine(8,5,8,19,paint);canvas.drawLine(16,5,16,19,paint);
         } else if (icon == VIDEO_RETURN) {
@@ -77,7 +79,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(10, 18.5f, 14, 18.5f, paint);
         } else if (icon == CLIPBOARD) {
             // A folded page and a small clamp, all at the same light stroke weight.
-            Path page = new Path();
+            Path page = glyph; page.reset();
             page.moveTo(8, 4); page.lineTo(5.5f, 4); page.quadTo(4, 4, 4, 5.5f);
             page.lineTo(4, 20); page.quadTo(4, 21.5f, 5.5f, 21.5f);
             page.lineTo(18.5f, 21.5f); page.quadTo(20, 21.5f, 20, 20);
@@ -97,7 +99,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(18, 6, 6, 18, paint);
         } else if (icon == TORCH) {
             // Rounded flashlight head and grip; the short rays stay inside the icon box.
-            Path body = new Path();
+            Path body = glyph; body.reset();
             body.moveTo(6.5f, 7); body.lineTo(17.5f, 7);
             body.quadTo(18, 7, 17.5f, 8); body.lineTo(15, 11.5f);
             body.lineTo(15, 20); body.quadTo(15, 21.5f, 13.5f, 21.5f);
@@ -112,7 +114,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(16.5f, 3.5f, 17.5f, 2.5f, paint);
         } else if (icon == SCREENSHOT) {
             // A clear capture frame, without a second tiny camera outline inside it.
-            Path frame = new Path();
+            Path frame = glyph; frame.reset();
             frame.moveTo(8, 3.5f); frame.lineTo(5, 3.5f); frame.quadTo(3.5f, 3.5f, 3.5f, 5); frame.lineTo(3.5f, 8);
             frame.moveTo(16, 3.5f); frame.lineTo(19, 3.5f); frame.quadTo(20.5f, 3.5f, 20.5f, 5); frame.lineTo(20.5f, 8);
             frame.moveTo(3.5f, 16); frame.lineTo(3.5f, 19); frame.quadTo(3.5f, 20.5f, 5, 20.5f); frame.lineTo(8, 20.5f);
@@ -125,7 +127,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(4, 18, 14, 18, paint);
             canvas.drawLine(2.5f, 7.5f, 2.5f, 16.5f, paint);
             canvas.drawLine(15.5f, 7.5f, 15.5f, 16.5f, paint);
-            Path corners = new Path();
+            Path corners = glyph; corners.reset();
             corners.moveTo(2.5f, 7.5f); corners.quadTo(2.5f, 6, 4, 6);
             corners.moveTo(14, 6); corners.quadTo(15.5f, 6, 15.5f, 7.5f);
             corners.moveTo(15.5f, 16.5f); corners.quadTo(15.5f, 18, 14, 18);
@@ -135,7 +137,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(21.5f, 6.5f, 21.5f, 17.5f, paint);
             canvas.drawLine(21.5f, 17.5f, 15.5f, 14, paint);
         } else if (icon == SETTINGS) {
-            Path gear = new Path();
+            Path gear = glyph; gear.reset();
             for (int i = 0; i < 32; i++) {
                 double angle = Math.PI * 2 * i / 32 - Math.PI / 2;
                 float radius = (i % 4 == 0 || i % 4 == 3) ? 10f : 8f;
@@ -153,7 +155,7 @@ final class MiStepIconButton extends View {
             canvas.drawLine(19, 5, 19, 15, paint);
         } else {
             if (icon == NEXT) canvas.scale(-1, 1, 12, 12);
-            Path chevron = new Path();
+            Path chevron = glyph; chevron.reset();
             chevron.moveTo(15, 5);
             chevron.lineTo(8, 12);
             chevron.lineTo(15, 19);

@@ -14,6 +14,8 @@ import java.util.Locale;
 /** System time/date broadcasts avoid a background timer and follow timezone changes. */
 final class WorkspaceClock extends View {
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** Scratch ink bounds; the clock paints once per frame. */
+    private final android.graphics.Rect timeInk=new android.graphics.Rect(),dateInk=new android.graphics.Rect(),lunarInk=new android.graphics.Rect();
     private boolean showLunar=true,registered;
     private String time,date,lunar;
     private android.graphics.Bitmap wallpaper;
@@ -66,7 +68,6 @@ final class WorkspaceClock extends View {
         super.onDraw(c);
         float d=getResources().getDisplayMetrics().density,font=getResources().getDisplayMetrics().scaledDensity;
         float anchor=startInset>=0?startInset:20*d,cy=getHeight()*.5f;
-        android.graphics.Rect timeInk=new android.graphics.Rect(),dateInk=new android.graphics.Rect(),lunarInk=new android.graphics.Rect();
         paint.setColor(HyperOsStyle.textPrimary(getContext()));paint.setAlpha(255);
         paint.setTypeface(android.graphics.Typeface.create("sans-serif-medium",0));
         paint.setTextSize(Math.min(46*font,getHeight()*.84f));
