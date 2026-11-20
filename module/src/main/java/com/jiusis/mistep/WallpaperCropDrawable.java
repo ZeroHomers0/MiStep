@@ -19,6 +19,8 @@ final class WallpaperCropDrawable extends Drawable {
     private final Paint bitmapPaint = new Paint(7);
     private final Paint tintPaint = new Paint();
     private final Rect source = new Rect();
+    /** Scratch destination: the drawable paints once per frame. */
+    private final RectF destination = new RectF();
     private RectF mainHole;
     private Bitmap wellWallpaper;
     private final android.graphics.Path wellPath = new android.graphics.Path();
@@ -36,7 +38,8 @@ final class WallpaperCropDrawable extends Drawable {
                 Math.round(screenY * wellWallpaper.getHeight() / (float) screenHeight),
                 Math.round((screenX + width) * wellWallpaper.getWidth() / (float) screenWidth),
                 Math.round((screenY + height) * wellWallpaper.getHeight() / (float) screenHeight));
-        canvas.drawBitmap(wellWallpaper, source, new RectF(0, 0, width, height), bitmapPaint);
+        destination.set(0, 0, width, height);
+        canvas.drawBitmap(wellWallpaper, source, destination, bitmapPaint);
         canvas.restoreToCount(saved);
     }
 
@@ -91,7 +94,8 @@ final class WallpaperCropDrawable extends Drawable {
                 bounds.left + mainHole.left - screenX, bounds.top + mainHole.top - screenY,
                 bounds.left + mainHole.right - screenX, bounds.top + mainHole.bottom - screenY);
         this.source.set(Math.round((this.screenX * this.wallpaper.getWidth()) / this.screenWidth), Math.round((this.screenY * this.wallpaper.getHeight()) / this.screenHeight), Math.round(((this.screenX + bounds.width()) * this.wallpaper.getWidth()) / this.screenWidth), Math.round(((this.screenY + bounds.height()) * this.wallpaper.getHeight()) / this.screenHeight));
-        canvas.drawBitmap(this.wallpaper, this.source, new RectF(bounds), this.bitmapPaint);
+        this.destination.set(bounds);
+        canvas.drawBitmap(this.wallpaper, this.source, this.destination, this.bitmapPaint);
         if ((this.tint >>> 24) != 0) {
             canvas.drawRect(bounds, this.tintPaint);
         }
