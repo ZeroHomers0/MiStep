@@ -12,17 +12,19 @@ def method(signature):
     return host[a:b]
 body=r'''
 package com.jiusis.mistep;
-import android.view.SurfaceControl;
+import android.view.SurfaceControl;import android.graphics.Rect;
 import de.robv.android.xposed.XposedHelpers;
 public class CellVisibilityRegression {
+ Rect workspaceCellCrop(Slot slot){return null;}
  static int checks;static final int SLOT_TOP=4,CELL_SLOT_COUNT=4;boolean topFace,taskCellsCovered;Roll topRoll;
  static class Roll{boolean moving,task;boolean rolling(){return moving;}boolean showingTask(){return task;}}
  static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}
- float workspaceAlpha=1f;Object cellMotion;Promotion promotion;boolean owns=true,sideScrolling;
+ float workspaceAlpha=1f;Object cellMotion;Promotion promotion;boolean owns=true,sideScrolling,writable=true;
  static class Promotion{boolean nativeSwap=true,cancelled;}
- static class View{float alpha;void setAlpha(float a){alpha=a;}}
- static class Slot{int index=1,sideRow=-1;boolean occupied,parked,promoting,launching,sideShown,sidePrepared;int taskId=42;Object taskToken=new Object();View view=new View();Object controller=new SurfaceControl();}
- Object getSurfaceField(Object c,String f){return c;}
+ static class View{float alpha;void setAlpha(float a){alpha=a;}void setClipBounds(Rect r){}}
+ static class Slot{int index=1,sideRow=-1;boolean occupied,parked,promoting,launching,sideShown,sidePrepared,frozen;int taskId=42;Object taskToken=new Object();View view=new View();Object controller=new SurfaceControl();}
+ boolean mayWriteSideSurface(Slot s){return writable;}
+ Object getSurfaceField(Object c,String f){SurfaceControl p=(SurfaceControl)c;if(f.equals("mTaskLeash")){if(p.child==null)p.child=new SurfaceControl();return p.child;}return p;}
  boolean controllerOwns(Slot s,int id,Object token){return owns;}
  static void closeSurfaceObject(Object o,String m){if(o!=null)XposedHelpers.callMethod(o,m);}
  static void log(String s){throw new AssertionError(s);}
@@ -47,9 +49,9 @@ public class CellVisibilityRegression {
   check(!SurfaceControl.ops.contains("hide"),"clear-bind replacement emitted no intermediate hide");
   SurfaceControl.ops.clear();s.occupied=false;h.updateCellSurfaceVisibility(s);
   check(s.view.alpha==0&&!surface.shown,"retired empty destination hidden after native ownership ends");
-  h.workspaceAlpha=.45f;h.prepareCellSurface(s);check(surface.alpha==.45f,"preparation retains workspace fade");
+  h.workspaceAlpha=.45f;h.prepareCellSurface(s);check(surface.alpha==1f&&s.view.alpha==1f,"preparation keeps live tasks opaque throughout workspace transition");
   SurfaceControl.ops.clear();surface.valid=false;s.view.alpha=0;h.prepareCellSurface(s);
-  check(s.view.alpha==1&&SurfaceControl.ops.isEmpty(),"future surface can open hole without invalid native transaction");
+  check(s.view.alpha==1&&!SurfaceControl.ops.contains("alpha")&&!SurfaceControl.ops.contains("show"),"future surface can open hole without invalid native surface operations");
   surface.valid=true;s.occupied=true;s.index=SLOT_TOP;h.workspaceAlpha=1f;
   h.updateCellSurfaceVisibility(s);check(s.view.alpha==0&&!surface.shown,"closed upper face hides actual task surface");
   h.topFace=true;h.updateCellSurfaceVisibility(s);check(s.view.alpha==1&&surface.shown,"settled upper face shows live task surface");
@@ -73,14 +75,22 @@ public class CellVisibilityRegression {
   check(surface.shown&&s.taskId==42,"viewport parent clips a warm task before it appears");
   s.sidePrepared=false;h.updateCellSurfaceVisibility(s);
   check(!surface.shown&&s.taskId==42,"a distant row can retire its surface without losing the task");
+  h.sideScrolling=false;s.sideRow=-1;s.index=1;s.sideShown=true;s.occupied=true;
+  for(float progress:new float[]{.1f,.5f,.9f}){h.workspaceAlpha=progress;h.updateCellSurfaceVisibility(s);
+   check(surface.alpha==1f&&s.view.alpha==1f,"RenderThread and module agree on opaque live content at every entry frame");}
+  h.workspaceAlpha=0;h.updateCellSurfaceVisibility(s);check(surface.alpha==0&&s.view.alpha==0,"first visible Host frame cannot resurrect the first retained app");
+  surface.alpha=1;check(surface.child.alpha==0,"RenderThread parent rewrite cannot reveal zero-gated task leash");
+  h.workspaceAlpha=.5f;s.frozen=true;surface.child.alpha=.37f;h.updateCellSurfaceVisibility(s);check(surface.child.alpha==.37f,"native-frozen task retains its own leash opacity");
+  s.frozen=false;h.writable=false;h.updateCellSurfaceVisibility(s);check(surface.child.alpha==.37f,"external native task cannot be pulled back by entry opacity gate");
   System.out.println("Actual Host cell visibility checks="+checks+" passed");
  }
 }
-'''.replace('__METHODS__','\n'.join(method(s) for s in ['    private boolean presentsSlot(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility(', '    private void prepareCellSurface(']))
+'''.replace('__METHODS__','\n'.join(method(s) for s in ['    private boolean presentsSlot(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility(', '    private void prepareCellSurface(', '    private void stageCellPresentation(']))
 files={
+'android/graphics/Rect.java':'package android.graphics;public class Rect {public boolean isEmpty(){return false;}}',
 'com/jiusis/mistep/CellVisibilityRegression.java':body,
 'android/view/SurfaceControl.java':r'''package android.view;import java.util.*;
-public class SurfaceControl {public boolean valid=true,shown;public float alpha;public boolean isValid(){return valid;}public static final List<String> ops=new ArrayList<>();
+public class SurfaceControl {public SurfaceControl child;public boolean valid=true,shown;public float alpha;public boolean isValid(){return valid;}public static final List<String> ops=new ArrayList<>();
  public static class Transaction implements AutoCloseable {
   public Transaction setAlpha(SurfaceControl s,float a){s.alpha=a;ops.add("alpha");return this;}
   public Transaction show(SurfaceControl s){s.shown=true;ops.add("show");return this;}

@@ -112,7 +112,7 @@ final class HyperOsStyle {
     }
 
     static int topWallpaperTint(Context context) {
-        return dark(context) ? 637534208 : 536870911;
+        return 0;
     }
 
     static Bitmap blurredWallpaper(Context context, int i, int i2) throws Exception {
@@ -141,7 +141,7 @@ final class HyperOsStyle {
         new Canvas(bitmapCreateBitmap).drawBitmap(bitmap, (Rect) null, new RectF(0.0f, 0.0f, iMax, iMax2), new Paint(6));
         int[] iArrBoxBlur = new int[iMax * iMax2];
         bitmapCreateBitmap.getPixels(iArrBoxBlur, 0, iMax, 0, 0, iMax, iMax2);
-        int iMax3 = Math.max(4, Math.min(iMax, iMax2) / 55);
+        int iMax3 = Math.max(4, Math.min(iMax, iMax2) / 38);
         for (int i3 = 0; i3 < 3; i3++) {
             iArrBoxBlur = boxBlur(iArrBoxBlur, iMax, iMax2, iMax3);
         }

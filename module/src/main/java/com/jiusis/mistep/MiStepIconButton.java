@@ -11,10 +11,15 @@ import android.view.View;
 final class MiStepIconButton extends View {
     static final int SETTINGS = 0, EXIT = 1, PREVIOUS = 2, NEXT = 3, CLIPBOARD = 4,
             TORCH = 5, SCREENSHOT = 6, RECORD = 7, CLEAR = 8, DELETE = 9, CLOSE = 10,
-            TOOLS = 11, PORTRAIT_TASK = 12;
-    private final int icon;
+            TOOLS = 11, PORTRAIT_TASK = 12, SIDE_LEFT = 13, SIDE_RIGHT = 14, EXPAND = 15, PLAY = 16, PAUSE = 17, VIDEO_RETURN = 18;
+    private int icon;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean exitLeft;
+    private int foreground;
+
+    void setIcon(int value) {icon=value;invalidate();}
+
+    void setIconColor(int color) { foreground = color; invalidate(); }
 
     MiStepIconButton(Context context, int icon, String description) {
         super(context);
@@ -38,13 +43,37 @@ final class MiStepIconButton extends View {
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         int save = canvas.save();
-        float size = Math.min(HyperOsStyle.dp(getContext(), 23f), Math.min(getWidth(), getHeight()) * .84f);
+        float size = Math.min(HyperOsStyle.dp(getContext(), 26f), Math.min(getWidth(), getHeight()) * .84f);
         canvas.translate((getWidth() - size) / 2f, (getHeight() - size) / 2f);
         canvas.scale(size / 24f, size / 24f);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setColor(HyperOsStyle.textPrimary(getContext()));
-        paint.setStrokeWidth(1.8f);
-        if (icon == TOOLS) {
+        paint.setColor(foreground == 0 ? HyperOsStyle.textPrimary(getContext()) : foreground);
+        paint.setStrokeWidth(2.1f);
+        if (icon == PLAY) {
+            Path triangle=new Path();triangle.moveTo(8,5);triangle.lineTo(19,12);triangle.lineTo(8,19);triangle.close();canvas.drawPath(triangle,paint);
+        } else if (icon == PAUSE) {
+            canvas.drawLine(8,5,8,19,paint);canvas.drawLine(16,5,16,19,paint);
+        } else if (icon == VIDEO_RETURN) {
+            canvas.drawLine(3,5,21,5,paint);canvas.drawLine(3,5,3,19,paint);canvas.drawLine(3,19,21,19,paint);canvas.drawLine(21,5,21,19,paint);
+            canvas.drawLine(12,11,21,11,paint);canvas.drawLine(12,11,12,19,paint);
+        } else if (icon == SIDE_LEFT || icon == SIDE_RIGHT) {
+            // Open line segments avoid OEM stroked-round-rect paths becoming solid plates.
+            canvas.drawLine(3, 4, 21, 4, paint);
+            canvas.drawLine(21, 4, 21, 20, paint);
+            canvas.drawLine(21, 20, 3, 20, paint);
+            canvas.drawLine(3, 20, 3, 4, paint);
+            float split = icon == SIDE_LEFT ? 9f : 15f;
+            canvas.drawLine(split, 4, split, 20, paint);
+            float start = icon == SIDE_LEFT ? 3f : 15f, end = icon == SIDE_LEFT ? 9f : 21f;
+            canvas.drawLine(start, 9.3f, end, 9.3f, paint);
+            canvas.drawLine(start, 14.7f, end, 14.7f, paint);
+        } else if (icon == EXPAND) {
+            canvas.drawLine(4, 10, 4, 4, paint); canvas.drawLine(4, 4, 10, 4, paint);
+            canvas.drawLine(14, 4, 20, 4, paint); canvas.drawLine(20, 4, 20, 10, paint);
+            canvas.drawLine(20, 14, 20, 20, paint); canvas.drawLine(20, 20, 14, 20, paint);
+            canvas.drawLine(10, 20, 4, 20, paint); canvas.drawLine(4, 20, 4, 14, paint);
+            canvas.drawLine(4, 4, 9, 9, paint); canvas.drawLine(20, 20, 15, 15, paint);
+        } else if (icon == TOOLS) {
             for (int row = 0; row < 2; row++) for (int column = 0; column < 2; column++) {
                 float x = 4f + column * 9f, y = 4f + row * 9f;
                 canvas.drawRoundRect(x, y, x + 6f, y + 6f, 1f, 1f, paint);

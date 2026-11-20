@@ -127,6 +127,8 @@ public final class MiStepHost {
     private View topStripBacking;
     private View mainGapBacking;
     private Bitmap wallpaperBackdrop;
+    private MiStepVideoPane videoPane;
+    private Bitmap wellWallpaperBackdrop;
     private boolean wallpaperBackdropRequested;
     private BroadcastReceiver wallpaperReceiver;
     private BroadcastReceiver desktopIconReceiver;
@@ -146,6 +148,8 @@ public final class MiStepHost {
     private MiStepTopRoll topRoll;
     private final TopTaskState topTaskState = new TopTaskState();
     private final java.util.Map<TopTaskState.Key, Boolean> topDirections = new java.util.HashMap<>();
+    private final WideVideoPolicy wideVideoPolicy = new WideVideoPolicy();
+    private long wideVideoSequence, wideVideoEpoch=-1;
     private Slot topOriginalSlot;
     private TopCandidate tabletCoveredMain;
     private TopTaskState.Key tabletReturnedTop;
@@ -174,6 +178,8 @@ public final class MiStepHost {
     private Slot dragTarget;
     private volatile boolean keyguardLocked;
     private volatile boolean retainedForLock;
+    private boolean lockExitPending;
+    private boolean retainedGeometryConfirmed;
     private boolean retainedWindowPrepared;
     private long retainedWindowGeneration;
     private volatile boolean keyguardWindowHidden;
@@ -512,13 +518,18 @@ public final class MiStepHost {
         }
         workspaceSettings = new WorkspaceSettingsClient(this.ctx, main, options -> {
             workspaceOptions = options;
+            refreshVideoPane();
             if (topBar != null) topBar.applyOptions(options);
+            if (root != null) {
+                publishDesktopSideTasks();
+            }
             requestCompaction();
             if (!options.keepOnLock && retainedForLock) {
-                retainedForLock = false;
-                suspendSession("lock-retention-disabled");
+                // Settings may arrive while the physical screen is still locked.
+                // Decide on authenticated wake, without returning tasks during fade-out.
+                leaveKeyguardPrivacy();
             }
-            log("workspace settings applied hidden=" + options.hiddenButtons + " swap=" + options.swapMode
+            log("workspace settings applied swap=" + options.swapMode
                     + " keepOnLock=" + options.keepOnLock + " scrollSideTasks=" + options.scrollSideTasks);
         });
     }
@@ -571,7 +582,7 @@ public final class MiStepHost {
                 h.closeSwapPreview();
                 h.statusBar.restore();
                 h.closeCellMovePreview();
-                if (!h.workspaceOptions.keepOnLock || !h.retainWorkspaceForLock())
+                if (!h.retainWorkspaceForLock())
                     h.suspendSession("screen-lock");
             } else {
                 if (h.retainedForLock) h.leaveKeyguardPrivacy();
@@ -583,6 +594,14 @@ public final class MiStepHost {
     public static void onUserPresent() {
         MiStepHost h = sInstance;
         if (h != null) h.main.post(h::leaveKeyguardPrivacy);
+    }
+
+    static void onRetainedNativeReady(long generation) {
+        MiStepHost h=sInstance;if(h==null)return;
+        h.main.post(()->{
+            if(h.retainedForLock&&generation>0&&generation==h.retainedWindowGeneration
+                    &&MiStepEntryGuard.canOpen(h.ctx))h.leaveKeyguardPrivacy();
+        });
     }
 
     public static void onNativeWake() {
@@ -603,15 +622,19 @@ public final class MiStepHost {
                 || !h.keyguardWindowHidden || h.root == null || h.layout == null
                 || (h.scene != ACTIVE && h.scene != RESUMING)
                 || !MiStepEntryGuard.canOpen(h.ctx) || h.unlockHandoff != null) return false;
+        if(!h.workspaceOptions.keepOnLock)return h.handoffLockExit(nativeHide);
         final long epoch = h.sceneEpoch;
+        final boolean[] frameReady = {false};
+        final MiStepUnlockHandoff[] owner = {null};
         h.screenOn = true;
         MiStepLayout geometry = h.layout;
         MiStepUnlockHandoff handoff = new MiStepUnlockHandoff(h.ctx, h.main,
                 geometry.mainScale, geometry.mainOffsetX, geometry.mainOffsetY, ack -> {
-            if (h != sInstance || epoch != h.sceneEpoch || !h.retainedForLock
+            if (h.unlockHandoff != owner[0] || h != sInstance || epoch != h.sceneEpoch || !h.retainedForLock
                     || !h.keyguardWindowHidden || !MiStepEntryGuard.canOpen(h.ctx)) {
-                h.unlockHandoff.finish(); return;
+                owner[0].finish(); return;
             }
+            if(!h.workspaceOptions.keepOnLock){owner[0].finish();return;}
             h.keyguardLocked = false;
             h.workspaceGeneration++;
             h.workspaceEntering = false;
@@ -622,25 +645,59 @@ public final class MiStepHost {
                 tx = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
                 XposedHelpers.callMethod(tx, "merge", ack.finishReplay);
                 h.appendWorkspaceSurfaces(tx, java.util.Collections.singletonList(epoch));
-                XposedHelpers.callMethod(tx, "apply");
-                h.setZoomState(true);
-                if (!h.setKeyguardWindowHidden(false)) throw new IllegalStateException("Host reveal failed");
-                h.root.getViewTreeObserver().registerFrameCommitCallback(() -> h.main.post(() -> {
-                    MiStepUnlockHandoff current = h.unlockHandoff;
-                    if (current != null && current.active()) {
-                        log("authenticated retained Host frame committed before native hide");
-                        current.finish();
+                ((android.view.SurfaceControl.Transaction) tx).addTransactionCommittedListener(
+                        action -> h.main.post(action), () -> {
+                    if (h.unlockHandoff != owner[0] || h != sInstance || epoch != h.sceneEpoch
+                            || !h.retainedForLock || !MiStepEntryGuard.canOpen(h.ctx)) return;
+                    try {
+                        if(!h.workspaceOptions.keepOnLock){owner[0].finish();return;}
+                        h.setZoomState(true);
+                        if (!h.setKeyguardWindowHidden(false)) throw new IllegalStateException("Host reveal failed");
+                        h.root.getViewTreeObserver().registerFrameCommitCallback(() -> h.main.post(() -> {
+                            MiStepUnlockHandoff current = h.unlockHandoff;
+                            if (current == owner[0] && h == sInstance && h.sceneEpoch == epoch
+                                    && h.retainedForLock && MiStepEntryGuard.canOpen(h.ctx) && current.active()) {
+                                frameReady[0] = true;
+                                log("authenticated retained geometry and Host frame committed before reveal completion");
+                                current.finish();
+                            }
+                        }));
+                        h.root.invalidate();
+                    } catch (Throwable error) {
+                        log("retained committed reveal failed: " + error);
+                        owner[0].finish();
                     }
-                }));
-                h.root.invalidate();
+                });
+                XposedHelpers.callMethod(tx, "apply");
             } catch (Throwable error) {
                 log("retained unlock handoff stopped: " + error);
-                h.unlockHandoff.finish();
+                owner[0].finish();
             } finally { h.closeSurfaceObject(tx, "close"); }
         }, () -> {
+            if (h.unlockHandoff != owner[0]) return;
             h.unlockHandoff = null;
-            if (MiStepEntryGuard.canOpen(h.ctx)) nativeHide.run();
+            if(h==sInstance&&h.sceneEpoch==epoch&&h.retainedForLock&&!h.workspaceOptions.keepOnLock
+                    &&MiStepEntryGuard.canOpen(h.ctx)){h.handoffLockExit(nativeHide);return;}
+            if (MiStepEntryGuard.canOpen(h.ctx)) {
+                if (h == sInstance && h.sceneEpoch == epoch && h.retainedForLock) {
+                    if (frameReady[0]) {
+                        h.retainedGeometryConfirmed = true;
+                        h.leaveKeyguardPrivacy();
+                    } else {
+                        // No valid WM replay/frame: never expose a clipped fullscreen
+                        // buffer as a workspace. Return through normal task cleanup.
+                        h.root.setVisibility(View.GONE);
+                        h.retainedForLock = false;
+                        h.retainedGeometryConfirmed = false;
+                        h.keyguardLocked = false; // Full authentication was checked above.
+                        h.setKeyguardWindowHidden(false);
+                        h.suspendSession("retained-unlock-failed");
+                    }
+                }
+                nativeHide.run();
+            }
         });
+        owner[0] = handoff;
         h.unlockHandoff = handoff;
         log("authenticated retained unlock waiting for WMS commit and Host frame");
         handoff.start();
@@ -1379,6 +1436,7 @@ public final class MiStepHost {
         int pending = pendingMainSide;
         if (pending < 0) return;
         pendingMainSide = -1;
+        if(ctx.createDeviceProtectedStorageContext().getSharedPreferences("workspace_position",0).contains("main_right"))return;
         boolean right = pending == 1;
         if (right != mainOnRight) {
             log("pending main side applied: " + (right ? "right" : "left"));
@@ -1674,6 +1732,8 @@ public final class MiStepHost {
 
     /** Transfer live tasks first. Removing a SurfaceView while still bound hides its task. */
     private void suspendSession(String reason) {
+        cancelMainSideSwitch();
+        if(videoPane!=null)videoPane.releaseForPrivacy();
         if (topBar != null) topBar.closeQuickAppPicker();
         if (!"native-landscape".equals(reason)) landscapeSuspended = false;
         statusBar.restore(); // Includes a deferred exit while native ownership is changing.
@@ -1707,7 +1767,7 @@ public final class MiStepHost {
             }
         }
         if (sideArmed || sideCaptured || isSideMotionRunning()) finishSideScroll();
-        final boolean keepBoundTasks = ("exit".equals(reason) || "homekey".equals(reason))
+        final boolean keepBoundTasks = ("exit".equals(reason) || "homekey".equals(reason) || "unlock-exit".equals(reason) || lockExitPending)
                 && canRetainBoundTasks();
         retainedExitSourceEpoch = keepBoundTasks ? sceneEpoch : -1;
         retainedOnExit = keepBoundTasks;
@@ -1728,7 +1788,7 @@ public final class MiStepHost {
         hideIme();
         workspaceEntering = false;
         final long exitAnimation = ++workspaceGeneration;
-        if (screenOn) writeZoomAnimated(false); else writeZoom(false);
+        if (screenOn&&!lockExitPending) writeZoomAnimated(false); else writeZoom(false);
         setZoomState(false);
         log("suspend begin; retain live task identities: " + reason);
         final long exitEpoch = sceneEpoch;
@@ -1737,7 +1797,7 @@ public final class MiStepHost {
             if (keepBoundTasks) finishRetainedSuspend(exitEpoch);
             else returnUnboundOwnedCandidates(exitEpoch, () -> parkNext(1));
         };
-        if (screenOn) playWorkspaceFade(false, exitAnimation, returnTasks);
+        if (screenOn&&!lockExitPending) playWorkspaceFade(false, exitAnimation, returnTasks);
         else {
             android.animation.ValueAnimator previous = workspaceAnimator;
             workspaceAnimator = null;
@@ -1748,7 +1808,7 @@ public final class MiStepHost {
     }
 
     private boolean canRetainBoundTasks() {
-        if (root == null || root.getVisibility() != View.VISIBLE || !screenOn || retainedForLock
+        if (root == null || (root.getVisibility() != View.VISIBLE&&!lockExitPending) || !screenOn || retainedForLock
                 || promotion != null || transferBusy || workspaceEntering || workspaceAnimator != null
                 || topTransition != null || topSelectionPending
                 || (topRoll != null && topRoll.rolling()) || cellMotion != null
@@ -1774,6 +1834,7 @@ public final class MiStepHost {
         setMirrorLayerVisible(false);
         scene = SUSPENDED;
         publishDesktopSideTasks();
+        lockExitPending=false;
         log("host hidden; live TaskView bindings retained: " + describeTasks());
         releaseVisibleNativeRetainedTask();
     }
@@ -1883,6 +1944,7 @@ public final class MiStepHost {
             setMirrorLayerVisible(false);
             scene = SUSPENDED;
             publishDesktopSideTasks();
+            lockExitPending=false;
             log("host suspended; all side tasks returned alive: " + describeTasks());
             if(DeviceProfile.isTablet(ctx))scheduleDisplayGeometryRefresh();
             return;
@@ -2010,11 +2072,26 @@ public final class MiStepHost {
         root.setVisibility(View.VISIBLE);
         setMirrorLayerVisible(true);
         main.postDelayed(this::collapseStatusBarPanels, 220L);
-        beginWorkspaceEntry(() -> {
-            if (scene != RESUMING || sceneEpoch != epoch) return;
-            if (retainedOnExit) confirmRetainedResume(epoch, 0);
-            else resumeNext(1, epoch);
+        if (retainedOnExit) {
+            // Restore every bound task while all SurfaceViews are still hidden.
+            // The old path waited until the main zoom/fade had already finished.
+            workspaceEntering = true;
+            awaitRetainedWorkspaceFrame(epoch);
+        } else beginWorkspaceEntry(() -> resumeNext(1, epoch));
+    }
+
+    /** SurfaceViews recreate their native parents in the first visible traversal. */
+    private void awaitRetainedWorkspaceFrame(long epoch) {
+        final long generation = ++workspaceGeneration;
+        Runnable ready = () -> main.post(() -> {
+            if (scene == RESUMING && sceneEpoch == epoch && workspaceGeneration == generation
+                    && retainedOnExit && !retainedForLock && !keyguardLocked && screenOn && !suspendRequested)
+                confirmRetainedResume(epoch, 0);
         });
+        if (root.isAttachedToWindow() && root.isHardwareAccelerated()) {
+            root.getViewTreeObserver().registerFrameCommitCallback(ready);
+            root.invalidate();
+        } else ready.run();
     }
 
     private void confirmRetainedResume(long epoch, int attempt) {
@@ -2059,7 +2136,9 @@ public final class MiStepHost {
                             if (!XposedHelpers.getBooleanField(core, "isVisible")) {
                                 ready = false;
                                 detail = "task hidden slot=" + slot.index;
-                                if (slot.sideRow >= 0 && slot.sidePrepared) hiddenRows.add(slot.taskToken);
+                                if (slot.sideRow >= 0 ? slot.sidePrepared
+                                        : slot.index > SLOT_MAIN && slot.index < CELL_SLOT_COUNT)
+                                    hiddenRows.add(slot.taskToken);
                             }
                         }
                         boolean restore = !visibilityRestored && attempt < 2 && !hiddenRows.isEmpty()
@@ -2103,7 +2182,7 @@ public final class MiStepHost {
             return;
         }
         if (ready) {
-            completeWorkspaceResume(epoch, true);
+            prepareRetainedWorkspaceEntry(epoch);
         } else if (attempt < 2) {
             main.postDelayed(() -> confirmRetainedResume(epoch, attempt + 1, visibilityRestored), 250L);
         } else {
@@ -2114,9 +2193,49 @@ public final class MiStepHost {
         }
     }
 
+    /** Commit all restored task parents before the Host frame gate starts main zoom. */
+    private void prepareRetainedWorkspaceEntry(long epoch) {
+        if (scene != RESUMING || sceneEpoch != epoch || !retainedOnExit
+                || retainedForLock || keyguardLocked || !screenOn || suspendRequested) return;
+        final long generation = workspaceGeneration;
+        final boolean[] committed = {false};
+        Object tx = null;
+        try {
+            setWorkspaceAlpha(0f);
+            tx = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
+            appendWorkspaceSurfaces(tx, java.util.Collections.singletonList(epoch));
+            ((android.view.SurfaceControl.Transaction) tx).addTransactionCommittedListener(
+                    action -> main.post(action), () -> {
+                if (scene != RESUMING || sceneEpoch != epoch || !retainedOnExit
+                        || workspaceGeneration != generation
+                        || retainedForLock || keyguardLocked || !screenOn || suspendRequested) return;
+                committed[0] = true;
+                beginWorkspaceEntry(() -> completeWorkspaceResume(epoch, true));
+            });
+            XposedHelpers.callMethod(tx, "apply");
+            main.postDelayed(() -> {
+                if (!committed[0] && scene == RESUMING && sceneEpoch == epoch
+                        && workspaceGeneration == generation && retainedOnExit
+                        && !retainedForLock && !keyguardLocked && screenOn && !suspendRequested) {
+                    log("retained entry parent commit timed out; keep partial tasks hidden");
+                    retainedOnExit = false;
+                    scene = ACTIVE;
+                    suspendSession("retained-entry-commit-timeout");
+                }
+            }, 1500L);
+        } catch (Throwable error) {
+            log("retained entry parent preparation failed: " + error);
+            retainedOnExit = false;
+            scene = ACTIVE;
+            suspendSession("retained-entry-preparation-failed");
+        } finally { closeSurfaceObject(tx, "close"); }
+    }
+
     private void completeWorkspaceResume(long epoch, boolean retained) {
         if (scene != RESUMING || sceneEpoch != epoch) return;
         scene = ACTIVE;
+        if(lockExitPending){if(!retainedForLock)suspendSession("unlock-exit");return;}
+        refreshVideoPane();
         retainedOnExit = false;
         configureTabletTools();
         publishDesktopSideTasks();
@@ -3309,7 +3428,9 @@ public final class MiStepHost {
                 appendSlotViewport(tx, slot);
                 float scale = scaleFor(slot);
                 XposedHelpers.callMethod(tx, "setMatrix", frame.leash, scale, 0f, 0f, scale);
-                XposedHelpers.callMethod(tx, "setAlpha", frame.leash, 1f);
+                // A late native TaskView finish must not reveal the first retained
+                // task before the whole group has passed the entry frame gate.
+                XposedHelpers.callMethod(tx, "setAlpha", frame.leash, workspaceAlpha > 0f ? 1f : 0f);
                 XposedHelpers.callMethod(tx, "show", frame.leash);
                 restored.add(slot);
                 count++;
@@ -3347,7 +3468,7 @@ public final class MiStepHost {
 
 
     private void setZoomState(boolean on) {
-        on = on && !keyguardLocked && screenOn;
+        on = on && !keyguardLocked && screenOn && !lockExitPending;
         zoomed = on;
         HostEntry.setHostZoomed(on);
         MiStepStatusBarSampling.geometryChanged();
@@ -3361,6 +3482,8 @@ public final class MiStepHost {
      */
     private static final long ZOOM_ANIM_MS = 300L;
     private android.animation.ValueAnimator workspaceAnimator;
+    private android.animation.ValueAnimator mainSideAnimator;
+    private long mainSideSwitchGeneration;
     private long workspaceGeneration;
     private float workspaceAlpha = 1f;
     private boolean workspaceEntering;
@@ -3434,6 +3557,7 @@ public final class MiStepHost {
             prepareWorkspaceBackdrop(generation, 0, () -> {
                 if (generation != workspaceGeneration || root != enteringRoot || !screenOn || keyguardLocked
                         || scene != ACTIVE && scene != RESUMING) return;
+                setWorkspaceAlpha(0f);
                 writeZoomAnimated(true);
                 setZoomState(true);
                 scheduleMainCropClear(900L);
@@ -3446,13 +3570,13 @@ public final class MiStepHost {
         } else start.run();
     }
 
-    /** Fade Host controls and real TaskView surface parents; task buffers are never copied. */
+    /** Fade Host controls; reveal opaque live task buffers by their uncovered geometry. */
     private void setWorkspaceAlpha(float value) {
         workspaceAlpha = Math.max(0f, Math.min(1f, value));
         if (topBar != null) topBar.setAlpha(workspaceAlpha);
         if (tabletTools != null) tabletTools.setAlpha(workspaceAlpha);
         if (topTaskPane != null) topTaskPane.setAlpha(workspaceAlpha);
-        boolean movingBackdrop = layout != null && layout.tabletLandscape;
+        boolean movingBackdrop = layout != null;
         android.graphics.RectF hole = movingBackdrop ? workspaceMainHole() : null;
         updateWorkspaceBacking(topStripBacking, hole);
         updateWorkspaceBacking(mainGapBacking, hole);
@@ -3469,12 +3593,8 @@ public final class MiStepHost {
                 if (slot.hint != null && slot.hint.getBackground()!=null)
                     slot.hint.getBackground().setAlpha(255);
                 if (!ownsCellPresentation(slot)) continue;
-                boolean visible = cellPresentationVisible(slot);
-                if (slot.view != null) slot.view.setAlpha(visible ? 1f : 0f);
-                Object surface = getSurfaceField(slot.controller, "mSurfaceControl");
-                if (surface == null || !Boolean.TRUE.equals(XposedHelpers.callMethod(surface, "isValid"))) continue;
                 if (tx == null) tx = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
-                XposedHelpers.callMethod(tx, "setAlpha", surface, visible ? workspaceAlpha : 0f);
+                stageCellPresentation(tx, slot, cellPresentationVisible(slot));
             }
             if (tx != null) XposedHelpers.callMethod(tx, "apply");
         } catch (Throwable error) { log("workspace surface fade: " + error); }
@@ -3491,17 +3611,16 @@ public final class MiStepHost {
      */
     private void updateChromeClip() {
         if (layout == null || screenW <= 0 || screenH <= 0) return;
-        // Tablet landscape already cuts the main task out of the wallpaper backdrop
-        // and lays its cells around it; only the portrait band needs the cut.
-        android.graphics.RectF main = !layout.tabletLandscape && workspaceAlpha < 1f
+        // Every form factor shares the moving main exclusion.
+        android.graphics.RectF main = workspaceAlpha < 1f
                 ? workspaceMainHole() : null;
+        if (topBar != null) topBar.setWorkspaceMainHole(layout.tabletLandscape ? null : main);
         if (topLiveClip != null) {
-            // The strip spans the full width and is always topStrip tall, so only its
-            // bottom edge can overlap the shrinking main task.
-            int height = layout.topStrip;
-            int visible = main == null ? height
-                    : Math.max(0, Math.min(height, Math.round(main.top)));
-            topLiveClip.setClipBounds(new Rect(0, 0, screenW, visible));
+            // The moving main is cut out in dispatchDraw. Keep the left/right
+            // exposed corner instead of cutting this entire strip horizontally.
+            topLiveClip.setClipBounds(new Rect(0, 0, screenW,
+                    layout.tabletLandscape ? screenH : layout.topStrip));
+            topLiveClip.invalidate();
         }
         for (int i = 1; i < SLOT_COUNT; i++) {
             int[] bounds = sideBackingBounds(i);
@@ -3581,7 +3700,7 @@ public final class MiStepHost {
             @Override public void onAnimationEnd(android.animation.Animator value) {
                 if (workspaceAnimator != animator || generation != workspaceGeneration) return;
                 workspaceAnimator = null;
-                if (entering) workspaceEntering = false;
+                if (entering) {workspaceEntering = false;refreshVideoPane();}
                 setWorkspaceAlpha(entering ? 1f : 0f);
                 if (complete != null) complete.run();
             }
@@ -3640,7 +3759,7 @@ public final class MiStepHost {
     }
 
     private void writeZoomLine(String command, long issuedAt) {
-        if (keyguardLocked || !screenOn) command = "1 0 0";
+        if (keyguardLocked || !screenOn || lockExitPending) command = "1 0 0";
         // Independent transport: a failed private-file write must not suppress zoom/restore.
         broadcastZoom(command, issuedAt);
         try {
@@ -3728,7 +3847,10 @@ public final class MiStepHost {
         readDisplayGeometry();
         int w = screenW;
         int h = screenH;
-        int pendingSide = pendingMainSide;
+        android.content.SharedPreferences position=ctx.createDeviceProtectedStorageContext().getSharedPreferences("workspace_position",0);
+        if(position.contains("main_right"))mainOnRight=position.getBoolean("main_right",false);
+        int pendingSide = position.contains("main_right")?-1:pendingMainSide;
+        pendingMainSide=-1;
         if (pendingSide >= 0) {
             pendingMainSide = -1;
             mainOnRight = pendingSide == 1;
@@ -3743,6 +3865,18 @@ public final class MiStepHost {
                 + " mainScale=" + mainScale() + " cellScale=" + cellScale());
 
         root = new FrameLayout(ctx) {
+            private final android.graphics.Paint divider = new android.graphics.Paint(
+                    android.graphics.Paint.ANTI_ALIAS_FLAG);
+            @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
+                super.dispatchDraw(canvas);
+                if (layout == null || workspaceAlpha <= 0f) return;
+                int saved = canvas.save();
+                android.graphics.RectF main = workspaceMainHole();
+                canvas.clipOutRect(main);
+                WorkspaceDividers.draw(canvas, layout, HyperOsStyle.dp(ctx, 1f), workspaceAlpha, divider);
+                canvas.restoreToCount(saved);
+
+            }
             @Override public boolean dispatchTouchEvent(MotionEvent event) {
                 if (transitionInput != null && transitionInput.consume(event.getActionMasked())) return true;
                 boolean wasCaptured = sideCaptured;
@@ -3815,23 +3949,10 @@ public final class MiStepHost {
             }
             topBar = new MiStepTopBar(ctx, layout, quickApps, new MiStepTopBar.Listener() {
                 @Override public void onOpenSettings() { openSettingsInMain(); }
-                @Override public void onOpenClipboard() {
-                    if (scene == ACTIVE && promotion == null && !transferBusy) {
-                        if (layout.tabletLandscape) setTabletToolsOpen(true);
-                        topBar.toggleClipboard(wallpaperBackdrop, screenW, screenH);
-                    }
-                }
-                @Override public void onToggleTorch() {
-                    if (scene == ACTIVE && promotion == null && !transferBusy)
-                        MiStepSystemActions.toggleTorch(ctx);
-                }
-                @Override public void onScreenshot() {
-                    if (scene == ACTIVE && promotion == null && !transferBusy)
-                        MiStepSystemActions.takeScreenshot(ctx);
-                }
-                @Override public void onScreenRecord() {
-                    if (scene == ACTIVE && promotion == null && !transferBusy)
-                        MiStepSystemActions.toggleScreenRecord(ctx);
+                @Override public void onSetMainSide(boolean right) {
+                    if (scene != ACTIVE || workspaceEntering || promotion != null || transferBusy
+                            || cellMotion != null || isSideMotionRunning() || holdsLiveFlipZoom()) return;
+                    switchMainSideAnimated(right);
                 }
                 @Override public void onExit() {
                     log("top bar exit tapped");
@@ -3843,9 +3964,9 @@ public final class MiStepHost {
                             && promotion == null && !transferBusy
                             && (!topFace || layout.tabletLandscape && tabletToolsOpen);
                 }
-                @Override public void onDragStart(MotionEvent event) { beginWindowDrag(event); }
-                @Override public void onDragMove(MotionEvent event) { updateWindowDrag(event); }
-                @Override public void onDragEnd(MotionEvent event) { finishWindowDrag(event); }
+
+
+
                 @Override public void onOpenLandscape() { openTopFace(true); }
                 @Override public void onTaskCellsCovered(boolean covered) { setTaskCellsCovered(covered); }
             });
@@ -3853,7 +3974,15 @@ public final class MiStepHost {
             topStripBacking = new View(ctx);
             topStripBacking.setBackgroundColor(0xFF1E2420);
             root.addView(topStripBacking, new FrameLayout.LayoutParams(-1, layout.topStrip));
-            topLiveClip=new FrameLayout(ctx);
+            topLiveClip=new FrameLayout(ctx) {
+                @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
+                    int saved = canvas.save();
+                    if (layout != null && !layout.tabletLandscape && workspaceAlpha < 1f)
+                        canvas.clipOutRect(workspaceMainHole());
+                    super.dispatchDraw(canvas);
+                    canvas.restoreToCount(saved);
+                }
+            };
             topLiveClip.setClipChildren(true);
             topLiveClip.setClipToPadding(true);
             topLiveClip.setClipBounds(new Rect(0,0,screenW,layout.tabletLandscape?screenH:layout.topStrip));
@@ -3941,6 +4070,19 @@ public final class MiStepHost {
         if(!topFace && topBar!=null)topBar.bringToFront();
     }
 
+    private void refreshVideoPane() {
+        if(videoPane!=null)videoPane.refresh();
+    }
+
+    private void createVideoPane() {
+        if(videoPane!=null)videoPane.releaseForPrivacy();
+        videoPane=new MiStepVideoPane(ctx,main,()->root!=null&&scene==ACTIVE&&screenOn&&!keyguardLocked
+                &&!retainedForLock&&!workspaceEntering&&workspaceOptions.landscapeVideo==WorkspaceOptions.VIDEO_TOP,
+                showing->{if(topBar!=null)topBar.setVisibility(showing?View.INVISIBLE:View.VISIBLE);});
+        videoPane.setWallpaper(wellWallpaperBackdrop,screenW,screenH);
+        root.addView(videoPane,new FrameLayout.LayoutParams(-1,layout.topStrip));
+    }
+
     private void configureTabletTools() {
         if (root==null || topBar==null) return;
         if (tabletTools!=null) {root.removeView(tabletTools);tabletTools=null;}
@@ -3967,7 +4109,7 @@ public final class MiStepHost {
         if (!open) {
             topBar.closeQuickAppPicker();
             MiStepClipboard.get(ctx).close();
-            MiStepScanner.closeImmediately();
+
         }
         topBar.setTabletToolsExpanded(open,true);
         if (open) {topLiveClip.bringToFront();topBar.bringToFront();}
@@ -4329,7 +4471,7 @@ public final class MiStepHost {
                         if(!intoMain || !h.startLiveMainRevealTransition(handback))handback.run();
                     },MiStepHost::log);
             h.sideDismiss=run[0];h.sideDismissSlot=upper;
-            MiStepClipboard.get(h.ctx).close();MiStepScanner.closeImmediately();
+            MiStepClipboard.get(h.ctx).close();
             run[0].follow(dx);
             return true;
         } catch(Throwable error) {
@@ -4361,7 +4503,7 @@ public final class MiStepHost {
         if(h==null || h.layout.tabletLandscape || topGestureHeight()==0)return false;
         if(!h.topRoll.rolling())h.prepareLiveTopRoll();
         h.topSelectionPending=!h.topFace;
-        MiStepClipboard.get(h.ctx).close(); MiStepScanner.closeImmediately();
+        MiStepClipboard.get(h.ctx).close();
         h.topRoll.beginGesture();
         return true;
     }
@@ -4379,7 +4521,7 @@ public final class MiStepHost {
     private void openTopFace(boolean manual) {
         if(!topReady() || topRoll.rolling() || topTransition!=null)return;
         if(topFace) {if(!slots[SLOT_TOP].occupied)showTopCandidates(); return;}
-        MiStepClipboard.get(ctx).close(); MiStepScanner.closeImmediately();
+        MiStepClipboard.get(ctx).close();
         topSelectionPending=manual; prepareLiveTopRoll(); topRoll.show(true);
     }
 
@@ -4660,7 +4802,56 @@ public final class MiStepHost {
         final Object token=intent.getParcelableExtra("token");
         final boolean landscape=intent.getBooleanExtra("landscape",false);
         if(taskId<0 || userId<0 || token==null)return;
-        host.main.post(()->host.topTaskDirection(new TopTaskState.Key(taskId,userId,token),landscape));
+        final TopTaskState.Key key=new TopTaskState.Key(taskId,userId,token);
+        host.main.post(()->{
+            host.topTaskDirection(key,landscape);
+            host.observeWideVideo(key,landscape,intent.getBooleanExtra("fullscreen",false),
+                    intent.getBooleanExtra("focused",false),intent.getIntExtra("mode",-1),
+                    intent.getBooleanExtra("portrait",false),intent.getLongExtra("issued",0));
+        });
+    }
+
+    private void observeWideVideo(TopTaskState.Key key, boolean landscape, boolean fullscreen,
+            boolean focused, int mode, boolean portrait, long issued) {
+        if(root==null || !supportsTaskUser(key.userId)
+                || !WideVideoPolicy.fresh(android.os.SystemClock.uptimeMillis(),issued))return;
+        if(wideVideoEpoch!=sceneEpoch) {wideVideoEpoch=sceneEpoch;wideVideoPolicy.clear();}
+        wideVideoPolicy.observe(key,landscape,fullscreen,mode);
+        // Task migration can publish temporary portrait/non-fullscreen state. Never treat
+        // these configuration callbacks as a request to return a pinned application.
+        if(mode!=1)return;
+        final long sequence=++wideVideoSequence;
+        if(!wideVideoPolicy.eligible(key,landscape,fullscreen,focused,mode))return;
+        final long epoch=sceneEpoch;
+        attemptWideVideo(key,epoch,sequence,issued,workspaceOptions.landscapeVideo);
+    }
+
+    /** Retry only while this exact foreground request waits for entry/transfer to settle. */
+    private void attemptWideVideo(TopTaskState.Key key, long epoch, long sequence, long issued, int mode) {
+        if(epoch!=sceneEpoch || sequence!=wideVideoSequence || root==null
+                || !WideVideoPolicy.fresh(android.os.SystemClock.uptimeMillis(),issued)
+                || workspaceOptions.landscapeVideo!=mode || !screenOn || keyguardLocked
+                || retainedForLock || suspendRequested || (scene!=ACTIVE && scene!=RESUMING)
+                || !MiStepEntryGuard.canOpen(ctx))return;
+        if(!topReady() || slots[SLOT_TOP].view==null || slots[SLOT_TOP].controller==null
+                || topTaskState.busy() || topTransition!=null || topRoll.rolling()) {
+            main.postDelayed(()->attemptWideVideo(key,epoch,sequence,issued,mode),80L);
+            return;
+        }
+        TopCandidate current=currentTopCandidate();
+        if(current==null || !key.equals(current.key))return;
+        try {
+            Object fresh=rootInfo(current.task);
+            if(fresh==null || !XposedHelpers.getBooleanField(fresh,"isFocused"))return;
+        } catch(Throwable unavailable) {return;}
+        wideVideoPolicy.handled(key);
+        if(mode==WorkspaceOptions.VIDEO_FULLSCREEN) {
+            log("wide video exits workspace task="+key.taskId);
+            suspendSession("video-fullscreen");
+        } else if(mode==WorkspaceOptions.VIDEO_TOP) {
+            refreshVideoPane();
+            log("video-only mode waits for native PiP or floating video; main task unchanged="+key.taskId);
+        } else log("wide video stays in main task="+key.taskId);
     }
 
     private void topTaskDirection(TopTaskState.Key key, boolean landscape) {
@@ -4693,6 +4884,7 @@ public final class MiStepHost {
     private void createNext(final int index) {
         if (index >= SLOT_COUNT) {
             configureTabletTools();
+            createVideoPane();
             log("TaskViews ready cells="+layout.cellCount+" interactive=1; system main has no TaskView");
             requestCompaction();
             return;
@@ -4771,6 +4963,9 @@ public final class MiStepHost {
             @Override protected void onDraw(android.graphics.Canvas canvas) {
                 super.onDraw(canvas);
                 if (length() != 0) return;
+                if (getBackground() instanceof WallpaperCropDrawable)
+                    ((WallpaperCropDrawable) getBackground()).drawAddWell(canvas, getWidth(),
+                            getHeight(), getResources().getDisplayMetrics().density);
                 drawEmptyCellPlus(canvas, getWidth(), getHeight(), getCurrentTextColor(), plus);
             }
         };
@@ -4788,13 +4983,7 @@ public final class MiStepHost {
 
     private void drawEmptyCellPlus(android.graphics.Canvas canvas, int width, int height,
             int color, android.graphics.Paint plus) {
-        plus.setColor(color);
-        plus.setStrokeWidth(HyperOsStyle.dp(ctx, 1.25f));
-        plus.setStrokeCap(android.graphics.Paint.Cap.ROUND);
-        float x = width * .5f, y = height * .5f;
-        float radius = HyperOsStyle.dp(ctx, 10f);
-        canvas.drawLine(x - radius, y, x + radius, y, plus);
-        canvas.drawLine(x, y - radius, x, y + radius, plus);
+        WorkspaceCellStyle.drawAdd(canvas, width, height, HyperOsStyle.dp(ctx, 1f), plus);
     }
 
     private FrameLayout.LayoutParams hintParams(Slot slot) {
@@ -4853,36 +5042,70 @@ public final class MiStepHost {
                         || (topRoll!=null && (topRoll.rolling() || topRoll.showingTask())));
     }
 
-    /** The same gate owns normal updates, workspace fades and covered task cells. */
-    private void updateCellSurfaceVisibility(Slot slot) {
-        if (!ownsCellPresentation(slot)) return;
-        boolean visible = cellPresentationVisible(slot);
-        // An empty native container can be re-shown by SurfaceView's next position frame.
-        // Its RenderNode must also be transparent; keep its surface alive for the next launch.
-        if (slot.view != null) slot.view.setAlpha(visible ? 1f : 0f);
+    private Rect workspaceCellCrop(Slot slot) {
+        if (slot == null || slot.rect == null || layout == null) return null;
+        // A live TOP roll supplies its own projected crop; restore the full cell at rest.
+        if (slot.index == SLOT_TOP && workspaceAlpha >= 1f
+                && topRoll != null && topRoll.rolling()) return null;
+        return workspaceCellCrop(slot.rect, slot.index == SLOT_TOP || layout.tabletLandscape);
+    }
+
+    private Rect workspaceCellCrop(int[] rect, boolean aboveMain) {
+        android.graphics.RectF main = workspaceMainHole();
+        int[] crop = WorkspaceCellReveal.crop(rect[0], rect[1], rect[2], rect[3],
+                aboveMain ? 0 : layout.topStrip, screenH, aboveMain, layout.mainOnRight,
+                workspaceAlpha < 1f, main.left, main.top, main.right, main.bottom);
+        return new Rect(crop[0], crop[1], crop[2], crop[3]);
+    }
+
+    /** SurfaceView's render node and native parent must publish the SAME opacity.
+     * Real application buffers stay opaque; geometry reveals them behind the main.
+     */
+    private void stageCellPresentation(Object tx, Slot slot, boolean visible) {
+        Rect crop = workspaceCellCrop(slot);
+        boolean showing = visible && workspaceAlpha > 0f && (crop == null || !crop.isEmpty());
+        float alpha = showing ? 1f : 0f;
+        if (slot.view != null) {
+            if (crop != null) slot.view.setClipBounds(crop);
+            slot.view.setAlpha(alpha);
+        }
         Object surface = getSurfaceField(slot.controller, "mSurfaceControl");
         if (surface == null || !Boolean.TRUE.equals(XposedHelpers.callMethod(surface, "isValid"))) return;
+        if (crop != null && !crop.isEmpty()) XposedHelpers.callMethod(tx, "setWindowCrop", surface, crop);
+        XposedHelpers.callMethod(tx, "setAlpha", surface, alpha);
+        // SurfaceView's RenderThread owns its outer parent and can rewrite that
+        // parent's alpha. Also gate our settled task leash, which it cannot reset.
+        if (ownsCellPresentation(slot) && slot.occupied && !slot.parked && !slot.frozen
+                && mayWriteSideSurface(slot)
+                && controllerOwns(slot, slot.taskId, slot.taskToken)) {
+            Object leash = getSurfaceField(slot.controller, "mTaskLeash");
+            if (leash != null && leash != surface
+                    && Boolean.TRUE.equals(XposedHelpers.callMethod(leash, "isValid")))
+                XposedHelpers.callMethod(tx, "setAlpha", leash, alpha);
+        }
+    }
+
+    /** The same gate owns normal updates, workspace transitions and covered cells. */
+    private void updateCellSurfaceVisibility(Slot slot) {
+        if (!ownsCellPresentation(slot)) return;
         Object tx = null;
         try {
             tx = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
-            XposedHelpers.callMethod(tx, "setAlpha", surface, visible ? workspaceAlpha : 0f);
-            XposedHelpers.callMethod(tx, visible ? "show" : "hide", surface);
+            stageCellPresentation(tx, slot, cellPresentationVisible(slot));
+            Object surface = getSurfaceField(slot.controller, "mSurfaceControl");
+            if (surface != null && Boolean.TRUE.equals(XposedHelpers.callMethod(surface, "isValid")))
+                XposedHelpers.callMethod(tx, cellPresentationVisible(slot) && workspaceAlpha > 0f ? "show" : "hide", surface);
             XposedHelpers.callMethod(tx, "apply");
         } catch (Throwable error) { log("cell container visibility: " + error); }
         finally { closeSurfaceObject(tx, "close"); }
     }
 
-    /** Open the destination hole while its opaque empty hint still covers it.
-     * Native preparation owns show/hide; only make its eventual parent nontransparent.
-     */
+    /** Prepare opacity/crop without taking native show/hide ownership. */
     private void prepareCellSurface(Slot slot) {
-        if (slot.view != null) slot.view.setAlpha(1f);
-        Object surface = getSurfaceField(slot.controller, "mSurfaceControl");
-        if (surface == null || !Boolean.TRUE.equals(XposedHelpers.callMethod(surface, "isValid"))) return;
         Object tx = null;
         try {
             tx = Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
-            XposedHelpers.callMethod(tx, "setAlpha", surface, workspaceAlpha);
+            stageCellPresentation(tx, slot, true);
             XposedHelpers.callMethod(tx, "apply");
         } catch (Throwable error) { log("cell destination preparation: " + error); }
         finally { closeSurfaceObject(tx, "close"); }
@@ -5161,6 +5384,7 @@ public final class MiStepHost {
     }
 
     private void updateTopBarState() {
+        refreshVideoPane();
         if (workspaceAnimator != null || workspaceAlpha < 1f) return;
         boolean available = scene == ACTIVE && screenOn && !keyguardLocked
                 && promotion == null && !transferBusy;
@@ -5195,8 +5419,53 @@ public final class MiStepHost {
         }
     }
 
+    /** Physical fullscreen commit while the Host stays hidden; no workspace reveal frame. */
+    private boolean handoffLockExit(Runnable nativeHide){
+        if(!retainedForLock||unlockHandoff!=null||root==null||!MiStepEntryGuard.canOpen(ctx))return false;
+        final long epoch=sceneEpoch;
+        final MiStepHost host=this;
+        final MiStepUnlockHandoff[] owner={null};
+        lockExitPending=true;
+        root.setVisibility(View.GONE);
+        setWorkspaceAlpha(0f);
+        MiStepUnlockHandoff next=new MiStepUnlockHandoff(ctx,main,1f,0f,0f,ack->{
+            if(unlockHandoff!=owner[0]||host!=sInstance||epoch!=sceneEpoch||!retainedForLock
+                    ||!MiStepEntryGuard.canOpen(ctx)){owner[0].finish();return;}
+            Object tx=null;
+            try{
+                tx=Class.forName("android.view.SurfaceControl$Transaction").getDeclaredConstructor().newInstance();
+                XposedHelpers.callMethod(tx,"merge",ack.finishReplay);
+                ((android.view.SurfaceControl.Transaction)tx).addTransactionCommittedListener(action->main.post(action),()->{
+                    if(unlockHandoff==owner[0]&&host==sInstance&&sceneEpoch==epoch
+                            &&retainedForLock&&MiStepEntryGuard.canOpen(ctx))owner[0].finish();
+                });
+                XposedHelpers.callMethod(tx,"apply");
+            }catch(Throwable failure){log("hidden unlock exit commit: "+failure);owner[0].finish();}
+            finally{closeSurfaceObject(tx,"close");}
+        },()->{
+            if(unlockHandoff!=owner[0])return;
+            unlockHandoff=null;
+            if(host!=sInstance||sceneEpoch!=epoch||!retainedForLock||!MiStepEntryGuard.canOpen(ctx))return;
+            retainedForLock=false;retainedGeometryConfirmed=false;
+            keyguardLocked=false;screenOn=true;keyguardResumeIndex=-1;
+            setZoomState(false);
+            setKeyguardWindowHidden(false); // Root remains GONE before changing window attributes.
+            suspendSession("unlock-exit");
+            nativeHide.run();
+            log("authenticated hidden exit; workspace was never revealed");
+        });
+        owner[0]=next;unlockHandoff=next;next.start();return true;
+    }
+
     private boolean retainWorkspaceForLock() {
+        cancelMainSideSwitch();
+        if(videoPane!=null)videoPane.releaseForPrivacy();
+        retainedGeometryConfirmed = false;
+        lockExitPending=false;
         if (retainedForLock) {
+            // A quick relock can cancel an exit after its hidden root became GONE.
+            // Restore only attachment here; native window alpha remains zero.
+            if(root!=null)root.setVisibility(View.VISIBLE);
             keyguardLocked = true;
             writeZoom(false);
             setZoomState(false);
@@ -5205,6 +5474,7 @@ public final class MiStepHost {
         if (root == null || (scene != ACTIVE && scene != RESUMING)) return false;
         keyguardLocked = true;
         retainedForLock = true;
+        retainedGeometryConfirmed = false;
         keyguardResumeIndex = scene == RESUMING && workspaceEntering ? 1 : -1;
         workspaceEntering = false;
         workspaceGeneration++;
@@ -5215,14 +5485,15 @@ public final class MiStepHost {
         MiStepClipboard.get(ctx).close();
         publishDesktopSideTasks();
         statusBar.restore();
-        hideIme();
-        writeZoom(false);
-        setZoomState(false);
+        // Hide native overlay/input before publishing physical fullscreen geometry.
         if (!setKeyguardWindowHidden(true)) {
             retainedForLock = false;
             return false;
         }
+        hideIme();
         setMirrorLayerVisible(false);
+        writeZoom(false);
+        setZoomState(false);
         retainedWindowPrepared = false;
         final long generation = retainedWindowGeneration = System.currentTimeMillis();
         final long epoch = sceneEpoch;
@@ -5232,15 +5503,10 @@ public final class MiStepHost {
             if (!hidden || sInstance != this || root != owner || sceneEpoch != epoch
                     || retainedWindowGeneration != generation || !retainedForLock
                     || !keyguardWindowHidden || MiStepEntryGuard.canOpen(ctx)) return;
-            // WMS has confirmed that this exact window is hidden by native policy.
-            // Keep its live buffer drawn at normal alpha behind that hidden parent.
-            float oldAlpha = lp.alpha;
-            lp.alpha = keyguardWindowAlpha;
-            try {
-                wm.updateViewLayout(root, lp);
-                retainedWindowPrepared = true;
-                log("native-hidden retained Host buffer warmed without showing window");
-            } catch (Throwable error) { lp.alpha = oldAlpha; log("retained buffer warm stopped: " + error); }
+            // A hidden-window acknowledgement is not a geometry commit. Keep
+            // compositor alpha at zero until WM confirms the actual zoom replay.
+            retainedWindowPrepared = true;
+            log("native-hidden retained Host leased; waiting for authenticated geometry commit");
         });
         log("workspace retained for lock; native lockscreen zoom restored");
         return true;
@@ -5254,6 +5520,13 @@ public final class MiStepHost {
         if (retainedForLock) screenOn = true;
         if (!screenOn) return;
         boolean restore = retainedForLock;
+        if(restore&&!workspaceOptions.keepOnLock){handoffNativeUnlock(()->{});return;}
+        if (restore && !retainedGeometryConfirmed) {
+            // Native wake/USER_PRESENT and the warm-buffer path use the SAME
+            // correlated WM commit and Host frame gate. Neither may reveal early.
+            handoffNativeUnlock(() -> {});
+            return;
+        }
         keyguardLocked = false;
         if (restore && root != null && (scene == ACTIVE || scene == RESUMING)) {
             // The real workspace stayed attached. Restore its steady geometry
@@ -5263,9 +5536,8 @@ public final class MiStepHost {
             zoomAnimUntil = 0L;
             setWorkspaceAlpha(1f);
             restoreRetainedWorkspaceSurfaces();
-            if (!retainedWindowPrepared) writeZoom(true);
-            // With a warm buffer, WMS restores the real main geometry in the very
-            // transaction which natively shows this Host WindowState.
+            writeZoom(true);
+            // Geometry and its Host frame have both committed before this path.
             setZoomState(true);
         }
         if (!setKeyguardWindowHidden(false)) {
@@ -5295,6 +5567,7 @@ public final class MiStepHost {
                 }
             }
         }
+        refreshVideoPane();
         log("keyguard privacy cleared");
     }
 
@@ -5323,12 +5596,18 @@ public final class MiStepHost {
         wallpaperBackdropRequested = true;
         Thread loader = new Thread(() -> {
             Bitmap ready = null;
+            Bitmap wellReady = null;
             try {
-                ready = MiStepWarmup.wallpaper(ctx, screenW, screenH);
+                ready = WorkspaceFrost.finish(MiStepWarmup.wallpaper(ctx, screenW, screenH));
+                // A tiny, extra-blurred texture is shared by all circular wells.
+                // Prepare it off the UI thread; no blur or capture work per frame.
+                if (ready != null) wellReady = HyperOsStyle.blurredBitmap(ready,
+                        Math.max(1, screenW / 6), Math.max(1, screenH / 6));
             } catch (Throwable error) {
                 log("wallpaper blur failed: " + error);
             }
             final Bitmap bitmap = ready;
+            final Bitmap wellBitmap = wellReady;
             main.post(() -> {
                 wallpaperBackdropRequested = false;
                 if (bitmap == null || bitmap.isRecycled()) {
@@ -5340,6 +5619,8 @@ public final class MiStepHost {
                     wallpaperBackdrop.recycle();
                 }
                 wallpaperBackdrop = bitmap;
+                if (wellWallpaperBackdrop != null) wellWallpaperBackdrop.recycle();
+                wellWallpaperBackdrop = wellBitmap;
                 log("wallpaper gaussian backdrop ready " + bitmap.getWidth() + "x" + bitmap.getHeight());
                 applyWallpaperBackdrops();
             });
@@ -5395,6 +5676,7 @@ public final class MiStepHost {
                     bounds[0], bounds[1], HyperOsStyle.topWallpaperTint(ctx)));
         }
         if (topBar != null) topBar.setWallpaperBackdrop(wallpaperBackdrop, screenW, screenH);
+        if (videoPane != null) videoPane.setWallpaper(wellWallpaperBackdrop,screenW,screenH);
         if (topStripBacking != null) {
             topStripBacking.setBackground(new WallpaperCropDrawable(wallpaperBackdrop, screenW, screenH,
                     0, 0, HyperOsStyle.topWallpaperTint(ctx)));
@@ -5428,12 +5710,14 @@ public final class MiStepHost {
             WallpaperCropDrawable current = (WallpaperCropDrawable) slot.hint.getBackground();
             if (current.matchesWallpaper(wallpaperBackdrop, screenW, screenH, tint)) {
                 current.setScreenOrigin(x, y);
+                current.setWellWallpaper(wellWallpaperBackdrop);
                 return;
             }
         }
         WallpaperCropDrawable backdrop = new WallpaperCropDrawable(
                 wallpaperBackdrop, screenW, screenH, x, y, tint);
-        if (layout != null && layout.tabletLandscape) backdrop.setMainHole(workspaceMainHole());
+        backdrop.setWellWallpaper(wellWallpaperBackdrop);
+        if (layout != null) backdrop.setMainHole(workspaceMainHole());
         slot.hint.setBackground(backdrop);
     }
 
@@ -5441,7 +5725,7 @@ public final class MiStepHost {
     private void updateWorkspaceBackdropVisibility() {
         if (layout == null) return;
         // Wallpaper can arrive during a task handoff; do not rewrite its Surface alpha.
-        android.graphics.RectF hole = layout.tabletLandscape ? workspaceMainHole() : null;
+        android.graphics.RectF hole = workspaceMainHole();
         for (View backing : new View[]{topStripBacking,mainGapBacking})
             updateWorkspaceBacking(backing, hole);
         for (int i=1;i<SLOT_COUNT;i++) {
@@ -5477,6 +5761,10 @@ public final class MiStepHost {
                     if (wallpaperBackdrop != null) {
                         wallpaperBackdrop.recycle();
                         wallpaperBackdrop = null;
+                    }
+                    if (wellWallpaperBackdrop != null) {
+                        wellWallpaperBackdrop.recycle();
+                        wellWallpaperBackdrop = null;
                     }
                     wallpaperBackdropRequested = false;
                     loadWallpaperBackdrop();
@@ -5602,6 +5890,8 @@ public final class MiStepHost {
             if (sequence != desktopRegistrationSequence || epoch != sceneEpoch) return;
             state.putBinder("owner", desktopSceneOwner);
             state.putBoolean("retained", retainedOnExit && (scene == SUSPENDING || scene == SUSPENDED));
+            state.putBoolean("hideRecents", workspaceOptions.hideSideRecents && active
+                    && scene==ACTIVE && screenOn && !keyguardLocked);
             if (active && scene == ACTIVE && screenOn && !keyguardLocked) {
                 try {
                     LiveTask mainTask = findMainTask();
@@ -6548,6 +6838,8 @@ public final class MiStepHost {
             params.height = rect[3] - rect[1];
             view.setLayoutParams(params);
         }
+        if (workspaceAlpha < 1f && layout != null && !layout.tabletLandscape)
+            crop = workspaceCellCrop(rect, false);
         view.setClipBounds(crop);
     }
 
@@ -6703,8 +6995,7 @@ public final class MiStepHost {
                 slot.view.setLayoutParams(lp);
             }
             if (slot.index != SLOT_TOP)
-                slot.view.setClipBounds(new Rect(0, 0,
-                        slot.rect[2] - slot.rect[0], slot.rect[3] - slot.rect[1]));
+                slot.view.setClipBounds(workspaceCellCrop(slot));
         }
         if (slot.hint != null) {
             boolean paneLocal=slot.index==SLOT_TOP;
@@ -6725,10 +7016,73 @@ public final class MiStepHost {
      * windows anchored to opposite edges, so the shrinking and growing panes share a
      * moving divider instead of crossing through each other's centre.
      */
+    private void rememberMainSide() {
+        ctx.createDeviceProtectedStorageContext().getSharedPreferences("workspace_position",0)
+                .edit().putBoolean("main_right",mainOnRight).apply();
+    }
+
+    private void translateSidePresentation(float offset) {
+        for(Slot slot:slots) {
+            if(slot==null||slot.index<=SLOT_MAIN||slot.index==SLOT_TOP)continue;
+            // setX is also used by the steady slot layout. Its translation is
+            // part of the base position, not an animation offset to clear.
+            if(slot.rect!=null){
+                if(slot.view!=null)slot.view.setX(slot.rect[0]+offset);
+                if(slot.hint!=null)slot.hint.setX(slot.rect[0]+offset);
+            }
+            if(slot.index<sideBackingViews.length&&sideBackingViews[slot.index]!=null)sideBackingViews[slot.index].setTranslationX(offset);
+        }
+    }
+
+    private void settleMainSidePresentation() {
+        translateSidePresentation(0);
+        liveSwapInputBlocked=false;transferBusy=false;
+        for(Slot slot:slots)if(slot!=null&&slot.index>SLOT_MAIN&&slot.index!=SLOT_TOP)updateTouchRegion(slot);
+        if(root!=null){root.requestLayout();root.invalidate();}
+        updateChromeClip();
+    }
+
+    private void cancelMainSideSwitch() {
+        mainSideSwitchGeneration++;
+        android.animation.ValueAnimator previous=mainSideAnimator;mainSideAnimator=null;
+        if(previous!=null){previous.cancel();settleMainSidePresentation();}
+    }
+
+    /** Move cells through their outside edge, then animate the native main and incoming cells together. */
+    private void switchMainSideAnimated(boolean right) {
+        if(root==null||layout==null||right==mainOnRight||mainSideAnimator!=null||liveSwapInputBlocked
+                ||scene!=ACTIVE||workspaceEntering||promotion!=null||transferBusy||cellMotion!=null
+                ||isSideMotionRunning()||holdsLiveFlipZoom()||!screenOn||keyguardLocked||suspendRequested)return;
+        if(!android.animation.ValueAnimator.areAnimatorsEnabled()){setMainSide(right);return;}
+        final long generation=++mainSideSwitchGeneration,epoch=sceneEpoch;
+        final float outgoing=layout.mainOnRight?-layout.sideWidth:layout.sideWidth;
+        liveSwapInputBlocked=true;transferBusy=true;
+        android.animation.ValueAnimator exit=android.animation.ValueAnimator.ofFloat(0,1);
+        mainSideAnimator=exit;exit.setDuration(110);
+        exit.addUpdateListener(value->{if(mainSideAnimator==exit&&generation==mainSideSwitchGeneration)translateSidePresentation(outgoing*(Float)value.getAnimatedValue());});
+        exit.addListener(new android.animation.AnimatorListenerAdapter(){@Override public void onAnimationEnd(android.animation.Animator value){
+            if(mainSideAnimator!=exit||generation!=mainSideSwitchGeneration)return;
+            if(epoch!=sceneEpoch||scene!=ACTIVE||!screenOn||keyguardLocked||suspendRequested){cancelMainSideSwitch();finishPendingSuspend();return;}
+            try{applyMainLayout(makeAdaptiveLayout(right));rememberMainSide();writeZoomAnimated(true);}
+            catch(Throwable error){log("animated side layout: "+error);cancelMainSideSwitch();return;}
+            final float incoming=layout.mainOnRight?-layout.sideWidth:layout.sideWidth;
+            translateSidePresentation(incoming);
+            android.animation.ValueAnimator enter=android.animation.ValueAnimator.ofFloat(0,1);mainSideAnimator=enter;
+            enter.setDuration(ZOOM_ANIM_MS);enter.setStartDelay(Math.max(0,workspaceZoomStart-SystemClock.uptimeMillis()));
+            enter.setInterpolator(new android.view.animation.PathInterpolator(.4f,0,.2f,1));
+            enter.addUpdateListener(frame->{if(mainSideAnimator==enter&&generation==mainSideSwitchGeneration)translateSidePresentation(incoming*(1-(Float)frame.getAnimatedValue()));});
+            enter.addListener(new android.animation.AnimatorListenerAdapter(){@Override public void onAnimationEnd(android.animation.Animator animation){
+                if(mainSideAnimator!=enter||generation!=mainSideSwitchGeneration)return;
+                mainSideAnimator=null;settleMainSidePresentation();refreshVideoPane();finishPendingSuspend();
+            }});enter.start();
+        }});exit.start();
+    }
+
     private void setMainSide(boolean right) {
         if (layout != null && mainOnRight == right) return;
         try {
             applyMainLayout(makeAdaptiveLayout(right));
+            rememberMainSide();
             // Reopening from the opposite corner prepares Host geometry first.
             // The entry frame gate owns its animated zoom; an early steady write
             // would shrink the real main task before the backdrop is drawable.
@@ -9955,6 +10309,8 @@ public final class MiStepHost {
         // Never rotate, move or scale this parent. TaskView's own render thread
         // continues to place it, including TOP's live roll/collection clipping.
         XposedHelpers.callMethod(tx, "setWindowCrop", parent, crop);
+        // TaskView parent pixels are physical and stay outside task rotation.
+        XposedHelpers.callMethod(tx, "setCornerRadius", parent, 0f);
     }
 
     /** 统一施加"缩放 + 归位"：leash 需要 setPosition(0,0)，容器表面不能动位置。 */

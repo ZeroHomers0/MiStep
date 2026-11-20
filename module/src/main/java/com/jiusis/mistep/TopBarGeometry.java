@@ -18,34 +18,19 @@ final class TopBarGeometry {
 
     TopBarGeometry(int width, int height, int inset, float density, boolean tablet, int externalHeaderHeight) {
         density = density > 0f ? density : 1f;
-        int usable = Math.max(3, height - MAIN_GAP_PX);
-        float scale = Math.min(1f, usable / (63f * density));
-        railHeight = Math.max(1, Math.round(34f * density * scale));
-        int rowGap = Math.max(1, Math.round(1f * density * scale));
-        headerHeight = Math.max(1, Math.min(usable - railHeight - rowGap,
-                Math.round(28f * density * scale)));
-        railTop = height - MAIN_GAP_PX - railHeight;
-        headerTop = railTop - rowGap - headerHeight;
-        edge = Math.max(2, Math.round(8f * density * scale));
-        // A compact physical-corner margin, independent of the status-bar band.
-        int controlsLimit = (externalHeaderHeight > 0 ? railTop : headerTop) - edge;
-        int controlsTop = externalHeaderHeight > 0
-                ? Math.min(Math.max(0, controlsLimit), externalHeaderHeight + edge)
-                : Math.min(Math.max(0, headerTop - edge), Math.round(14f * density * scale));
-        int controlsBottom = Math.max(controlsTop, controlsLimit);
-        int controlsHeight = controlsBottom - controlsTop;
-        if (tablet && controlsHeight > Math.round(160f * density)) {
-            int extra = controlsHeight - Math.round(160f * density);
-            controlsTop += extra / 2;
-            controlsBottom -= extra - extra / 2;
-        }
-        blankTop = controlsTop;
-        blankBottom = controlsBottom;
+        int bottom = Math.max(3, height - Math.round(8f * density));
+        float fit = Math.min(1f, bottom / (112f * density));
+        railHeight = Math.max(1, Math.round(44f * density * fit));
+        headerHeight = Math.max(1, Math.round(44f * density * fit));
+        railTop = Math.max(0, bottom - railHeight);
+        headerTop = Math.max(0, railTop - Math.round(6f * density * fit) - headerHeight);
+        int clockTop = Math.min(headerTop, Math.max(inset + Math.round(12f * density),
+                externalHeaderHeight + Math.round(12f * density)));
+        blankBottom = Math.max(clockTop, headerTop - Math.round(8f * density * fit));
+        blankTop = Math.max(clockTop, blankBottom - Math.round(100f * density));
+        edge = Math.max(2, Math.round(10f * density));
+        buttonWidth = Math.max(1, Math.min(headerHeight, (width - 2 * edge) / 6));
+        titleInset = edge + 2 * buttonWidth;
         controlWidth = Math.max(1, width - 2 * edge);
-        // Four controls per side, with a symmetric title reservation even at large font scales.
-        int titleBudget = Math.max(1, Math.round(76f * density * scale));
-        buttonWidth = Math.max(1, Math.min(Math.round(36f * density * scale),
-                (width - 2 * edge - titleBudget) / 8));
-        titleInset = edge + 4 * buttonWidth;
     }
 }

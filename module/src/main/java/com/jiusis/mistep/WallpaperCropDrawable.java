@@ -20,6 +20,25 @@ final class WallpaperCropDrawable extends Drawable {
     private final Paint tintPaint = new Paint();
     private final Rect source = new Rect();
     private RectF mainHole;
+    private Bitmap wellWallpaper;
+    private final android.graphics.Path wellPath = new android.graphics.Path();
+
+    void setWellWallpaper(Bitmap bitmap) { wellWallpaper = bitmap; }
+
+    void drawAddWell(Canvas canvas, int width, int height, float density) {
+        if (wellWallpaper == null || wellWallpaper.isRecycled()) return;
+        int saved = canvas.save();
+        wellPath.reset();
+        wellPath.addCircle(width * .5f, height * .5f,
+                WorkspaceCellStyle.wellRadius(width, height, density), android.graphics.Path.Direction.CW);
+        canvas.clipPath(wellPath);
+        source.set(Math.round(screenX * wellWallpaper.getWidth() / (float) screenWidth),
+                Math.round(screenY * wellWallpaper.getHeight() / (float) screenHeight),
+                Math.round((screenX + width) * wellWallpaper.getWidth() / (float) screenWidth),
+                Math.round((screenY + height) * wellWallpaper.getHeight() / (float) screenHeight));
+        canvas.drawBitmap(wellWallpaper, source, new RectF(0, 0, width, height), bitmapPaint);
+        canvas.restoreToCount(saved);
+    }
 
     void setMainHole(RectF hole) {
         mainHole = hole == null ? null : new RectF(hole);

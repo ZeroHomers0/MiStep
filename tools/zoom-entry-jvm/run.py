@@ -40,13 +40,20 @@ public class ZoomEntryRegression {
  void endFixedMainRotationLocked(Object dc){sFullscreenRotationActive=false;}
  void placeHostBelowNativeFreeforms(Object d,Object tx){}void restoreExitedMagnificationLocked(ZoomTarget t){}void applyGestureSurfacesLocked(ZoomTarget t,float s,float y,float x){}void log(String s){}
  ACTUAL
+ static Object sWmsContext=new Object();
+ static class MiStepEntryGuard {static boolean unlocked=true;static boolean canOpen(Object c){return unlocked;}}
+ static class Retained {int holds;void holdOpeningMainForLock(Object dc){holds++;}}
+ static Retained sRetainedWindow=new Retained();
  static MiStepKeyguardZoom sKeyguardZoom=new MiStepKeyguardZoom();
  static int checks;static void check(boolean x,String why){checks++;if(!x)throw new AssertionError(why);}
- static ZoomTarget reset(){sKeyguardZoom=new MiStepKeyguardZoom();Looper.current=Looper.MAIN;sZoomed=false;sFullscreenRotationActive=false;sNativeLandscapeState=0;topWorkspaceGeneration=0;sZoomScale=1;sZoomOffsetX=sZoomOffset=0;callbacks=nativeSuspensions=refreshes=0;failRotation=false;sZoomTarget=new ZoomTarget();sDisplayContent=sZoomTarget.display;return sZoomTarget;}
+ static ZoomTarget reset(){MiStepEntryGuard.unlocked=true;sRetainedWindow=new Retained();sKeyguardZoom=new MiStepKeyguardZoom();Looper.current=Looper.MAIN;sZoomed=false;sFullscreenRotationActive=false;sNativeLandscapeState=0;topWorkspaceGeneration=0;sZoomScale=1;sZoomOffsetX=sZoomOffset=0;callbacks=nativeSuspensions=refreshes=0;failRotation=false;sZoomTarget=new ZoomTarget();sDisplayContent=sZoomTarget.display;return sZoomTarget;}
  static void apply(ZoomTarget t,float s)throws Throwable{synchronized(t.globalLock){new ZoomEntryRegression().applyDisplayZoomLocked(t,s,s==1?0:622,0,null);}}
  public static void main(String[] args)throws Throwable{
   var t=reset();apply(t,.747f);check(callbacks==1&&nativeSuspensions==0,"entry orientation callback sees incoming workspace instead of native fullscreen");check(sZoomed&&sFullscreenRotationActive&&topWorkspaceGeneration==1,"entry published once");check(t.display.mMagnificationSpec.scale==.747f&&sZoomScale==.747f,"applied state retained");
   apply(t,.747f);check(topWorkspaceGeneration==1&&nativeSuspensions==0,"animation frame keeps same workspace generation");apply(t,1);check(!sZoomed&&!sFullscreenRotationActive&&sZoomScale==1&&refreshes==2,"exit restores normal display state");
+  t=reset();apply(t,.747f);MiStepEntryGuard.unlocked=false;apply(t,1);
+  check(sRetainedWindow.holds==1&&!sZoomed,"screen-off reset before keyguard hook hides main before restoring fullscreen geometry");
+  t=reset();apply(t,.747f);apply(t,1);check(sRetainedWindow.holds==0,"ordinary unlocked exit never hides main");
   t=reset();t.display.fail=true;try{apply(t,.747f);throw new AssertionError("failure swallowed");}catch(RuntimeException expected){}check(!sZoomed&&!sFullscreenRotationActive&&sNativeLandscapeState==0&&sZoomScale==1,"failed magnification rolls back publication and rotation");
   t=reset();failRotation=true;try{apply(t,.747f);throw new AssertionError("orientation failure swallowed");}catch(RuntimeException expected){}check(!sZoomed&&!sFullscreenRotationActive&&sNativeLandscapeState==0,"synchronous orientation failure rolls back too");
   t=reset();sFullscreenRotationActive=true;t.display.fail=true;try{apply(t,.747f);throw new AssertionError("failure swallowed");}catch(RuntimeException expected){}check(!sZoomed&&sFullscreenRotationActive,"existing rotation ownership survives apply failure");

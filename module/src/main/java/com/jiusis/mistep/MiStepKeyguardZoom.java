@@ -7,10 +7,12 @@ import de.robv.android.xposed.XposedHelpers;
 /** Native lock-entry barrier; clearing it never restores or authenticates a workspace. */
 final class MiStepKeyguardZoom {
     interface Reset { void run() throws Throwable; }
-    private volatile boolean blocked;
-    boolean blocked() { return blocked; }
+    private volatile boolean blocked,sleeping;
+    private boolean sleepHooksReady;
+    boolean sleeping(){return sleeping;}
+    boolean blocked() { return blocked||sleeping; }
     boolean onAuthenticatedReveal(boolean authenticated) {
-        if (!authenticated) return false;
+        if (!authenticated||sleeping) return false;
         blocked = false;
         return true;
     }
@@ -32,4 +34,29 @@ final class MiStepKeyguardZoom {
                     }
                 });
     }
+    void onSleep(boolean sleep,Runnable reset){
+        if(sleeping==sleep)return;
+        sleeping=sleep;
+        XposedBridge.log("MiStepProbe: native default-display sleep barrier="+sleep);
+        if(sleep)reset.run();
+    }
+    void installSleep(ClassLoader loader,Runnable reset){
+        try{
+            Class<?> policy=XposedHelpers.findClass("com.android.server.policy.PhoneWindowManager",loader);
+            java.util.Set<XC_MethodHook.Unhook> wake=XposedBridge.hookAllMethods(policy,"startedWakingUp",new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){if(sleepHooksReady&&defaultGroup(p))onSleep(false,reset);}
+            });
+            java.util.Set<XC_MethodHook.Unhook> sleep=XposedBridge.hookAllMethods(policy,"startedGoingToSleep",new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){if(sleepHooksReady&&defaultGroup(p))onSleep(true,reset);}
+            });
+            sleepHooksReady=!wake.isEmpty()&&!sleep.isEmpty();
+            if(!sleepHooksReady)XposedBridge.log("MiStepProbe: early sleep/wake pair absent; using native keyguard barrier");
+        }catch(Throwable unavailable){sleepHooksReady=false;XposedBridge.log("MiStepProbe: early sleep barrier unavailable: "+unavailable);}
+    }
+    private static boolean defaultGroup(XC_MethodHook.MethodHookParam p){
+        // Legacy API has only a reason (or no wake argument). Current API has
+        // displayGroupId then reason. Never act on another display group.
+        return p.args.length<2||Integer.valueOf(0).equals(p.args[0]);
+    }
+
 }

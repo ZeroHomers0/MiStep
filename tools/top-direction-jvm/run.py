@@ -10,6 +10,7 @@ tree=ast.parse((ROOT/'tools/live-swap-jvm/run.py').read_text(encoding='utf-8-sig
 shared=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='FILES' for t in n.targets))
 FILES={
 'de/robv/android/xposed/XposedHelpers.java':shared['de/robv/android/xposed/XposedHelpers.java'],
+'android/os/SystemClock.java':'package android.os;public class SystemClock {public static long uptimeMillis(){return 1000;}}',
 'android/os/Parcelable.java':'package android.os;public interface Parcelable {}',
 'android/os/Handler.java':'package android.os;public class Handler {public boolean post(Runnable r){r.run();return true;}}',
 'android/Manifest.java':'package android;public class Manifest {public static class permission {public static final String WRITE_SECURE_SETTINGS="secure";}}',
@@ -25,22 +26,25 @@ public class DirectionRegression {
  static class Remote {Token token=new Token();Object toWindowContainerToken(){return token;}}
  static Object nativeTaskInfoInProgress;
  static class Info {int userId=999;Object token=new Token();boolean isFocused;}
- static class Task {int mUserId=10,mCurrentUser=20,aggregations;boolean leaf=true,focused=true,upper=true;Object mRemoteToken=new Remote();
+ static class Task {int mUserId=10,mCurrentUser=20,aggregations;boolean leaf=true,focused=true,upper=true,fullscreen=true;Object mRemoteToken=new Remote();
   boolean isLeafTask(){return leaf;}boolean isFocused(){return focused;}
   Info getTaskInfo(){aggregations++;nativeTaskInfoInProgress=null;return new Info();}}
  static boolean sZoomed=true;static long topWorkspaceGeneration=1;static final String SYSTEMUI="com.android.systemui";
  static Context sSystemContext=new Context(),sWmsContext;static Handler sZoomBridgeHandler=new Handler();
  final Map<Object,String> topTaskSignals=new WeakHashMap<>();static List<String> logs=new ArrayList<>();
+ boolean wideVideoFullscreen(Object t){return ((Task)t).fullscreen;}
  static boolean isUpperLandscapeTask(Object t){return ((Task)t).upper;}static void log(String s){logs.add(s);}
 '''+method+'''
  void send(Task t,int mode){sendTopTaskDirection(t,100,1,0,0,mode);}
  public static void main(String[] args){DirectionRegression h=new DirectionRegression();Task t=new Task();Object outer=new Object();nativeTaskInfoInProgress=outer;
  h.send(t,1);check(t.aggregations==0,"direction sender reentered shared native TaskInfo aggregation");check(nativeTaskInfoInProgress==outer,"outer native TaskInfo was cleared");
  check(sSystemContext.sent.size()==1,"main signal missing");Intent i=sSystemContext.sent.get(0);check(i.extras.get("user").equals(10),"leaf user mismatch");check(i.extras.get("token")==((Remote)t.mRemoteToken).token,"native token mismatch");check(i.extras.get("task").equals(100),"task id changed");check(i.pkg.equals(SYSTEMUI),"receiver changed");
+ check(Boolean.TRUE.equals(i.extras.get("fullscreen"))&&Boolean.TRUE.equals(i.extras.get("focused"))&&i.extras.get("mode").equals(1),"fullscreen scene payload missing");
  h.send(t,1);check(sSystemContext.sent.size()==1,"duplicate not suppressed");t.focused=false;h.send(t,1);check(sSystemContext.sent.size()==2,"native focus change lost");
  t.leaf=false;h.send(t,1);check(sSystemContext.sent.get(2).extras.get("user").equals(20),"root current user mismatch");
  int before=sSystemContext.sent.size();t.upper=false;h.send(t,6);check(sSystemContext.sent.size()==before,"non-TOP side admitted");t.upper=true;h.send(t,6);check(sSystemContext.sent.size()==before+1,"TOP signal missing");
  h.sendTopTaskDirection(t,100,0,0,0,6);check(Boolean.TRUE.equals(sSystemContext.sent.get(before+1).extras.get("landscape")),"landscape changed");
+ int last=sSystemContext.sent.size();t.fullscreen=false;h.send(t,1);check(sSystemContext.sent.size()==last+1,"late fullscreen change lost");check(Boolean.FALSE.equals(sSystemContext.sent.get(last).extras.get("fullscreen")),"fullscreen cleared signal wrong");
  sZoomed=false;h.send(t,1);check(h.topTaskSignals.isEmpty(),"exit cache not cleared");sZoomed=true;t.mRemoteToken=null;h.send(t,1);check(!logs.isEmpty(),"unavailable native token not contained");
  check(t.aggregations==0&&nativeTaskInfoInProgress==outer,"later branch reentered shared native helper");
  System.out.println("Actual direction sender: "+checks+" checks passed; shared native TaskInfo untouched");}

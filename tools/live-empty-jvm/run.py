@@ -30,7 +30,7 @@ public class Canvas {
  public void scale(float a,float b){sx*=a;sy*=b;}
  public void translate(float a,float b){x+=a*sx;y+=b*sy;}
  public void drawColor(int color){colors++;lastColor=color;}
- public void drawLine(float a,float b,float c,float d,Paint paint){plusLines++;}
+ public void drawLine(float a,float b,float c,float d,Paint paint){plusLines++;}public void drawCircle(float x,float y,float r,Paint p){}
  public boolean clipRect(int a,int b,int c,int d){if(c<=0||d<=0)throw new AssertionError("invalid empty crop");clips++;return true;}
 }'''
 body = r'''package com.jiusis.mistep;
@@ -89,7 +89,7 @@ cpath = out / 'android/graphics/Canvas.java'
 cpath.parent.mkdir(parents=True, exist_ok=True)
 cpath.write_text(canvas, encoding='utf8')
 ppath = out / 'android/graphics/Paint.java'
-ppath.write_text('package android.graphics; public class Paint {public static final int ANTI_ALIAS_FLAG=1;public enum Cap {ROUND}public Paint(int flags){}public void setColor(int color){}public void setStrokeWidth(float width){}public void setStrokeCap(Cap cap){}}', encoding='utf8')
+ppath.write_text('package android.graphics; public class Paint {public static final int ANTI_ALIAS_FLAG=1;public enum Cap {ROUND}public enum Style {FILL}public void setStyle(Style s){}public Paint(int flags){}public void setColor(int color){}public void setStrokeWidth(float width){}public void setStrokeCap(Cap cap){}}', encoding='utf8')
 dpath = out / 'android/graphics/drawable/Drawable.java'
 dpath.parent.mkdir(parents=True, exist_ok=True)
 dpath.write_text('package android.graphics.drawable; public class Drawable {}', encoding='utf8')
@@ -97,5 +97,5 @@ hpath = out / 'EmptyHostRegression.java'
 hpath.write_text(body, encoding='utf8')
 jdk = Path(os.environ["MISTEP_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-                str(src/'MiStepLayout.java'), str(cpath), str(ppath), str(dpath), str(hpath)], check=True)
+                str(src/'MiStepLayout.java'), str(src/'WorkspaceCellStyle.java'), str(cpath), str(ppath), str(dpath), str(hpath)], check=True)
 subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.EmptyHostRegression'], check=True)

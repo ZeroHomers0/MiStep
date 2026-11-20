@@ -15,19 +15,13 @@ public final class WorkspaceOptionsTest {
     }
     public static void main(String[] args) {
         WorkspaceOptions defaults = WorkspaceOptions.DEFAULT;
-        for (int id = 0; id <= WorkspaceOptions.SCREEN_RECORD; id++) {
-            check(defaults.visible(id), "existing buttons must stay visible by default");
-            WorkspaceOptions hidden = defaults.withVisible(id, false);
-            for (int other = 0; other <= WorkspaceOptions.SCREEN_RECORD; other++)
-                check(hidden.visible(other) == (other != id), "one switch changed another control");
-            check(hidden.withVisible(id, true).hiddenButtons == 0, "restore did not persist all-visible state");
-            check(!WorkspaceOptions.label(id).isEmpty(), "setting has no label");
-        }
-        check(new WorkspaceOptions(1 << 28, 99).hiddenButtons == 0, "unknown bit leaked into options");
+        check(defaults.showLunar, "lunar date visible by default");
+        check(!defaults.withShowLunar(false).withSwapMode(1).withEntryGesture(1).showLunar,
+                "interaction changes preserve lunar preference");
         check(new WorkspaceOptions(0, -1).swapMode == WorkspaceOptions.GROW_IN_PLACE, "invalid mode changed existing behavior");
         for (boolean right : new boolean[]{false, true}) for (int mode : new int[]{0, 1}) {
-            WorkspaceOptions options = defaults.withVisible(WorkspaceOptions.WIFI, false).withSwapMode(mode);
-            check(!options.visible(WorkspaceOptions.WIFI), "mode reset display settings");
+            WorkspaceOptions options = defaults.withShowLunar(false).withSwapMode(mode);
+            check(!options.showLunar, "mode reset date settings");
             check(options.mainOnRightAfterSwap(right) == (mode == WorkspaceOptions.FIXED_MAIN ? right : !right), "wrong target main side");
             for (int width : new int[]{720, 1080, 1200, 1440}) {
                 int height = width * 22 / 10;

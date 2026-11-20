@@ -63,6 +63,7 @@ public class LiveLayoutRegression {
  void updateChromeClip(){}
  int[] slotBounds(Slot slot){return layout.cellBounds(slot.index-1);}
  __METHOD__
+ void rememberMainSide(){}
  __SET_MAIN_SIDE__
  __LIVE_RECTS__
  static void tabletSurfaceRects(){

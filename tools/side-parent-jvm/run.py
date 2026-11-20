@@ -36,7 +36,7 @@ public class WindowContainerTransaction {
 stub = r'''package android.view;
 import java.util.*;
 public class SurfaceControl {
- public static class Leash {public Object parent,crop;public float x=99,y=99,k=1,alpha;public int layer=99;public boolean shown,valid=true;public boolean isValid(){return valid;}public void release(){valid=false;}}
+ public static class Leash {public Object parent,crop;public float x=99,y=99,k=1,alpha,radius;public int layer=99;public boolean shown,valid=true;public boolean isValid(){return valid;}public void release(){valid=false;}}
  public static class Builder {
   final Leash layer=new Leash();
   public Builder setName(String name){return this;}
@@ -50,7 +50,7 @@ public class SurfaceControl {
   public Transaction setLayer(Leash l,int z){ops.add("layer");pending.add(()->l.layer=z);return this;}
   public Transaction setPosition(Leash l,float x,float y){ops.add("position");pending.add(()->{l.x=x;l.y=y;});return this;}
   public Transaction setWindowCrop(Leash l,Object c){ops.add("crop");pending.add(()->l.crop=c);return this;}
-  public Transaction setMatrix(Leash l,float a,float b,float c,float d){ops.add("matrix");pending.add(()->l.k=a);return this;}
+  public Transaction setCornerRadius(Leash l,float r){ops.add("corner");pending.add(()->l.radius=r);return this;}public Transaction setMatrix(Leash l,float a,float b,float c,float d){ops.add("matrix");pending.add(()->l.k=a);return this;}
   public Transaction setAlpha(Leash l,float a){ops.add("alpha");pending.add(()->l.alpha=a);return this;}
   public Transaction show(Leash l){ops.add("show");pending.add(()->l.shown=true);return this;}
   public void apply(){applies++;pending.forEach(Runnable::run);pending.clear();}public void close(){closes++;}
@@ -62,7 +62,7 @@ public class SideParentRegression {
  static final int SLOT_MAIN=0,SLOT_TOP=4,ACTIVE=2,RESUMING=1;int scene=ACTIVE;long sceneEpoch=7;boolean screenOn=true,topFace,keyguardLocked,retainedForLock,keyguardWindowHidden;Object root=new Object();
  static class MiStepLayout {int cellX=813,cellWidth=267,topStrip=622;}
  final MiStepLayout layout=new MiStepLayout();
- final int screenH=2460;
+ float workspaceAlpha=1f;final int screenH=2460;float workspaceCornerRadius=80;
  final Rect sideViewportCrop=new Rect();
  Object sideViewport,sideViewportHost,hostSurface=new Leash();
  Object liveHostRootSurface(){return hostSurface;}
@@ -111,7 +111,7 @@ public class SideParentRegression {
   check(leash.x==0&&leash.y==0&&leash.k==file.scale&&leash.crop==file.crop,"parent and local geometry restored together");
   check(leash.shown&&leash.alpha==1&&leash.layer==0,"owned task visible at original layer");
   check(Transaction.all.size()==1&&Transaction.all.get(0).applies==1&&Transaction.all.get(0).closes==1,"one applied and closed transaction");
-  check(Transaction.all.get(0).ops.size()==24&&h.transitions.calls==3,"three side tasks repaired and parent viewports clipped, main and inactive TOP excluded");
+  check(Transaction.all.get(0).ops.size()==27&&h.transitions.calls==3,"three side tasks repaired and parent viewports clipped, main and inactive TOP excluded");
   Rect physicalCrop=(Rect)((Leash)file.controller.mSurfaceControl).crop;
   check(physicalCrop.width()==300&&physicalCrop.height()==640,"outer crop uses physical view pixels rather than logical task bounds");
   check(file.taskId==103&&file.taskEpoch==3,"no task relaunch or identity rewrite");
@@ -119,9 +119,14 @@ public class SideParentRegression {
   excluded(x->x.slots[3].promoting=true,"promoting");excluded(x->x.slots[3].launching=true,"launching");excluded(x->x.slots[3].frozen=true,"frozen");excluded(x->x.slots[3].parked=true,"parked");excluded(x->x.slots[3].occupied=false,"empty");excluded(x->x.slots[3].controller.task=999,"foreign owner");excluded(x->x.slots[3].controller.token=new Object(),"foreign token");excluded(x->x.screenOn=false,"screen off");excluded(x->x.scene=0,"inactive");excluded(x->x.root=null,"no host");
   h=fresh();h.reassertSideTaskViews("old scene");h.sceneEpoch++;h.drain();check(Transaction.all.isEmpty()&&h.transitions.calls==0,"queued repair cannot cross scene epoch");
   stale(x->x.sceneEpoch++,"stale scene binding");stale(x->x.slots[3].taskEpoch++,"stale task binding");stale(x->x.slots[3].taskId++,"replaced task id");stale(x->x.slots[3].taskToken=new Object(),"replaced token");stale(x->x.slots[3].controller.mTaskLeash=new Leash(),"retired leash");stale(x->x.slots[3].controller.mSurfaceControl=new Object(),"retired parent");stale(x->x.slots[3].writable=false,"surface ownership gate");stale(x->x.slots[3].controller.task=999,"owner changed before append");
-  h=fresh();var s=h.slots[3];var f=new RenderBinding(s,h.sceneEpoch,s.controller.mTaskLeash,s.controller.mSurfaceControl);var tx=new Transaction();h.appendRetainedSurfaces(tx,List.of(f,f));check(tx.ops.size()==8,"same slot appended only once");
+  h=fresh();var s=h.slots[3];var f=new RenderBinding(s,h.sceneEpoch,s.controller.mTaskLeash,s.controller.mSurfaceControl);var tx=new Transaction();h.appendRetainedSurfaces(tx,List.of(f,f));check(tx.ops.size()==9,"same slot appended only once");
+  h=fresh();h.workspaceAlpha=0;s=h.slots[1];f=new RenderBinding(s,h.sceneEpoch,s.controller.mTaskLeash,s.controller.mSurfaceControl);tx=new Transaction();h.appendRetainedSurfaces(tx,List.of(f));tx.apply();
+  check(((Leash)s.controller.mTaskLeash).alpha==0,"late native finish cannot expose first task before entry group readiness");
   h=fresh();s=h.slots[4];s.view.width=1200;s.view.height=560;s.view.clip=new Rect(0,70,1200,490);
   tx=new Transaction();h.appendSlotViewport(tx,s);check(tx.applies==0,"crop appended to supplied transaction without a separate apply");tx.apply();
+  check(((Leash)s.controller.mSurfaceControl).radius==0,"all hosted parents remain square");
+  ((Leash)s.controller.mSurfaceControl).radius=80;tx=new Transaction();h.appendSlotViewport(tx,s);tx.apply();
+  check(((Leash)s.controller.mSurfaceControl).radius==0,"existing rounded parent is reset to square without relaunch");
   Rect clipped=(Rect)((Leash)s.controller.mSurfaceControl).crop;check(clipped.top==70&&clipped.bottom==490&&clipped.width()==1200,"TOP live view clip respected in parent coordinates");
   check(((Leash)s.controller.mSurfaceControl).x==99&&((Leash)s.controller.mSurfaceControl).k==1,"outer parent placement and scale remain render-thread owned");
   for(int gate=0;gate<9;gate++){

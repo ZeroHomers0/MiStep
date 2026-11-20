@@ -176,7 +176,7 @@ final class QuickAppPicker {
         done.setGravity(Gravity.CENTER);
         done.setTextColor(Color.WHITE);
         done.setBackground(button(context, BLUE, 18));
-        LinearLayout.LayoutParams doneBounds = new LinearLayout.LayoutParams(0, -1, 1.5f);
+        LinearLayout.LayoutParams doneBounds = new LinearLayout.LayoutParams(0, -1, 1f);
         doneBounds.leftMargin = dp(context, 10);
         footer.addView(done, doneBounds);
         LinearLayout.LayoutParams footerBounds = new LinearLayout.LayoutParams(-1, dp(context, 46));

@@ -145,20 +145,7 @@ public final class SettingsActivity extends Activity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        settings.setStarted(true);
-    }
-
-    @Override
-    protected void onStop() {
-        settings.setStarted(false);
-        super.onStop();
-    }
-
-    @Override
     protected void onDestroy() {
-        if (settings != null) settings.close();
         if (runtimeLogs != null) runtimeLogs.close();
         super.onDestroy();
     }

@@ -27,12 +27,9 @@ public final class WorkspaceDisplayPolicyTest {
                 check(top.blankTop>=0 && top.blankBottom<=top.headerTop);
                 check(top.blankBottom-top.blankTop<=Math.round(160*density));
                 check(top.controlWidth==w-2*top.edge && top.controlWidth<=w);
-                int controlsWidth=(top.controlWidth-Math.round(12*density))/2;
-                ControlCenterGeometry controls=new ControlCenterGeometry(controlsWidth,top.blankBottom-top.blankTop,Math.round(8*density));
-                check(controls.networkWidth>0 && controls.cardTop>=0);
-                check(controls.brightnessLeft+controls.sliderWidth<=controlsWidth);
-                check(controls.scanLeft-controls.codeWidth-controls.codeGap>=controls.networkWidth);
-                check(controls.scanLeft+2*controls.codeWidth+controls.codeGap<=controls.volumeLeft);
+                check(top.railTop>=top.headerTop+top.headerHeight);
+                check(top.titleInset*2<w);
+
             }
         }
         System.out.println("WorkspaceDisplayPolicy checks="+checks+" passed");

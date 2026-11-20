@@ -1,47 +1,16 @@
 package com.jiusis.mistep;
-
 public final class TopBarFitTest {
-    private static int checks;
-    private static void check(boolean value, String message) {
-        if (!value) throw new AssertionError(message);
-        checks++;
-    }
-    public static void main(String[] args) {
-        int[][] screens = {{1200,2608,144}, {1080,2460,122}, {1440,3200,144},
-                {1080,1920,96}, {2608,1200,96}, {720,1600,72}, {240,640,20}};
-        for (int[] screen : screens) for (float density : new float[]{1f,2f,2.75f,3f,4f}) {
-            MiStepLayout layout = MiStepLayout.of(screen[0], screen[1], false, density);
-            TopBarGeometry g = new TopBarGeometry(screen[0], layout.topStrip, screen[2], density);
-            check(layout.topStrip - (g.railTop + g.railHeight) == 10, "main-to-rail gap is 10 physical pixels");
-            int rowGap = g.railTop - (g.headerTop + g.headerHeight);
-            check(rowGap > 0 && rowGap <= Math.max(1, Math.round(2f * density)), "rows have a small positive gap");
-            float iconGap = rowGap + Math.max(0f, g.headerHeight - 23f * density) / 2f
-                    + Math.max(0f, g.railHeight - 31f * density) / 2f;
-            check(iconGap <= 8f * density, "visible icons stay close, including internal row whitespace");
-            check(g.headerTop >= 0, "header stays inside top strip");
-            check(g.headerHeight > 0 && g.railHeight > 0, "positive visible header and rail");
-            check(2 * g.titleInset < screen[0], "title stays visible between the groups");
-            check(g.edge + 4 * g.buttonWidth == g.titleInset, "four controls remain clear of centered title");
-            check(g.blankTop >= 0 && g.blankBottom >= g.blankTop
-                            && (g.blankBottom == 0 || g.blankTop > 0),
-                    "visible controls leave a physical-corner margin; tiny strips may omit controls");
-            check(g.blankBottom <= g.headerTop || g.blankBottom == g.blankTop,
-                    "clipboard cannot cover header or rail");
-        }
-        TopBarGeometry target = new TopBarGeometry(1200, 661, 144, 3f);
-        check(target.buttonWidth < 48 * 3, "button pitch is tighter than 56 baseline");
-        check(target.headerTop + target.headerHeight < target.railTop, "no toolbar overlap on 17PM");
-        for (int[] screen : new int[][]{{3048,2032},{2560,1600},{1280,800}})
-            for (float density : new float[]{1f,1.5f,2.5f}) {
-                MiStepLayout tablet = MiStepLayout.of(screen[0],screen[1],false,density,true);
-                TopBarGeometry g = new TopBarGeometry(screen[0],tablet.topStrip,0,density,true,tablet.toolHeight);
-                check(g.blankTop >= tablet.toolHeight + g.edge,
-                        "expanded tablet controls leave the independent title row clear");
-                check(g.blankBottom + g.edge <= g.railTop,
-                        "expanded tablet control/music area stays above the quick app rail");
-                check(g.blankBottom > g.blankTop && g.controlWidth == screen[0]-2*g.edge,
-                        "combined tablet controls use available width with positive content height");
-            }
-        System.out.println("TopBarFit: " + checks + " checks passed");
-    }
+ public static void main(String[] args) {
+  int checks=0;
+  for(int[] size:new int[][]{{720,1600},{1080,2400},{1200,2608},{1440,3200},{240,640},{2608,1200}})
+   for(float d:new float[]{1,1.5f,2.75f,3,4}) {
+    MiStepLayout layout=MiStepLayout.of(size[0],size[1],true,d);
+    TopBarGeometry g=new TopBarGeometry(size[0],layout.topStrip,Math.round(24*d),d);
+    if(g.blankTop<0||g.blankBottom<g.blankTop||g.blankBottom>g.headerTop)throw new AssertionError("clock bounds");checks++;
+    if(g.headerTop+g.headerHeight>g.railTop||g.railTop+g.railHeight>layout.topStrip)throw new AssertionError("three layers overlap");checks++;
+    if(g.titleInset!=g.edge+2*g.buttonWidth||2*g.titleInset>=size[0])throw new AssertionError("four buttons leave title room");checks++;
+    if(g.railHeight<=0||g.headerHeight<=0)throw new AssertionError("empty action row");checks++;
+   }
+  System.out.println("TopBarFit: "+checks+" checks passed");
+ }
 }

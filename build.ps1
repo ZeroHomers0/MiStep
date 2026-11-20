@@ -44,7 +44,12 @@ if ($recommendedScope.Count -ne 1 -or
 }
 $entry = Get-Content -LiteralPath (Join-Path $src 'java\com\jiusis\mistep\HostEntry.java') -Raw
 if ([regex]::Matches($entry,[regex]::Escape($version.runtimeMarker)).Count -ne 3) { throw 'Runtime markers mismatch.' }
-New-Item -ItemType Directory -Force -Path $out,$dist,(Join-Path $out 'classes'),(Join-Path $out 'native'),(Join-Path $out 'dex') | Out-Null
+# Deleted source classes must never survive in the next APK.
+$classOutput = [IO.Path]::GetFullPath((Join-Path $out 'classes'))
+$expectedClassOutput = [IO.Path]::GetFullPath((Join-Path $root 'build\classes'))
+if ($classOutput -cne $expectedClassOutput) { throw 'Unexpected class output directory.' }
+if (Test-Path -LiteralPath $classOutput) { Remove-Item -LiteralPath $classOutput -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $out,$dist,$classOutput,(Join-Path $out 'native'),(Join-Path $out 'dex') | Out-Null
 $env:JAVA_HOME = $JavaHome
 $env:MISTEP_JAVA_BIN = $javaBin
 $env:MISTEP_ANDROID_JAR = $android

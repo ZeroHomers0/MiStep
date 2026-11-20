@@ -78,7 +78,7 @@ final class MiStepDesktopLaunchBridge {
         Bundle topInput;
         Bundle topLaunch;
         Bundle rotationMain;
-        boolean retained;
+        boolean retained, hideRecents;
         long lastAt;
         int lastTask = -1;
         Registry(IBinder owner, long sequence, ArrayList<Bundle> rows, ArrayList<Bundle> recentsRows) {
@@ -109,6 +109,7 @@ final class MiStepDesktopLaunchBridge {
             if (current != null && current.owner.equals(owner) && sequence <= current.sequence) return false;
             Registry next = new Registry(owner, sequence, new ArrayList<>(rows), new ArrayList<>(recents));
             next.retained = state.getBoolean("retained", false);
+            next.hideRecents = state.getBoolean("hideRecents", false);
             next.topInput = state.getBundle("topInput");
             next.topLaunch = state.getBundle("topLaunch");
             next.rotationMain = state.getBundle("rotationMain");
@@ -221,6 +222,19 @@ final class MiStepDesktopLaunchBridge {
 
     static synchronized boolean recentsLeaseAlive(Object lease) {
         return current == lease && current != null && current.owner.isBinderAlive();
+    }
+
+    static synchronized boolean recentsLeaseHidden(Object lease) {
+        return recentsLeaseAlive(lease) && current.hideRecents && !current.retained;
+    }
+
+    static synchronized java.util.Set<IBinder> hiddenRecentsTasks() {
+        java.util.Set<IBinder> tasks=new java.util.HashSet<>();
+        if(current!=null && current.hideRecents && !current.retained && current.owner.isBinderAlive())
+            for(Bundle row:current.recentsRows) {
+                IBinder token=row.getBinder("task");if(token!=null)tasks.add(token);
+            }
+        return tasks;
     }
 
     /** Launcher main-task queries exclude active TOP without making it a passive IME cell. */

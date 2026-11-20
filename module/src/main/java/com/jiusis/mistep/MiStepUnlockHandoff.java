@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 /** One authenticated unlock: WM commit, existing Host frame, then native hide. */
 final class MiStepUnlockHandoff {
     static final String PHYSICAL_KEYGUARD = "retainedPhysicalKeyguard";
+    static final String COMPLETED="retainedRevealCompleted";
     static final String RELEASE = "com.jiusis.mistep.UNLOCK_HANDOFF_RELEASE";
     private static long nextGeneration = System.currentTimeMillis();
     private final Context context;
@@ -84,6 +85,7 @@ final class MiStepUnlockHandoff {
             // Native hide changes the real shade's window before this release is dispatched.
             Intent release = new Intent(RELEASE).setPackage("android");
             release.putExtra(LiveSwapZoomProtocol.GENERATION, zoom.generation);
+            release.putExtra(COMPLETED,hide);
             try { context.sendBroadcast(release, LiveSwapZoomProtocol.PERMISSION); }
             catch (RuntimeException ignored) {}
         }

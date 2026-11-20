@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public final class WorkspaceRetentionTest {
+ void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane;boolean lockExitPending;
     static int checks;
     static void check(boolean value, String message) {
         checks++;
@@ -149,6 +150,7 @@ public final class WorkspaceRetentionTest {
         check(!host.canRetainBoundTasks(),"in-flight promotion blocks retention");
         host.promotion=null;host.root.setVisibility(View.GONE);
         check(!host.canRetainBoundTasks(),"invisible host is not retained twice");
+        host.lockExitPending=true;check(host.canRetainBoundTasks(),"authenticated hidden lock exit may preserve valid task bindings");host.lockExitPending=false;
         host.root.setVisibility(View.VISIBLE);host.slots[1].occupied=false;
         check(!host.canRetainBoundTasks(),"empty workspace uses ordinary suspend");
     }

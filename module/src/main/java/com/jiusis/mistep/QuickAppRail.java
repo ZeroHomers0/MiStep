@@ -3,7 +3,6 @@ package com.jiusis.mistep;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -16,10 +15,14 @@ import java.util.List;
 
 /* JADX INFO: loaded from: classes.dex */
 final class QuickAppRail extends View {
+    private RectF workspaceMain;
+
+    void setWorkspaceMainHole(RectF hole) {
+        workspaceMain = hole == null ? null : new RectF(hole);
+        invalidate();
+    }
     private int activeIndex;
     private List<QuickApp> apps;
-    private final RectF bounds;
-    private final Path clip;
     private boolean down;
     private float downX;
     private float downY;
@@ -54,8 +57,6 @@ final class QuickAppRail extends View {
 
     QuickAppRail(Context context, List<QuickApp> list, Listener listener) {
         super(context);
-        this.clip = new Path();
-        this.bounds = new RectF();
         this.longPress = new Runnable() { // from class: com.jiusis.mistep.QuickAppRail.2
             @Override // java.lang.Runnable
             public final void run() {
@@ -66,9 +67,9 @@ final class QuickAppRail extends View {
         this.apps = list == null ? Collections.emptyList() : Collections.unmodifiableList(new java.util.ArrayList<>(list));
         this.listener = listener;
         float f = context.getResources().getDisplayMetrics().density;
-        this.tileWidth = 48.0f * f;
+        this.tileWidth = 50.0f * f;
         this.padding = 10.0f * f;
-        this.iconSize = 31.0f * f;
+        this.iconSize = 38.0f * f;
         ViewConfiguration config = ViewConfiguration.get(context);
         this.touchSlop = config.getScaledTouchSlop();
         this.minimumVelocity = config.getScaledMinimumFlingVelocity();
@@ -148,12 +149,8 @@ final class QuickAppRail extends View {
     @Override // android.view.View
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        float f = getResources().getDisplayMetrics().density * 26.0f;
-        this.bounds.set(0.0f, 0.0f, getWidth(), getHeight());
-        this.clip.reset();
-        this.clip.addRoundRect(this.bounds, f, f, Path.Direction.CW);
         int iSave = canvas.save();
-        canvas.clipPath(this.clip);
+        canvas.clipRect(0, 0, getWidth(), getHeight());
         canvas.translate(-this.scrollOffset, 0.0f);
         float iconY = getHeight() * 0.5f;
         boolean stacking = stackProgress < 1f && stackFromIndex >= 0 && stackToIndex >= 0;
@@ -301,6 +298,15 @@ final class QuickAppRail extends View {
             float scale, int alpha) {
         QuickApp app = apps.get(index);
         if (app == null || app.icon == null || alpha <= 0) return;
+        if (workspaceMain != null) {
+            float half = Math.min(iconSize, getHeight() / 1.18f) * .5f * scale;
+            float x = getLeft() + centerX - scrollOffset, y = getTop() + centerY;
+            alpha = Math.round(alpha * WorkspaceChromeReveal.alpha(x - half, y - half,
+                    x + half, y + half, workspaceMain.left, workspaceMain.top,
+                    workspaceMain.right, workspaceMain.bottom,
+                    12f * getResources().getDisplayMetrics().density));
+            if (alpha <= 0) return;
+        }
         int save = canvas.save();
         canvas.translate(centerX, centerY);
         canvas.scale(scale, scale);

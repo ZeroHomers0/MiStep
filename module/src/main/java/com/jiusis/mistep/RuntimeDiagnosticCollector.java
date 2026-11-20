@@ -130,7 +130,7 @@ final class RuntimeDiagnosticCollector {
         WorkspaceOptions o = WorkspaceSettingsStore.read(context);
         return "Mi Step 诊断包 v1\n模块APK版本：" + version + "\n设备：" + Build.MANUFACTURER + " " + Build.MODEL
                 + "\nAndroid：" + Build.VERSION.RELEASE + " / SDK " + Build.VERSION.SDK_INT
-                + "\n构建：" + Build.FINGERPRINT + "\n设置：entry=" + o.entryGesture + " hidden=" + o.hiddenButtons
+                + "\n构建：" + Build.FINGERPRINT + "\n设置：entry=" + o.entryGesture + " lunar=" + o.showLunar
                 + " swap=" + o.swapMode + " keepOnLock=" + o.keepOnLock
                 + "\nAPK版本不代表系统进程已加载同版；请核对PID与LSPosed attached marker。\n";
     }

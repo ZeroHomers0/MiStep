@@ -6,12 +6,19 @@ import de.robv.android.xposed.XposedHelpers;
 /** The exact native WCT call can publish mode before its force-translucent role bit. */
 final class MiStepSideRoleChange {
     private static final ThreadLocal<IdentityHashMap<Object, Integer>> pending = new ThreadLocal<>();
-    static Object enter(Object task, Object change, Object display) {
+    static boolean targetsSide(Object task,Object change,Object display){
         if (task == null || change == null || display == null
                 || XposedHelpers.callMethod(task, "getDisplayContent") != display
                 || !Integer.valueOf(6).equals(XposedHelpers.callMethod(change, "getWindowingMode"))
                 || (((Integer) XposedHelpers.callMethod(change, "getChangeMask")) & 64) == 0
-                || !Boolean.TRUE.equals(XposedHelpers.callMethod(change, "getForceTranslucent"))) return null;
+                || !Boolean.TRUE.equals(XposedHelpers.callMethod(change, "getForceTranslucent"))) return false;
+        return true;
+    }
+    static boolean isPending(Object task){
+        IdentityHashMap<Object,Integer> roles=pending.get();return roles!=null&&roles.containsKey(task);
+    }
+    static Object enter(Object task, Object change, Object display) {
+        if(!targetsSide(task,change,display))return null;
         IdentityHashMap<Object, Integer> roles = pending.get();
         if (roles == null) { roles = new IdentityHashMap<>(); pending.set(roles); }
         roles.put(task, roles.getOrDefault(task, 0) + 1);

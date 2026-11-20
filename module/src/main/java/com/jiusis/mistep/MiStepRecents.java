@@ -13,6 +13,23 @@ final class MiStepRecents {
     }
     private static final String SAVED = "mistep.recents.previous";
     private static final String ENTERED = "mistep.recents.entered";
+    private static java.util.Set<android.os.IBinder> hiddenTasks = java.util.Collections.emptySet();
+
+    /** Invalidate Launcher caches when a preference or an exact hidden-task set changes. */
+    static void registryChanged(Object wms) {
+        java.util.Set<android.os.IBinder> next=MiStepDesktopLaunchBridge.hiddenRecentsTasks();
+        synchronized(MiStepRecents.class) {
+            if(next.equals(hiddenTasks))return;
+            hiddenTasks=next;
+        }
+        try {
+            Object atm=XposedHelpers.getObjectField(wms,"mAtmService");
+            Object notifications=XposedHelpers.getObjectField(atm,"mTaskChangeNotificationController");
+            XposedHelpers.callMethod(notifications,"notifyTaskStackChanged");
+        } catch(Throwable unavailable) {
+            XposedBridge.log("MiStepProbe: recents refresh deferred to next native query: "+unavailable);
+        }
+    }
 
     static void install(ClassLoader loader) {
         XC_MethodHook.Unhook visibility = null;
@@ -26,7 +43,10 @@ final class MiStepRecents {
                     QUERY.remove();
                     if (p.args.length == 1) {
                         Object lease = MiStepDesktopLaunchBridge.recentsLease(p.args[0]);
-                        if (lease != null) QUERY.set(new Query(p.args[0], lease));
+                        if (lease != null) {
+                            QUERY.set(new Query(p.args[0], lease));
+                            if(MiStepDesktopLaunchBridge.recentsLeaseHidden(lease))p.setResult(false);
+                        }
                     }
                 }
                 @Override protected void afterHookedMethod(MethodHookParam p) {

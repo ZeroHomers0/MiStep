@@ -23,7 +23,7 @@ files = {
  public boolean getBoolean(String key,boolean fallback){return (Boolean)values.getOrDefault(key,fallback);}
  public Editor edit(){return new Editor();}
  public class Editor {Map<String,Object> pending=new HashMap<>();
-  public Editor putInt(String k,int v){pending.put(k,v);return this;}
+  public Editor remove(String k){pending.put(k,null);return this;}public Editor putInt(String k,int v){pending.put(k,v);return this;}
   public Editor putBoolean(String k,boolean v){pending.put(k,v);return this;}
   public boolean commit(){if(commit)values.putAll(pending);return commit;}}}''',
 'android/content/Context.java': '''package android.content;public class Context {
@@ -44,12 +44,12 @@ public class SettingsRegression {
   check(WorkspaceSettingsStore.read(c).entryGesture==0,"old install retains corner default");
   c.prefs.values.put("hidden_buttons",2);c.prefs.values.put("swap_mode",1);
   WorkspaceOptions old=WorkspaceSettingsStore.read(c);
-  check(old.hiddenButtons==2&&old.swapMode==1&&old.entryGesture==0,"old preferences migrate without loss");
+  check(old.showLunar&&old.swapMode==1&&old.entryGesture==0,"old preferences migrate without loss");
   check(!old.keepOnLock&&!WorkspaceOptions.DEFAULT.keepOnLock,"old installs retain lock-exit default");
   check(WorkspaceSettingsStore.write(c,old.withKeepOnLock(true)),"lock choice saves independently of gesture line");
   check(WorkspaceSettingsStore.read(c).keepOnLock,"lock choice persists");
   check(WorkspaceSettingsStore.decode(WorkspaceSettingsStore.bundle(WorkspaceSettingsStore.read(c))).keepOnLock,"lock choice reaches SystemUI snapshot");
-  check(old.withKeepOnLock(true).withVisible(3,false).withSwapMode(0).withEntryGesture(1).keepOnLock,"all other choices preserve lock preference");
+  check(old.withKeepOnLock(true).withShowLunar(false).withSwapMode(0).withEntryGesture(1).keepOnLock,"all other choices preserve lock preference");
   check(!WorkspaceSettingsStore.decode(new Bundle()).keepOnLock,"old provider snapshot defaults to exit");
   check(WorkspaceSettingsStore.write(c,old),"lock option can be disabled");
   c.resolver.notifications=0;
@@ -60,12 +60,31 @@ public class SettingsRegression {
   check(WorkspaceSettingsStore.write(c,bottom),"hidden line allows selection");
   check(c.resolver.notifications==1,"saved selection notifies live host");
   WorkspaceOptions decoded=WorkspaceSettingsStore.decode(WorkspaceSettingsStore.bundle(WorkspaceSettingsStore.read(c)));
-  check(decoded.entryGesture==1&&decoded.hiddenButtons==2&&decoded.swapMode==1,"snapshot carries all user choices");
-  check(decoded.withVisible(3,false).entryGesture==1,"button toggle preserves entry");
+  check(decoded.entryGesture==1&&decoded.showLunar&&decoded.swapMode==1,"snapshot carries all user choices");
+  check(!WorkspaceSettingsStore.decode(WorkspaceSettingsStore.bundle(decoded.withShowLunar(false))).showLunar,"lunar choice reaches SystemUI");
+  check(decoded.withShowLunar(false).entryGesture==1,"lunar toggle preserves entry");
   check(decoded.withSwapMode(0).entryGesture==1,"swap toggle preserves entry");
+  for(int mode=0;mode<3;mode++) {
+   WorkspaceOptions v=decoded.withLandscapeVideo(mode).withShowLunar(false).withSwapMode(0).withKeepOnLock(true).withScrollSideTasks(true);
+   check(WorkspaceSettingsStore.write(c,v),"video preference persists");
+   check(WorkspaceSettingsStore.read(c).landscapeVideo==mode,"video preference reads back");
+   check(WorkspaceSettingsStore.decode(WorkspaceSettingsStore.bundle(v)).landscapeVideo==mode,"video snapshot reaches Host");
+  }
+  check(WorkspaceSettingsStore.decode(new Bundle()).landscapeVideo==1,"existing installations retain main landscape");
+  check(decoded.withLandscapeVideo(99).landscapeVideo==1,"invalid video mode uses main landscape");
+  check(!WorkspaceSettingsStore.decode(new Bundle()).hideSideRecents,"old snapshot keeps visible recents");
+  c.prefs.values.put("rounded_windows",true);
+  for(boolean hide:new boolean[]{true,false}) {
+   WorkspaceOptions v=decoded.withHideSideRecents(hide).withLandscapeVideo(0).withShowLunar(false).withSwapMode(1).withKeepOnLock(true).withScrollSideTasks(true).withEntryGesture(1);
+   check(v.hideSideRecents==hide,"all setters preserve recents");
+   check(WorkspaceSettingsStore.write(c,v),"new choices persist");
+   WorkspaceOptions nativeRead=WorkspaceSettingsStore.decode(WorkspaceSettingsStore.bundle(WorkspaceSettingsStore.read(c)));
+   check(nativeRead.hideSideRecents==hide,"snapshot carries recents choices");
+   check(c.prefs.values.get("rounded_windows")==null,"obsolete rounded preference removed");
+  }
   Settings.Global.hidden=0;
   check(EntryGesturePolicy.effectiveMode(decoded.entryGesture,EntryGestureSettings.lineHidden(c))==0,"line reappears uses original corner");
-  check(WorkspaceSettingsStore.write(c,decoded.withVisible(4,false)),"other settings still save while bottom blocked");
+  check(WorkspaceSettingsStore.write(c,decoded.withShowLunar(false)),"other settings still save while bottom blocked");
   check(WorkspaceSettingsStore.read(c).entryGesture==1,"runtime fallback does not overwrite choice");
   check(WorkspaceSettingsStore.write(c,decoded.withEntryGesture(0)),"corner can always be selected");
   Settings.Global.hidden=2;

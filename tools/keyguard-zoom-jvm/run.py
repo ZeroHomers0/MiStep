@@ -4,12 +4,12 @@ root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 files={
 'de/robv/android/xposed/XC_MethodHook.java':'''package de.robv.android.xposed;public class XC_MethodHook {
-public static class MethodHookParam {public Object[] args;}
+public static class Unhook {}public static class MethodHookParam {public Object[] args;}
 protected void beforeHookedMethod(MethodHookParam p)throws Throwable{}
 public void before(Object...args)throws Throwable{var p=new MethodHookParam();p.args=args;beforeHookedMethod(p);}}''',
-'de/robv/android/xposed/XposedBridge.java':'''package de.robv.android.xposed;public class XposedBridge {public static int errors;public static void log(String s){errors++;}}''',
+'de/robv/android/xposed/XposedBridge.java':'''package de.robv.android.xposed;public class XposedBridge {public static java.util.Map<String,XC_MethodHook> hooks=new java.util.HashMap<>();public static java.util.Set<XC_MethodHook.Unhook> hookAllMethods(Class<?> c,String n,XC_MethodHook h){hooks.put(n,h);return java.util.Set.of(new XC_MethodHook.Unhook());}public static int errors;public static void log(String s){errors++;}}''',
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;public class XposedHelpers {
-public static XC_MethodHook hook;public static Object findAndHookMethod(String name,ClassLoader cl,String method,Object...args){if(!name.equals("com.android.server.wm.KeyguardController")||!method.equals("setKeyguardShown")||args[0]!=int.class||args[1]!=boolean.class||args[2]!=boolean.class)throw new AssertionError("wrong native hook");hook=(XC_MethodHook)args[3];return null;}}''',
+public static Class<?> findClass(String n,ClassLoader l){return Object.class;}public static XC_MethodHook hook;public static Object findAndHookMethod(String name,ClassLoader cl,String method,Object...args){if(!name.equals("com.android.server.wm.KeyguardController")||!method.equals("setKeyguardShown")||args[0]!=int.class||args[1]!=boolean.class||args[2]!=boolean.class)throw new AssertionError("wrong native hook");hook=(XC_MethodHook)args[3];return null;}}''',
 'com/jiusis/mistep/KeyguardZoomRegression.java':'''package com.jiusis.mistep;import de.robv.android.xposed.*;
 public class KeyguardZoomRegression {
 static int checks;static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
@@ -28,6 +28,12 @@ XposedHelpers.hook.before(0,true,false);check(gate.blocked(),"new lock rearms af
 check(!gate.onAuthenticatedReveal(false)&&gate.blocked(),"unauthenticated reveal cannot clear stale controller barrier");
 check(gate.onAuthenticatedReveal(true)&&!gate.blocked(),"authenticated native Host handoff releases stale showing barrier");
 XposedHelpers.hook.before(0,true,false);check(gate.blocked(),"next native lock rearms after authenticated handoff");
+gate.onShown(0,false,false,()->{});int[] early={0};gate.installSleep(KeyguardZoomRegression.class.getClassLoader(),()->early[0]++);
+XposedBridge.hooks.get("startedGoingToSleep").before(9,4);check(!gate.sleeping()&&early[0]==0,"secondary display group does not arm early sleep");
+XposedBridge.hooks.get("startedGoingToSleep").before(0,4);check(gate.sleeping()&&gate.blocked()&&early[0]==1,"sleep barrier precedes native keyguard notification");
+gate.onShown(0,false,false,()->{});check(gate.blocked()&&!gate.onAuthenticatedReveal(true),"interactive tail frames and delayed native clear cannot release sleep barrier");
+XposedBridge.hooks.get("startedWakingUp").before(9,1);check(gate.sleeping(),"foreign wake cannot release default sleep");XposedBridge.hooks.get("startedWakingUp").before(0,1);check(!gate.sleeping()&&!gate.blocked(),"default wake releases only early sleep state");
+XposedBridge.hooks.get("startedGoingToSleep").before(4);check(gate.sleeping(),"legacy one-argument sleep treats argument as reason");XposedBridge.hooks.get("startedWakingUp").before();check(!gate.sleeping(),"legacy wake is paired");
 System.out.println("Production native keyguard barrier: "+checks+" checks passed");}}
 '''
 }

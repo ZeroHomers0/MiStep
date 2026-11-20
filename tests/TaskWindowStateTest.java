@@ -21,6 +21,12 @@ public final class TaskWindowStateTest {
         check(main.generation == 1 && side.generation == 1,
                 "initial state update has one generation");
 
+        TaskWindowState handoff=new TaskWindowState(404);
+        handoff.update(0,2,-1,3,1,true,true,3);
+        handoff.update(1,1,-1,0,6,false,true,0);
+        check(handoff.inheritedMainRotation()==3,"side portrait staging cannot erase real main seascape");
+        handoff.forgetRememberedRotation();
+        check(handoff.inheritedMainRotation()==-1,"explicit application exit still clears inherited direction");
         TaskWindowState freeform = new TaskWindowState(303);
         freeform.update(0, 2, 11, 3, 1, true, true, 3);
         freeform.update(-1, 1, 11, 0, 5, false, true, 0);

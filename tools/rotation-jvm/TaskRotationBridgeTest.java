@@ -25,6 +25,7 @@ public class TaskRotationBridgeTest {
         int mode = 1;
         Activity top;
         Activity topRunningActivity() { return top; }
+        Object getDisplayContent(){return top==null?null:top.mDisplayContent;}
         int getWindowingMode() { return mode; }
         boolean isForceTranslucent() { return mode == 6; }
         Activity.Configuration getConfiguration() { return new Activity.Configuration(); }
@@ -81,6 +82,7 @@ public class TaskRotationBridgeTest {
         void setFixedRotationLaunchingApp(Activity activity, int rotation) { launches++; }
         void setFixedRotationLaunchingAppUnchecked(Activity activity) { launches++; }
     }
+    static class SideChange {int mode=6,mask=64;boolean force=true;int getWindowingMode(){return mode;}int getChangeMask(){return mask;}boolean getForceTranslucent(){return force;}}
     public static void main(String[] args) throws Exception {
         Display display = new Display();
         field("sDisplayContent").set(null, display);
@@ -192,6 +194,50 @@ public class TaskRotationBridgeTest {
         apply(display, manualVideo);
         check(!manualVideo.transformed, "a stale side configuration cannot restore an exited fullscreen direction");
         call("endFixedMainRotationLocked", new Class[]{Object.class}, display);
+
+        // An unlocked phone now points portrait while a landscape main is moved.
+        Activity movedVideo = new Activity(-1); movedVideo.configuration.orientation = 2;
+        movedVideo.mDisplayContent = display; display.top = movedVideo;
+        display.mDisplayRotation.frozen = false; display.mDisplayRotation.physical = 3;
+        display.mDisplayRotation.proposed = 3;
+        call("beginFixedMainRotationLocked", new Class[]{Object.class}, display);
+        apply(display, movedVideo);
+        movedVideo.task.mode = 6; movedVideo.configuration.orientation = 1;
+        display.mDisplayRotation.proposed = 0;
+        apply(display, movedVideo);
+        check(movedVideo.transformed && movedVideo.rotation == 3,
+                "main to side retains seascape with automatic rotation enabled");
+        call("beforeApplicationOrientationRequest", new Class[]{Object.class, int.class}, movedVideo, -1);
+        apply(display, movedVideo);
+        check(movedVideo.transformed && movedVideo.rotation == 3,
+                "same orientation repeated by side relayout preserves direction");
+        call("beforeApplicationOrientationRequest", new Class[]{Object.class, int.class}, movedVideo, 1);
+        movedVideo.request = 1; apply(display, movedVideo);
+        check(!movedVideo.transformed,
+                "application explicitly leaving fullscreen can restore portrait inside side");
+        call("endFixedMainRotationLocked", new Class[]{Object.class}, display);
+        display.mDisplayRotation.frozen = true;
+
+        // Both collect-to-empty and swap use the same native mode/bounds boundary.
+        for(String route:new String[]{"collect","swap"}){
+            Activity staged=new Activity(8);staged.mDisplayContent=display;staged.configuration.orientation=2;display.top=staged;
+            call("beginFixedMainRotationLocked",new Class[]{Object.class},display);field("sZoomed").set(null,true);
+            apply(display,staged);
+            call("captureMainBeforeSideChange",new Class[]{Object.class,Object.class},staged.task,new SideChange());
+            TaskWindowState history=(TaskWindowState)((Map<?,?>)field("sTaskWindowStates").get(null)).get(staged.task);
+            check(history.inheritedMainRotation()==3,"source direction captured before native mode/bounds change "+route);
+            history.update(1,1,-1,0,6,false,true,0);staged.request=-1;staged.configuration.orientation=1;
+            Object pending=MiStepSideRoleChange.enter(staged.task,new SideChange(),display);
+            apply(display,staged); // mode is still 1, force-translucency not yet visible
+            check(history.windowingMode==6&&history.lastFullscreenAppliedRotation==3,
+                    "pending WCT callback cannot overwrite source main history "+route);
+            staged.task.mode=6;MiStepSideRoleChange.exit(pending);display.mDisplayRotation.proposed=0;
+            apply(display,staged);
+            check(staged.transformed&&staged.rotation==3,"staged portrait cannot mask inherited side rotation "+route);
+            call("beforeApplicationOrientationRequest",new Class[]{Object.class,int.class},staged,1);staged.request=1;apply(display,staged);
+            check(!staged.transformed,"actual explicit portrait exit still works "+route);
+            call("endFixedMainRotationLocked",new Class[]{Object.class},display);field("sZoomed").set(null,false);
+        }
 
         // Real 200 trace: a landscape video and two portrait back-stack activities
         // share one task. Mode1/6 configuration callbacks visit every activity.

@@ -87,6 +87,13 @@ final class FullscreenRotationPolicy {
     static int taskRotation(int overrideOrientation, int resolvedRotation,
             boolean rotationLocked, int windowingMode, int rememberedFullscreenRotation,
             int workspaceRotation) {
+        return taskRotation(overrideOrientation,resolvedRotation,rotationLocked,windowingMode,
+                rememberedFullscreenRotation,workspaceRotation,false);
+    }
+
+    static int taskRotation(int overrideOrientation, int resolvedRotation,
+            boolean rotationLocked, int windowingMode, int rememberedFullscreenRotation,
+            int workspaceRotation, boolean inheritedMainLandscape) {
         switch (overrideOrientation) {
             case ORIENTATION_LANDSCAPE:
                 return DISPLAY_LANDSCAPE;
@@ -103,6 +110,17 @@ final class FullscreenRotationPolicy {
             case ORIENTATION_USER_PORTRAIT:
                 return DISPLAY_PORTRAIT;
             default:
+                // A phone's side carrier remains portrait, but its task keeps the
+                // main window's direction until the app changes its orientation.
+                // Sensor proposals describe the held display, not this moved task.
+                if (inheritedMainLandscape && !isLandscape(workspaceRotation) && windowingMode == 6
+                        && isLandscape(rememberedFullscreenRotation)
+                        && (usesSensorOrUserRotation(overrideOrientation)
+                                || overrideOrientation == ORIENTATION_BEHIND
+                                || overrideOrientation == ORIENTATION_NOSENSOR
+                                || overrideOrientation == ORIENTATION_LOCKED)) {
+                    return rememberedFullscreenRotation;
+                }
                 if (isLandscape(workspaceRotation)
                         && (usesSensorOrUserRotation(overrideOrientation)
                                 || overrideOrientation == ORIENTATION_BEHIND

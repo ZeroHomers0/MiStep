@@ -1,9 +1,5 @@
 package com.jiusis.mistep;
 
-import android.app.Dialog;
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -20,7 +16,6 @@ import android.graphics.drawable.shapes.RoundRectShape;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
-import android.net.Uri;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -28,7 +23,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
@@ -36,38 +30,19 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /** Settings use the installed system Settings resources and layout proportions. */
 final class WorkspaceSettingsPage extends FrameLayout {
-    private static final int HOME = 0, CONTROL = 1, HEADER = 2, SWAP = 3, LOGS = 4, GESTURE = 5,
-            ABOUT = 6, DONATE = 7, DONOR_THANKS = 8;
-    private static final long DONOR_REFRESH_MS = 30_000;
+    private static final int HOME = 0, SWAP = 3, LOGS = 4, GESTURE = 5, VIDEO = 6;
     private static final int BLUE = HyperOsStyle.CONTROL_ACCENT;
     private final SettingsActivity activity;
     private final boolean dark;
     private final int primary, secondary, surface;
-    private final int[] scrollPositions = new int[DONOR_THANKS + 1];
-    private final SharedPreferences aboutPreferences;
-    private final DonorFeed donorFeed;
-    private final ExecutorService donorWorker = Executors.newSingleThreadExecutor();
-    private final Runnable donorRefresh = this::refreshDonorNames;
-    private LinearLayout donorRows;
-    private int donorColumns;
-    private TextView donorStatus;
-    private List<String> donorNames;
-    private boolean started, donorRefreshing, donorRefreshFailed;
-    private int donationMethod;
-    private boolean donationTemporarilyHidden;
-    private Dialog donationDialog;
+    private final int[] scrollPositions = new int[VIDEO + 1];
     private final RuntimeLogController runtimeLogs;
     private TextView logStatus, logPreview;
     private View refreshLogs, exportLogs;
     private TextView recordLogs;
-    private final RadioButton[] choices = new RadioButton[2];
-    private final boolean[] nativeChoices = new boolean[2];
     private final android.database.ContentObserver gestureObserver =
             new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())) {
         @Override public void onChange(boolean selfChange) {
@@ -82,11 +57,6 @@ final class WorkspaceSettingsPage extends FrameLayout {
         super(activity);
         this.activity = activity;
         this.runtimeLogs = runtimeLogs;
-        aboutPreferences = activity.createDeviceProtectedStorageContext()
-                .getSharedPreferences("about_settings", android.content.Context.MODE_PRIVATE);
-        donorFeed = new DonorFeed(activity);
-        donationMethod = state == null ? 0 : state.getInt("donation_method", 0);
-        donationTemporarilyHidden = state != null && state.getBoolean("donation_temporary_hidden", false);
         dark = (getResources().getConfiguration().uiMode & 48) == 32;
         primary = activity.settingsColor("miuix_preference_primary_text_color_" + (dark ? "dark" : "light"),
                 dark ? 0xfff4f5f8 : 0xff000000);
@@ -99,15 +69,13 @@ final class WorkspaceSettingsPage extends FrameLayout {
                 System.arraycopy(saved, 0, scrollPositions, 0, Math.min(saved.length, scrollPositions.length));
         }
         int restored = state == null ? HOME : state.getInt("settings_page", HOME);
-        show(restored >= HOME && restored <= DONOR_THANKS ? restored : HOME, false);
+        show(restored == SWAP || restored == LOGS || restored == GESTURE || restored == VIDEO ? restored : HOME, false);
     }
 
     void save(Bundle state) {
         scrollPositions[screen] = scroll.getScrollY();
         state.putInt("settings_page", screen);
         state.putIntArray("settings_scroll", scrollPositions);
-        state.putInt("donation_method", donationMethod);
-        state.putBoolean("donation_temporary_hidden", donationTemporarilyHidden);
     }
 
     void refreshLayout() {
@@ -116,18 +84,11 @@ final class WorkspaceSettingsPage extends FrameLayout {
 
     boolean goBack() {
         if (screen == HOME) return false;
-        show(screen == DONATE || screen == DONOR_THANKS ? ABOUT : HOME, true);
+        show(HOME, true);
         return true;
     }
 
     private void show(int next, boolean animate) {
-        if (next == DONATE && donationHidden()) next = ABOUT;
-        boolean enteringDonorPage = next == DONOR_THANKS && screen != DONOR_THANKS;
-        if (next != DONOR_THANKS) {
-            removeCallbacks(donorRefresh);
-            donorRows = null;
-            donorStatus = null;
-        }
         if (scroll != null) scrollPositions[screen] = scroll.getScrollY();
         screen = next;
         removeAllViews();
@@ -144,22 +105,15 @@ final class WorkspaceSettingsPage extends FrameLayout {
                 -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -1));
         addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-        String title = next == CONTROL ? "控制中心按钮" : next == HEADER ? "标题栏按钮"
-                : next == SWAP ? "主副交换逻辑" : next == LOGS ? "运行日志"
-                : next == GESTURE ? "唤出手势" : next == ABOUT ? "关于 MiStep"
-                : next == DONATE ? "支持 MiStep" : next == DONOR_THANKS ? "捐赠致谢" : "Mi Step";
-        activity.setPageTitle(title);
-        if (next == HOME) home();
-        else if (next == LOGS) logs();
+        activity.setPageTitle(next == SWAP ? "主副交换逻辑" : next == LOGS ? "运行日志"
+                : next == GESTURE ? "唤出手势" : next == VIDEO ? "视频" : "Mi Step");
+        if (next == LOGS) logs();
         else if (next == SWAP) swap();
         else if (next == GESTURE) gesture();
-        else if (next == ABOUT) about();
-        else if (next == DONATE) donate();
-        else if (next == DONOR_THANKS) donorThanks();
-        else buttons(next == CONTROL ? WorkspaceOptions.CONTROL_IDS : WorkspaceOptions.HEADER_IDS);
+        else if (next == VIDEO) video();
+        else home();
         int restoreY = scrollPositions[next];
         scroll.post(() -> scroll.scrollTo(0, restoreY));
-        if (enteringDonorPage) refreshDonorNames();
         if (animate && android.animation.ValueAnimator.areAnimatorsEnabled()) {
             content.setAlpha(0f);
             content.animate().alpha(1f).setDuration(160).start();
@@ -168,381 +122,101 @@ final class WorkspaceSettingsPage extends FrameLayout {
 
     private void home() {
         WorkspaceOptions options = WorkspaceSettingsStore.read(activity);
-        section("界面");
+        section("外观");
         LinearLayout appearance = card();
-        menu(appearance, "控制中心按钮", options.visible(WorkspaceOptions.CONTROL_CENTER)
-                ? visibleCount(options, WorkspaceOptions.CONTROL_IDS, 1) + " 项已显示" : "已隐藏", () -> show(CONTROL, true));
-        divider(appearance);
-        menu(appearance, "标题栏按钮", visibleCount(options, WorkspaceOptions.HEADER_IDS, 0)
-                + " 项已显示", () -> show(HEADER, true));
+        switchOption(appearance, "显示农历", null, options.showLunar,
+                checked -> persist(WorkspaceSettingsStore.read(activity).withShowLunar(checked)));
         add(appearance, 0, 12);
         section("交互");
         LinearLayout interaction = card();
+        menu(interaction, "视频", WorkspaceOptions.videoLabel(options.landscapeVideo), () -> show(VIDEO, true));
+        divider(interaction);
         menu(interaction, "主副交换逻辑", WorkspaceOptions.modeLabel(options.swapMode), () -> show(SWAP, true));
         divider(interaction);
         menu(interaction, "唤出手势", gestureLabel(EntryGesturePolicy.effectiveMode(
-                        options.entryGesture, EntryGestureSettings.lineHidden(activity))),
-                () -> show(GESTURE, true));
+                        options.entryGesture, EntryGestureSettings.lineHidden(activity))), () -> show(GESTURE, true));
         divider(interaction);
-        LinearLayout lockRow = row();
-        TextView lockLabel = text("锁屏时保留 MiStep", 17, primary);
-        lockLabel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        lockRow.addView(lockLabel, new LinearLayout.LayoutParams(0, -2, 1));
-        Switch keepOnLock = settingsSwitch("锁屏时保留 MiStep", options.keepOnLock);
-        lockRow.addView(keepOnLock, new LinearLayout.LayoutParams(-2, -2));
-        keepOnLock.setOnCheckedChangeListener((button, checked) -> {
-            WorkspaceOptions current = WorkspaceSettingsStore.read(activity);
-            if (current.keepOnLock == checked) return;
-            if (!persist(current.withKeepOnLock(checked))) button.setChecked(!checked);
-        });
-        lockRow.setOnClickListener(v -> keepOnLock.toggle());
-        interaction.addView(lockRow);
+        switchOption(interaction, "锁屏时保留 MiStep", "开启后解锁恢复工作台；关闭后解锁回到正常界面", options.keepOnLock,
+                checked -> persist(WorkspaceSettingsStore.read(activity).withKeepOnLock(checked)));
         divider(interaction);
-        LinearLayout sideRow = row();
-        TextView sideLabel = text("无限小窗", 17, primary);
-        sideLabel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        sideRow.addView(sideLabel, new LinearLayout.LayoutParams(0, -2, 1));
-        Switch scrollSideTasks = settingsSwitch("无限小窗", options.scrollSideTasks);
-        sideRow.addView(scrollSideTasks, new LinearLayout.LayoutParams(-2, -2));
-        scrollSideTasks.setOnCheckedChangeListener((button, checked) -> {
-            WorkspaceOptions current = WorkspaceSettingsStore.read(activity);
-            if (current.scrollSideTasks == checked) return;
-            if (!persist(current.withScrollSideTasks(checked))) button.setChecked(!checked);
-        });
-        sideRow.setOnClickListener(v -> scrollSideTasks.toggle());
-        interaction.addView(sideRow);
+        switchOption(interaction, "无限小窗", null, options.scrollSideTasks,
+                checked -> persist(WorkspaceSettingsStore.read(activity).withScrollSideTasks(checked)));
+        divider(interaction);
+        switchOption(interaction, "最近任务里不显示小窗里的应用", "只在 One Step 打开时生效，不会关闭应用", options.hideSideRecents,
+                checked -> persist(WorkspaceSettingsStore.read(activity).withHideSideRecents(checked)));
         add(interaction, 0, 12);
         section("诊断");
         LinearLayout diagnostics = card();
         menu(diagnostics, "运行日志", "诊断信息与问题反馈", () -> show(LOGS, true));
         add(diagnostics, 0, 0);
-        LinearLayout about = card();
-        menu(about, "关于 MiStep", "项目与作者", () -> show(ABOUT, true));
-        add(about, 12, 0);
     }
 
-    private void about() {
-        ImageView icon = new ImageView(activity);
-        icon.setImageDrawable(activity.getApplicationInfo().loadIcon(activity.getPackageManager()));
-        icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        LinearLayout.LayoutParams iconSize = new LinearLayout.LayoutParams(dp(76), dp(76));
-        iconSize.gravity = Gravity.CENTER_HORIZONTAL;
-        iconSize.topMargin = dp(16); iconSize.bottomMargin = dp(14);
-        content.addView(icon, iconSize);
-        TextView name = text("MiStep", 28, primary);
-        name.setTypeface(Typeface.create("sans-serif-medium", 0));
-        name.setGravity(Gravity.CENTER);
-        name.setAccessibilityHeading(true);
-        add(name, 0, 6);
-        String version = "";
-        try { version = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName; }
-        catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
-        TextView versionLabel = text(version, 13, secondary);
-        versionLabel.setGravity(Gravity.CENTER);
-        add(versionLabel, 0, 22);
-        TextView intro = text("让多任务，自在一步。", 19, primary);
-        intro.setGravity(Gravity.CENTER);
-        add(intro, 0, 10);
-        TextView description = text("灵感来自锤子「一步」，为小米带来主区域与多个真实副任务协同的工作区，让应用之间的切换更从容。", 14, secondary);
-        description.setGravity(Gravity.CENTER);
-        description.setPadding(dp(12), 0, dp(12), 0);
-        description.setLineSpacing(dp(5), 1f);
-        add(description, 0, 22);
-        LinearLayout project = card();
-        menu(project, "项目仓库", "GitHub · JIUSIS / MiStep",
-                () -> openLink("https://github.com/JIUSIS/MiStep"));
-        add(project, 0, 12);
-        section("作者 · 君九思 JIUSI");
-        LinearLayout author = card();
-        menu(author, "酷安", "作者主页", () -> openLink("https://www.coolapk.com/u/652464"));
-        divider(author);
-        menu(author, "哔哩哔哩", "君九思JIUSI", () -> openLink("https://b23.tv/0jlB8Vb"));
-        divider(author);
-        menu(author, "抖音", "作者动态",
-                () -> openLink("https://www.iesdouyin.com/share/user/MS4wLjABAAAAwO_VlPNVbWRMdL5IKWyZmlYsgQWp1F7242NaGaChouEgyhgSH3A1vufR90CNWshx?u_code=4af0205jm7b6&did=MS4wLjABAAAAcPUqe1yfW2XQDXt_6aKgTqt-iCG5oBjpQ1-IXRV42TiF3OQp2aRnEMkkL9D98zEJ&iid=MS4wLjABAAAABcarNUFlFQX1acVALzLVSpihiFYInZAz1hvCeN41hTtxk8oCmzazMurlvhbTkIfi&with_sec_did=1&sec_uid=MS4wLjABAAAAwO_VlPNVbWRMdL5IKWyZmlYsgQWp1F7242NaGaChouEgyhgSH3A1vufR90CNWshx&from_ssr=1&from_aid=1128&timestamp=1794330190"));
-        add(author, 0, 12);
-        boolean showDonation = !donationHidden();
-        LinearLayout support = card();
-        if (showDonation) {
-            LinearLayout entry = menu(support, "捐赠", "赛博乞讨", () -> show(DONATE, true));
-            entry.setOnLongClickListener(v -> {
-                showDonationDialog(false);
-                return true;
-            });
-            divider(support);
-        }
-        menu(support, "捐赠致谢", "感谢支持 MiStep 的朋友", () -> show(DONOR_THANKS, true));
-        add(support, 0, 10);
-        if (showDonation) {
-            TextView hint = text("纯为爱发电 · 长按捐赠入口可关闭", 12, secondary);
-            hint.setGravity(Gravity.CENTER);
-            add(hint, 0, 0);
-        }
-    }
-
-    private void donorThanks() {
-        section("排名不分先后");
-        donorRows = card();
-        int width = getWidth() > 0 ? getWidth() : getResources().getDisplayMetrics().widthPixels;
-        donorColumns = donorColumnCount(Math.min(width, dp(680)), content);
-        content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-            if (right - left == oldRight - oldLeft) return;
-            // Rebuild after layout so the new rows receive their own measure pass.
-            view.post(() -> {
-                if (view != content || donorRows == null) return;
-                int columns = donorColumnCount(view.getWidth(), view);
-                if (columns != donorColumns) {
-                    donorColumns = columns;
-                    renderDonorNames();
-                }
-            });
+    private void switchOption(LinearLayout group, String label, String detail, boolean checked,
+            java.util.function.Predicate<Boolean> save) {
+        LinearLayout item=row(), labels=optionLabels(label,detail);
+        item.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+        Switch toggle=settingsSwitch(label,checked);
+        item.addView(toggle,new LinearLayout.LayoutParams(-2,-2));
+        final boolean[] reverting={false};
+        toggle.setOnCheckedChangeListener((button,value)->{
+            if(reverting[0])return;
+            if(!save.test(value)) {reverting[0]=true;button.setChecked(!value);reverting[0]=false;}
         });
-        add(donorRows, 0, 10);
-        donorStatus = text("", 13, secondary);
-        donorStatus.setGravity(Gravity.CENTER);
-        donorStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        add(donorStatus, 0, 0);
-        renderDonorNames();
+        item.setOnClickListener(v->toggle.toggle());group.addView(item);
     }
 
-    private int donorColumnCount(int width, View parent) {
-        int cellWidth = Math.round(TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP, 104, getResources().getDisplayMetrics()));
-        int available = width - parent.getPaddingLeft() - parent.getPaddingRight();
-        return Math.max(1, Math.min(4, available / Math.max(1, cellWidth)));
-    }
-
-    private void renderDonorNames() {
-        if (donorRows == null) return;
-        donorRows.removeAllViews();
-        boolean hasNames = donorNames != null && !donorNames.isEmpty();
-        donorRows.setVisibility(hasNames ? VISIBLE : GONE);
-        if (hasNames) {
-            for (int first = 0; first < donorNames.size(); first += donorColumns) {
-                if (donorRows.getChildCount() > 0) divider(donorRows);
-                LinearLayout row = new LinearLayout(activity);
-                row.setBaselineAligned(false);
-                row.setWeightSum(donorColumns);
-                int end = Math.min(first + donorColumns, donorNames.size());
-                for (int index = first; index < end; index++) {
-                    TextView label = text(donorNames.get(index), 17, primary);
-                    label.setMinHeight(dp(44));
-                    label.setGravity(Gravity.CENTER);
-                    label.setPadding(dp(8), dp(8), dp(8), dp(8));
-                    row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
-                }
-                donorRows.addView(row, new LinearLayout.LayoutParams(-1, -2));
-            }
+    private LinearLayout optionLabels(String label,String detail) {
+        LinearLayout labels=new LinearLayout(activity);labels.setOrientation(LinearLayout.VERTICAL);
+        TextView title=text(label,17,primary);title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        labels.addView(title);
+        if(detail!=null) {
+            TextView description=text(detail,13,secondary);
+            LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,-2);bounds.topMargin=dp(5);
+            labels.addView(description,bounds);
         }
-        String status = donorRefreshFailed ? (donorNames == null ? "暂时无法加载名单" : "暂时无法更新，已显示上次名单")
-                : hasNames ? "" : donorNames == null && donorFeed.isConfigured() ? "正在加载名单…" : "暂无公开名单";
-        donorStatus.setText(status);
-        donorStatus.setVisibility(status.isEmpty() ? GONE : VISIBLE);
+        return labels;
     }
 
-    void setStarted(boolean started) {
-        this.started = started;
-        if (started) refreshDonorNames();
-        else removeCallbacks(donorRefresh);
-    }
-
-    private void refreshDonorNames() {
-        if (!started || screen != DONOR_THANKS || donorRefreshing || !donorFeed.isConfigured()) return;
-        removeCallbacks(donorRefresh);
-        donorRefreshing = true;
-        boolean loadCache = donorNames == null;
-        donorWorker.execute(() -> {
-            List<String> cached = loadCache ? donorFeed.cachedNames() : null;
-            if (cached != null) {
-                activity.runOnUiThread(() -> {
-                    donorNames = cached;
-                    if (started) renderDonorNames();
-                });
-            }
-            try {
-                List<String> updated = donorFeed.refreshNames();
-                activity.runOnUiThread(() -> finishDonorRefresh(updated));
-            } catch (java.io.IOException | org.json.JSONException unavailable) {
-                activity.runOnUiThread(() -> finishDonorRefresh(null));
-            }
-        });
-    }
-
-    private void finishDonorRefresh(List<String> updated) {
-        donorRefreshing = false;
-        boolean changed = donorRefreshFailed != (updated == null);
-        donorRefreshFailed = updated == null;
-        if (updated != null && !updated.equals(donorNames)) {
-            donorNames = updated;
-            changed = true;
+    /** All selection pages share the system indicator, spacing, labels and click target. */
+    private void choiceOption(LinearLayout group,String label,String detail,boolean checked,
+            boolean enabled,View diagram,Runnable select) {
+        LinearLayout item=row();
+        if(diagram!=null) {
+            LinearLayout.LayoutParams preview=new LinearLayout.LayoutParams(dp(56),dp(80));
+            preview.rightMargin=dp(12);item.addView(diagram,preview);
         }
-        if (started && screen == DONOR_THANKS) {
-            if (changed) renderDonorNames();
-            postDelayed(donorRefresh, DONOR_REFRESH_MS);
+        LinearLayout labels=optionLabels(label,detail);
+        LinearLayout.LayoutParams labelBounds=new LinearLayout.LayoutParams(0,-2,1);
+        labelBounds.rightMargin=dp(8);item.addView(labels,labelBounds);
+        RadioButton radio=new RadioButton(activity);
+        Drawable indicator=activity.settingsDrawable("miuix_appcompat_btn_radio_"+(dark?"dark":"light"));
+        if(indicator!=null) {radio.setButtonDrawable(indicator);radio.setButtonTintList(null);}
+        else radio.setButtonTintList(ColorStateList.valueOf(checked?BLUE:secondary));
+        radio.setChecked(checked);radio.setEnabled(enabled);
+        radio.setContentDescription(detail==null?label:label+"，"+detail);
+        item.addView(radio,new LinearLayout.LayoutParams(-2,-2));
+        item.setEnabled(enabled);item.setAlpha(enabled?1f:.45f);
+        if(enabled) {item.setOnClickListener(v->select.run());radio.setOnClickListener(v->select.run());}
+        group.addView(item);
+    }
+
+    private void video() {
+        section("视频进入横屏全屏时");
+        LinearLayout group=card();
+        String[] descriptions={"仅接入播放器的画中画或悬浮视频窗口，下面的主窗和小窗照常使用。不支持的播放器留在主窗。",
+                "视频在主窗里横屏显示，小窗照常使用。",
+                "关闭工作台，恢复正常的全屏视频界面。"};
+        int selected=WorkspaceSettingsStore.read(activity).landscapeVideo;
+        for(int mode=0;mode<descriptions.length;mode++) {
+            final int choice=mode;if(mode>0)divider(group);
+            choiceOption(group,WorkspaceOptions.videoLabel(mode),descriptions[mode],mode==selected,true,
+                    new VideoModeDiagram(activity,mode,secondary,dark?0xff353840:0xffe9e9e9,BLUE),()->{
+                        if(persist(WorkspaceSettingsStore.read(activity).withLandscapeVideo(choice)))show(VIDEO,false);
+                    });
         }
-    }
-
-    void closeDialogs() {
-        if (donationDialog != null) {
-            donationDialog.dismiss();
-            donationDialog = null;
-        }
-    }
-
-    void close() {
-        setStarted(false);
-        donorWorker.shutdownNow();
-        closeDialogs();
-    }
-
-    private void showDonationDialog(boolean permanent) {
-        closeDialogs();
-        Dialog dialog = new Dialog(activity);
-        donationDialog = dialog;
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        LinearLayout panel = card();
-        panel.setPadding(dp(8), dp(22), dp(8), dp(8));
-        TextView title = text(permanent ? "永久关闭捐赠入口？" : "关闭捐赠入口", 20, primary);
-        title.setTypeface(Typeface.create("sans-serif-medium", 0));
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(dp(16), 0, dp(16), dp(18));
-        title.setAccessibilityHeading(true);
-        panel.addView(title, new LinearLayout.LayoutParams(-1, -2));
-        if (permanent) {
-            TextView message = text("确认后将不再显示捐赠入口，且无法在设置中恢复。", 14, secondary);
-            message.setGravity(Gravity.CENTER);
-            message.setLineSpacing(dp(5), 1f);
-            message.setPadding(dp(18), 0, dp(18), dp(22));
-            panel.addView(message, new LinearLayout.LayoutParams(-1, -2));
-        } else {
-            menu(panel, "临时关闭", "本次隐藏，重新打开设置后恢复", () -> {
-                dialog.dismiss();
-                donationTemporarilyHidden = true;
-                show(ABOUT, false);
-                Toast.makeText(activity, "本次已隐藏，重新打开设置后恢复", Toast.LENGTH_SHORT).show();
-            });
-            divider(panel);
-            menu(panel, "永久关闭", "关闭后无法在设置中恢复", () -> {
-                dialog.dismiss();
-                showDonationDialog(true);
-            });
-        }
-        LinearLayout actions = new LinearLayout(activity);
-        actions.setPadding(dp(8), dp(permanent ? 0 : 12), dp(8), dp(8));
-        TextView cancel = dialogAction("取消", false, dialog::dismiss);
-        actions.addView(cancel, new LinearLayout.LayoutParams(0, -2, 1));
-        if (permanent) {
-            TextView confirm = dialogAction("永久关闭", true, () -> {
-                if (closeDonationPermanently()) {
-                    dialog.dismiss();
-                    show(ABOUT, false);
-                    Toast.makeText(activity, "捐赠入口已永久关闭", Toast.LENGTH_SHORT).show();
-                }
-            });
-            LinearLayout.LayoutParams confirmSize = new LinearLayout.LayoutParams(0, -2, 1);
-            confirmSize.leftMargin = dp(12);
-            actions.addView(confirm, confirmSize);
-        }
-        panel.addView(actions, new LinearLayout.LayoutParams(-1, -2));
-        dialog.setContentView(panel);
-        Window window = dialog.getWindow();
-        window.setBackgroundDrawable(new ColorDrawable(0));
-        window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-        window.setDimAmount(.32f);
-        window.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        dialog.show();
-        window.setLayout(Math.min(getResources().getDisplayMetrics().widthPixels - dp(32), dp(560)), -2);
-        WindowManager.LayoutParams placement = window.getAttributes();
-        placement.y = dp(16);
-        window.setAttributes(placement);
-    }
-
-    private TextView dialogAction(String label, boolean destructive, Runnable action) {
-        TextView button = text(label, 16, destructive ? 0xffffffff : primary);
-        button.setGravity(Gravity.CENTER);
-        button.setTypeface(Typeface.create("sans-serif-medium", 0));
-        button.setMinHeight(dp(48));
-        button.setPadding(dp(12), dp(14), dp(12), dp(14));
-        button.setBackground(new RippleDrawable(ColorStateList.valueOf(dark ? 0x20ffffff : 0x14000000),
-                shape(destructive ? 0xffd74742 : dark ? 0xff2a2d34 : 0xfff0f1f3, 12), null));
-        button.setOnClickListener(v -> action.run());
-        return button;
-    }
-
-    private void donate() {
-        TextView title = text("给 MiStep 添一点口粮", 23, primary);
-        title.setTypeface(Typeface.create("sans-serif-medium", 0));
-        title.setGravity(Gravity.CENTER);
-        title.setAccessibilityHeading(true);
-        add(title, 22, 14);
-        TextView note = text("MiStep 纯为爱发电。\n如果你觉得它做得不错，欢迎给作者添一点口粮。\n支持完全自愿，感谢每一份心意。", 14, secondary);
-        note.setGravity(Gravity.CENTER);
-        note.setLineSpacing(dp(6), 1f);
-        add(note, 0, 24);
-
-        LinearLayout methods = new LinearLayout(activity);
-        methods.setPadding(dp(4), dp(4), dp(4), dp(4));
-        methods.setBackground(shape(dark ? 0xff292c32 : 0xffe7e9ed, 8));
-        TextView[] tabs = new TextView[2];
-        FrameLayout qrFrame = new FrameLayout(activity);
-        qrFrame.setBackground(shape(0xffffffff, 8));
-        qrFrame.setPadding(dp(4), dp(4), dp(4), dp(4));
-        ImageView qr = new ImageView(activity) {
-            @Override protected void onMeasure(int widthSpec, int heightSpec) {
-                int width = MeasureSpec.getSize(widthSpec);
-                super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY));
-            }
-        };
-        qr.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        qrFrame.addView(qr, new FrameLayout.LayoutParams(-1, -2));
-        Runnable select = () -> {
-            int selected = donationMethod == 1 ? 1 : 0;
-            for (int i = 0; i < tabs.length; i++) {
-                tabs[i].setSelected(i == selected);
-                tabs[i].setTextColor(i == selected ? (i == 0 ? 0xff078047 : 0xff1677ff) : secondary);
-                tabs[i].setBackground(i == selected ? shape(0xffffffff, 6) : null);
-            }
-            String resource = selected == 0 ? "donate_wechat" : "donate_alipay";
-            int id = getResources().getIdentifier(resource, "drawable", activity.getPackageName());
-            qr.setImageResource(id);
-            qr.setContentDescription(selected == 0 ? "微信收款二维码" : "支付宝收款二维码");
-        };
-        for (int i = 0; i < tabs.length; i++) {
-            final int method = i;
-            TextView tab = text(i == 0 ? "微信" : "支付宝", 16, primary);
-            tab.setGravity(Gravity.CENTER);
-            tab.setTypeface(Typeface.create("sans-serif-medium", 0));
-            tab.setMinHeight(dp(44));
-            tab.setPadding(dp(8), dp(10), dp(8), dp(10));
-            tab.setOnClickListener(v -> { donationMethod = method; select.run(); });
-            tabs[i] = tab;
-            methods.addView(tab, new LinearLayout.LayoutParams(0, -2, 1));
-        }
-        add(methods, 0, 16);
-        add(qrFrame, 0, 18);
-        TextView thanks = text("谢谢你的喜欢与支持", 13, secondary);
-        thanks.setGravity(Gravity.CENTER);
-        add(thanks, 0, 0);
-        select.run();
-    }
-
-    private boolean donationHidden() {
-        return donationTemporarilyHidden || aboutPreferences.getBoolean("donation_permanently_closed", false);
-    }
-
-    private boolean closeDonationPermanently() {
-        if (aboutPreferences.edit().putBoolean("donation_permanently_closed", true).commit()) return true;
-        Toast.makeText(activity, "未能保存，请重试", Toast.LENGTH_SHORT).show();
-        return false;
-    }
-
-    private void openLink(String url) {
-        try { activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                .addCategory(Intent.CATEGORY_BROWSABLE)); }
-        catch (ActivityNotFoundException | SecurityException unavailable) {
-            Toast.makeText(activity, "未找到可打开链接的应用", Toast.LENGTH_SHORT).show();
-        }
+        add(group,0,14);
+        TextView note=text("从下一次进入横屏全屏开始生效",13,secondary);
+        note.setPadding(dp(16),dp(2),dp(16),0);add(note,0,0);
     }
 
     private void logs() {
@@ -611,41 +285,6 @@ final class WorkspaceSettingsPage extends FrameLayout {
         recordLogs.setEnabled(runtimeLogs.recording()||!runtimeLogs.busy()); recordLogs.setAlpha(runtimeLogs.recording()||!runtimeLogs.busy()?1f:.45f);
     }
 
-    private int visibleCount(WorkspaceOptions options, int[] ids, int from) {
-        int count = 0;
-        for (int i = from; i < ids.length; i++) if (options.visible(ids[i])) count++;
-        return count;
-    }
-
-    private void buttons(int[] ids) {
-        WorkspaceOptions options = WorkspaceSettingsStore.read(activity);
-        LinearLayout group = card();
-        for (int i = 0; i < ids.length; i++) {
-            int id = ids[i];
-            if (group.getChildCount() > 0) divider(group);
-            LinearLayout row = row();
-            TextView label = text(WorkspaceOptions.label(id), 17, primary);
-            label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
-            Switch toggle = settingsSwitch(WorkspaceOptions.label(id), options.visible(id));
-            row.addView(toggle, new LinearLayout.LayoutParams(-2, -2));
-            toggle.setOnCheckedChangeListener((button, checked) -> {
-                WorkspaceOptions current = WorkspaceSettingsStore.read(activity);
-                if (current.visible(id) == checked) return;
-                if (!persist(current.withVisible(id, checked))) button.setChecked(!checked);
-            });
-            row.setOnClickListener(v -> toggle.toggle());
-            group.addView(row);
-            // Keep the panel visibility switch in its own group.
-            if (id == WorkspaceOptions.CONTROL_CENTER) {
-                add(group, 0, 4);
-                section("显示的按钮与信息");
-                group = card();
-            }
-        }
-        add(group, 0, 0);
-    }
-
     private Switch settingsSwitch(String label, boolean checked) {
         Switch toggle = new Switch(activity);
         toggle.setShowText(false);
@@ -697,53 +336,21 @@ final class WorkspaceSettingsPage extends FrameLayout {
     }
 
     private void swap() {
-        int selected = WorkspaceSettingsStore.read(activity).swapMode;
-        for (int mode = 0; mode < choices.length; mode++) {
-            final int choice = mode;
-            LinearLayout group = card();
-            LinearLayout row = row();
-            LinearLayout labels = new LinearLayout(activity);
-            labels.setOrientation(LinearLayout.VERTICAL);
-            labels.addView(text(WorkspaceOptions.modeLabel(mode), 18, primary));
-            TextView description = text(mode == WorkspaceOptions.FIXED_MAIN
-                    ? "主区域保持在当前一侧，只交换应用" : "副任务在原侧放大，主区域随之换边", 13, secondary);
-            LinearLayout.LayoutParams detail = new LinearLayout.LayoutParams(-1, -2);
-            detail.topMargin = dp(6); labels.addView(description, detail);
-            row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
-            RadioButton radio = new RadioButton(activity);
-            Drawable indicator = activity.settingsDrawable("miuix_appcompat_btn_radio_" + (dark ? "dark" : "light"));
-            nativeChoices[mode] = indicator != null;
-            if (indicator != null) {
-                radio.setButtonDrawable(indicator);
-                radio.setButtonTintList(null);
-            } else {
-                radio.setButtonTintList(ColorStateList.valueOf(mode == selected ? BLUE : secondary));
-            }
-            radio.setChecked(mode == selected);
-            radio.setContentDescription(WorkspaceOptions.modeLabel(mode));
-            choices[mode] = radio;
-            row.addView(radio, new LinearLayout.LayoutParams(-2, -2));
-            group.addView(row);
-            ModeDiagram diagram = new ModeDiagram(mode);
-            LinearLayout.LayoutParams preview = new LinearLayout.LayoutParams(-1, dp(104));
-            preview.setMargins(dp(18), 0, dp(18), dp(16));
-            group.addView(diagram, preview);
-            Runnable select = () -> {
-                if (!persist(WorkspaceSettingsStore.read(activity).withSwapMode(choice))) return;
-                for (int i = 0; i < choices.length; i++) {
-                    choices[i].setChecked(i == choice);
-                    if (!nativeChoices[i])
-                        choices[i].setButtonTintList(ColorStateList.valueOf(i == choice ? BLUE : secondary));
-                }
+        int selected=WorkspaceSettingsStore.read(activity).swapMode;
+        for(int mode=0;mode<2;mode++) {
+            final int choice=mode;LinearLayout group=card();
+            Runnable select=()->{
+                if(persist(WorkspaceSettingsStore.read(activity).withSwapMode(choice)))show(SWAP,false);
             };
-            group.setOnClickListener(v -> select.run());
-            row.setOnClickListener(v -> select.run());
-            radio.setOnClickListener(v -> select.run());
-            add(group, 0, 14);
+            choiceOption(group,WorkspaceOptions.modeLabel(mode),mode==WorkspaceOptions.FIXED_MAIN
+                    ?"主区域保持在当前一侧，只交换应用":"副任务在原侧放大，主区域随之换边",mode==selected,true,null,select);
+            group.setOnClickListener(v->select.run());
+            ModeDiagram diagram=new ModeDiagram(mode);
+            LinearLayout.LayoutParams preview=new LinearLayout.LayoutParams(-1,dp(104));
+            preview.setMargins(dp(18),0,dp(18),dp(16));group.addView(diagram,preview);add(group,0,14);
         }
-        TextView note = text("从下一次主副交换开始生效", 13, secondary);
-        note.setPadding(dp(16), dp(2), dp(16), 0);
-        add(note, 0, 0);
+        TextView note=text("从下一次主副交换开始生效",13,secondary);
+        note.setPadding(dp(16),dp(2),dp(16),0);add(note,0,0);
     }
 
     private String gestureLabel(int mode) {
@@ -768,47 +375,12 @@ final class WorkspaceSettingsPage extends FrameLayout {
 
     private void entryGestureOption(LinearLayout group, int mode, String label, String detail,
             int selectedMode, boolean enabled) {
-        LinearLayout row = row();
-        LinearLayout labels = new LinearLayout(activity);
-        labels.setOrientation(LinearLayout.VERTICAL);
-        TextView title = text(label, 17, primary);
-        TextView description = text(detail, 13, secondary);
-        LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(-1, -2);
-        descriptionParams.topMargin = dp(5);
-        labels.addView(title);
-        labels.addView(description, descriptionParams);
-        row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
-        RadioButton radio = new RadioButton(activity);
-        radio.setChecked(selectedMode == mode);
-        radio.setEnabled(enabled);
-        radio.setContentDescription(label + "，" + detail);
-        Drawable indicator = activity.settingsDrawable(
-                "miuix_appcompat_btn_radio_" + (dark ? "dark" : "light"));
-        if (indicator != null) {
-            radio.setButtonDrawable(indicator);
-            radio.setButtonTintList(null);
-        } else {
-            radio.setButtonTintList(ColorStateList.valueOf(selectedMode == mode ? BLUE : secondary));
-        }
-        row.addView(radio, new LinearLayout.LayoutParams(-2, -2));
-        row.setEnabled(enabled);
-        row.setAlpha(enabled ? 1f : .45f);
-        Runnable select = () -> {
-            if (!EntryGesturePolicy.canSelect(mode, EntryGestureSettings.lineHidden(activity))) {
-                Toast.makeText(activity, "请先关闭澎湃的手势提示线", Toast.LENGTH_SHORT).show();
-                show(GESTURE, false);
-                return;
-            }
-            WorkspaceOptions current = WorkspaceSettingsStore.read(activity);
-            if (!persist(current.withEntryGesture(mode))) {
-                show(GESTURE, false);
-                return;
-            }
-            show(GESTURE, false);
-        };
-        row.setOnClickListener(v -> select.run());
-        if (enabled) radio.setOnClickListener(v -> select.run());
-        group.addView(row);
+        choiceOption(group,label,detail,selectedMode==mode,enabled,null,()->{
+            if(!EntryGesturePolicy.canSelect(mode,EntryGestureSettings.lineHidden(activity)))
+                Toast.makeText(activity,"请先关闭澎湃的手势提示线",Toast.LENGTH_SHORT).show();
+            else persist(WorkspaceSettingsStore.read(activity).withEntryGesture(mode));
+            show(GESTURE,false);
+        });
     }
 
     @Override protected void onAttachedToWindow() {

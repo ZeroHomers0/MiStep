@@ -52,13 +52,14 @@ public class WallpaperLayoutRegression {
   WallpaperCropDrawable(Bitmap b,int w,int h,int x,int y,int t){wallpaper=b;width=w;height=h;this.x=x;this.y=y;tint=t;}
   boolean matchesWallpaper(Bitmap b,int w,int h,int t){return wallpaper==b&&width==w&&height==h&&tint==t;}
   void setScreenOrigin(int x,int y){this.x=x;this.y=y;}
-  void setMainHole(Object hole){}
+  void setMainHole(Object hole){}void setWellWallpaper(Bitmap b){}
  }
  static class HyperOsStyle{
   static Object topBackground(Object c){return new Object();}
   static int topWallpaperTint(Object c){return 0x1fffffff;}
   static int accent(Object c){return 0;}static int textSecondary(Object c){return 0;}
  }
+ static class MiStepVideoPane {void setWallpaper(Bitmap b,int w,int h){}}MiStepVideoPane videoPane;
  static class Bar extends View{void setWallpaperBackdrop(Bitmap b,int w,int h){}}
  static class Slot{
   final int index;int sideRow=-1;boolean occupied,parked,sideShown;
@@ -72,7 +73,7 @@ public class WallpaperLayoutRegression {
  int screenW,screenH,CELL_SLOT_COUNT;
  Object ctx=new Object();FrameLayout root=new FrameLayout();MiStepLayout layout;
  View mainGapBacking,topStripBacking=new View();View[]sideBackingViews=new View[6];
- Slot[]slots=new Slot[8];Bar topBar=new Bar();Bitmap wallpaperBackdrop=new Bitmap();
+ Slot[]slots=new Slot[8];Bar topBar=new Bar();Bitmap wallpaperBackdrop=new Bitmap(),wellWallpaperBackdrop=new Bitmap();
  TopTaskPane topTaskPane;boolean taskCellsCovered,sideCompacting;float workspaceAlpha=1f;
  void geometry(int w,int h){
   screenW=w;screenH=h;layout=MiStepLayout.of(w,h,false,2.5f,true);CELL_SLOT_COUNT=1+layout.cellCount;

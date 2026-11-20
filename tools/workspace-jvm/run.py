@@ -13,7 +13,7 @@ def member(signature):
   elif host[i]=='}':d-=1
   i+=1
  return host[a:i]
-methods='\n'.join(member(s) for s in ['    private void beginWorkspaceEntry(', '    private void awaitWorkspaceFrame(', '    private void setWorkspaceAlpha(', '    private android.graphics.RectF workspaceMainHole(', '    private void updateWorkspaceBacking(', '    private void updateWorkspaceBackdropVisibility(', '    private void updateChromeClip(', '    private void clipChromeBesideMain(', '    private int[] sideBackingBounds(', '    private int sideSegmentTop(', '    private int sideSegmentHeight(', '    private void playWorkspaceFade(', '    private void suspendSession(', '    private void finishPendingSuspend(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility('])
+methods='\n'.join(member(s) for s in ['    private void beginWorkspaceEntry(', '    private void awaitWorkspaceFrame(', '    private void setWorkspaceAlpha(', '    private void stageCellPresentation(', '    private Rect workspaceCellCrop(Slot slot)', '    private Rect workspaceCellCrop(int[] rect,', '    private android.graphics.RectF workspaceMainHole(', '    private void updateWorkspaceBacking(', '    private void updateWorkspaceBackdropVisibility(', '    private void updateChromeClip(', '    private void clipChromeBesideMain(', '    private int[] sideBackingBounds(', '    private int sideSegmentTop(', '    private int sideSegmentHeight(', '    private void playWorkspaceFade(', '    private void suspendSession(', '    private void finishPendingSuspend(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility('])
 files={
 'android/animation/Animator.java':'package android.animation;public class Animator {}',
 'android/animation/AnimatorListenerAdapter.java':'package android.animation;public class AnimatorListenerAdapter {public void onAnimationEnd(Animator a){}}',
@@ -27,29 +27,30 @@ import java.util.*;import java.util.function.*;public class ValueAnimator extend
 }''',
 'android/view/animation/PathInterpolator.java':'package android.view.animation;public class PathInterpolator {public PathInterpolator(float a,float b,float c,float d){}}',
 'android/graphics/RectF.java':'package android.graphics;public class RectF {public float left,top,right,bottom;public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}}',
-'android/graphics/Rect.java':'package android.graphics;public class Rect {public int left,top,right,bottom;public Rect(int a,int b,int c,int d){left=a;top=b;right=c;bottom=d;}public String toString(){return left+","+top+","+right+","+bottom;}}',
+'android/graphics/Rect.java':'package android.graphics;public class Rect {public int left,top,right,bottom;public Rect(int a,int b,int c,int d){left=a;top=b;right=c;bottom=d;}public boolean isEmpty(){return right<=left||bottom<=top;}public String toString(){return left+","+top+","+right+","+bottom;}}',
 'android/view/SurfaceControl.java':r'''package android.view;
-import java.util.*;public class SurfaceControl {public boolean valid=true,visible=true;public float alpha=1;public boolean isValid(){return valid;}
- public static class Transaction {List<Runnable>ops=new ArrayList<>();public Transaction setAlpha(Object o,float a){ops.add(()->((SurfaceControl)o).alpha=a);return this;}public Transaction show(Object o){ops.add(()->((SurfaceControl)o).visible=true);return this;}public Transaction hide(Object o){ops.add(()->((SurfaceControl)o).visible=false);return this;}public void apply(){ops.forEach(Runnable::run);}public void close(){}}
+import java.util.*;public class SurfaceControl {public boolean valid=true,visible=true;public float alpha=1;public android.graphics.Rect crop;public boolean isValid(){return valid;}
+ public static class Transaction {List<Runnable>ops=new ArrayList<>();public Transaction setAlpha(Object o,float a){ops.add(()->((SurfaceControl)o).alpha=a);return this;}public Transaction setWindowCrop(Object o,android.graphics.Rect r){ops.add(()->((SurfaceControl)o).crop=r);return this;}public Transaction show(Object o){ops.add(()->((SurfaceControl)o).visible=true);return this;}public Transaction hide(Object o){ops.add(()->((SurfaceControl)o).visible=false);return this;}public void apply(){ops.forEach(Runnable::run);}public void close(){}}
 }''',
 'de/robv/android/xposed/XposedHelpers.java':r'''package de.robv.android.xposed;
 public class XposedHelpers {public static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new IllegalStateException(e);}}}''',
 'com/jiusis/mistep/WorkspaceRegression.java':r'''package com.jiusis.mistep;
 import java.util.*;import android.view.SurfaceControl;import android.graphics.Rect;import de.robv.android.xposed.XposedHelpers;
 public class WorkspaceRegression {
+ void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane;boolean lockExitPending;
  static class LiveSwapVisualLease {static void writeAlpha(View v,float a){v.setAlpha(a);}}
  static class SideDismiss {boolean isTracking(){return false;}void settle(boolean b){}}
  SideDismiss sideDismiss;
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  static class Drawable {int alpha=255;void setAlpha(int a){alpha=a;}}
  static class WallpaperCropDrawable extends Drawable {android.graphics.RectF hole;void setMainHole(android.graphics.RectF r){hole=r;}}
- static class View {static final int VISIBLE=0,GONE=8;float alpha=1;int pickerCloses;Drawable background=new WallpaperCropDrawable();android.graphics.Rect clip;Drawable getBackground(){return background;}void setAlpha(float v){alpha=v;}void setClipBounds(android.graphics.Rect r){clip=r;}void closeQuickAppPicker(){pickerCloses++;}}
+ static class View {static final int VISIBLE=0,GONE=8;float alpha=1;int pickerCloses;Drawable background=new WallpaperCropDrawable();android.graphics.Rect clip;Drawable getBackground(){return background;}void setAlpha(float v){alpha=v;}void setClipBounds(android.graphics.Rect r){clip=r;}void invalidate(){}void setWorkspaceMainHole(android.graphics.RectF r){}void closeQuickAppPicker(){pickerCloses++;}}
  static class Observer {Runnable frame;void registerFrameCommitCallback(Runnable r){frame=r;}}
  static class FrameLayout extends View {Observer observer=new Observer();boolean attached=true,hardware=true;int invalidates;
   boolean isAttachedToWindow(){return attached;}boolean isHardwareAccelerated(){return hardware;}Observer getViewTreeObserver(){return observer;}void invalidate(){invalidates++;}void draw(){Runnable r=observer.frame;observer.frame=null;if(r!=null)r.run();}}
  static class Queue {List<Runnable>q=new ArrayList<>();void post(Runnable r){q.add(r);}void postDelayed(Runnable r,long d){q.add(r);}void flush(){while(!q.isEmpty())q.remove(0).run();}}
  static class Controller {SurfaceControl surface=new SurfaceControl();Object token=new Object();}
- static class Slot {int index=1,sideRow=-1;int taskId=1;Object taskToken;boolean occupied=true,parked,promoting,launching,sidePrepared;Controller controller=new Controller();View hint=new View(),view=new View();int[] rect=new int[]{0,508,762,900};Slot(){taskToken=controller.token;}}
+ static class Slot {int index=1,sideRow=-1;int taskId=1;Object taskToken;boolean occupied=true,parked,promoting,launching,sidePrepared,frozen;Controller controller=new Controller();View hint=new View(),view=new View();int[] rect=new int[]{0,508,762,900};Slot(){taskToken=controller.token;}}
  static class Bitmap {void recycle(){}}
  static class StatusBar {void restore(){}}
  static class Clipboard {void close(){}}static class MiStepClipboard {static Clipboard get(Object c){return new Clipboard();}}
@@ -66,7 +67,7 @@ public class WorkspaceRegression {
   check(all&&zoomWrites==0,"restore the real side viewport before starting the zoom");
   sideLayouts++;
  }
- boolean presentsSlot(Slot s){return true;}
+ boolean mayWriteSideSurface(Slot s){return true;}boolean presentsSlot(Slot s){return true;}
  static class Roll{boolean rolling(){return false;}boolean showingTask(){return false;}}
  static class CellMotion{void finish(){}}
  Queue main=new Queue();Object ctx=new Object();CellMotion cellMotion;StatusBar statusBar=new StatusBar();Promotion promotion;Bitmap mainBackdrop,wallpaperBackdrop=new Bitmap();
@@ -101,12 +102,12 @@ public class WorkspaceRegression {
   check(kept.retainedHides==1&&kept.returns==0,"settled collection exits into retained live bindings");
   var h=new WorkspaceRegression();h.beginWorkspaceEntry(()->h.ready++);
   check(h.backdropAcquires==0,"native backdrop acquisition must wait for the first committed Host frame");
-  check(h.workspaceAlpha==0&&h.topBar.alpha==0&&h.mainGapBacking.alpha==0&&h.slots[1].controller.surface.alpha==0,"entry hides controls, gap background and actual task parents before first buffer");
+  check(h.workspaceAlpha==0&&h.topBar.alpha==0&&h.mainGapBacking.alpha==1&&((WallpaperCropDrawable)h.mainGapBacking.background).hole!=null&&h.slots[1].controller.surface.alpha==0,"entry hides controls and actual task parents while wallpaper excludes the full main");
   check(h.tabletTools.alpha==0,"permanent tablet title is hidden before the first workspace frame");
   check(h.zoomWrites==0&&h.root.observer.frame!=null,"main zoom waits for committed Host buffer");h.root.draw();h.main.flush();
   check(h.backdropAcquires==1,"one native backdrop acquisition follows committed visibility");
   check(h.zoomWrites==1&&h.workspaceAnimator!=null,"one real main zoom starts after frame");h.workspaceAnimator.tick(.5f);
-  check(h.workspaceAlpha==.5f&&h.slots[2].controller.surface.alpha==.5f,"actual side containers fade with Host controls");h.workspaceAnimator.end();
+  check(h.workspaceAlpha==.5f&&(h.slots[2].controller.surface.alpha==0f||h.slots[2].controller.surface.alpha==1f)&&h.slots[2].view.alpha==h.slots[2].controller.surface.alpha,"actual side containers reveal by crop with consistent opaque render-node and surface state");h.workspaceAnimator.end();
   check(h.tabletTools.alpha==1,"permanent tablet title reaches full opacity with the real workspace");
   check(h.workspaceAlpha==1&&h.ready==1,"entry continuation follows end frame");
   h=new WorkspaceRegression();h.beginWorkspaceEntry(null);h.scene=SUSPENDING;h.root.draw();h.main.flush();check(h.zoomWrites==0,"stale entry cannot shrink a closing workspace");
@@ -114,7 +115,7 @@ public class WorkspaceRegression {
   h=new WorkspaceRegression();h.wallpaperBackdrop=null;h.beginWorkspaceEntry(null);check(h.root.observer.frame==null&&!h.main.q.isEmpty(),"entry waits for wallpaper instead of showing a black surround");h.wallpaperBackdrop=new Bitmap();h.main.flush();check(h.root.observer.frame!=null,"wallpaper readiness schedules real frame gate");
   h=new WorkspaceRegression();h.suspendSession("test");check(h.scene==SUSPENDING&&h.zoomWrites==1&&h.returns==0,"exit does not hand tasks back during real zoom");
   check(h.topBar.pickerCloses==1,"exit closes the shortcut editor before task handback");
-  Object owner=h.slots[1].taskToken;h.workspaceAnimator.tick(.5f);check(h.slots[1].controller.surface.alpha==.5f&&h.slots[1].taskToken==owner,"exit fades real content without changing owner");
+  Object owner=h.slots[1].taskToken;h.workspaceAnimator.tick(.5f);check((h.slots[1].controller.surface.alpha==0f||h.slots[1].controller.surface.alpha==1f)&&h.slots[1].taskToken==owner,"exit fades real content without changing owner");
   check(h.tabletTools.alpha==.5f,"permanent tablet title follows exit opacity instead of remaining visible");
   h.workspaceAnimator.end();check(h.returns==1&&h.parks==1&&h.workspaceAlpha==0,"task handback starts only after fade finishes");
   check(h.tabletTools.alpha==0,"permanent tablet title is fully hidden before task handback");
@@ -137,6 +138,8 @@ public class WorkspaceRegression {
   check(h.scene==SUSPENDING&&!h.workspaceEntering,"exit during pending resume frame cannot strand RESUMING");h.root.draw();h.main.flush();check(h.zoomWrites==1,"late entry frame cannot restart zoom after exit");h.workspaceAnimator.end();check(h.parks==1,"pending-entry exit returns tasks");
   h=new WorkspaceRegression();h.scene=RESUMING;h.beginWorkspaceEntry(null);h.screenOn=false;h.suspendSession("screen-lock");
   check(h.scene==SUSPENDING&&h.parks==1&&h.workspaceAnimator==null,"screen lock restores immediately without waiting for hidden display frames");h.root.draw();h.main.flush();check(h.zoomWrites==1&&!h.zoomed,"late unlocked entry never re-enables zoom");
+  h=new WorkspaceRegression();h.lockExitPending=true;h.retentionAllowed=true;h.suspendSession("unlock-exit");
+  check(h.workspaceAnimator==null&&h.retainedHides==1&&h.returns==0&&h.parks==0,"authenticated hidden lock exit has no fade and no unnecessary task handback");
   h=new WorkspaceRegression();h.tabletTools=null;h.beginWorkspaceEntry(null);
   check(h.workspaceAlpha==0,"portrait workspace remains valid without a permanent tablet title");
   for(boolean mainRight:new boolean[]{false,true}) {
@@ -147,16 +150,16 @@ public class WorkspaceRegression {
     check(h.topStripBacking.alpha==1&&h.mainGapBacking.alpha==1,"wallpaper stays opaque outside moving main");
     check(Math.abs(hole.left-h.layout.mainOffsetX*p)<.01&&Math.abs(hole.top-606*p)<.01,"hole follows actual main offset");
     check(Math.abs(hole.right-hole.left-3048*(1+(.7017717f-1)*p))<.01,"hole uses the same main scale");
-    check(h.slots[1].controller.surface.alpha==p&&((WallpaperCropDrawable)h.slots[1].hint.background).hole!=null,"real task fade and wallpaper exclusion coexist");
+    check((h.slots[1].controller.surface.alpha==0f||h.slots[1].controller.surface.alpha==1f)&&h.slots[1].view.alpha==h.slots[1].controller.surface.alpha&&((WallpaperCropDrawable)h.slots[1].hint.background).hole!=null,"real task remains opaque or hidden while wallpaper exclusion follows geometry");
    }
    h.workspaceBackdrop=new Object();h.setWorkspaceAlpha(.5f);
    check(h.topStripBacking.alpha==1&&h.mainGapBacking.alpha==1,"cutout wallpaper remains opaque while the native buffer reaches its first composition");
-   check(h.slots[1].hint.background.alpha==255&&h.slots[1].controller.surface.alpha==.5f,"hint wallpaper stays opaque while the actual task remains live");
+   check(h.slots[1].hint.background.alpha==255&&(h.slots[1].controller.surface.alpha==0f||h.slots[1].controller.surface.alpha==1f),"hint wallpaper and real task never acquire fractional opacity");
    h.setWorkspaceAlpha(1f);check(h.slots[1].hint.background.alpha==255,"settled hint wallpaper restores opacity");
    h.setWorkspaceAlpha(.5f);h.workspaceBackdrop=null;h.setWorkspaceAlpha(.5f);
    check(h.slots[1].hint.background.alpha==255,"failed or released native wallpaper restores original hint background");
    h.layout.tabletLandscape=false;h.setWorkspaceAlpha(.5f);
-   check(((WallpaperCropDrawable)h.topStripBacking.background).hole==null&&h.topStripBacking.alpha==.5f,"portrait restores original background behavior");
+   check(((WallpaperCropDrawable)h.topStripBacking.background).hole!=null&&h.topStripBacking.alpha==1f,"portrait background excludes moving main without a translucent color band");
   }
   h=new WorkspaceRegression();h.layout.tabletLandscape=true;h.wallpaperBackdrop=null;
   h.topStripBacking.background=new Drawable();h.mainGapBacking.background=new Drawable();
@@ -210,6 +213,6 @@ files['com/jiusis/mistep/WorkspaceRegression.java']=files['com/jiusis/mistep/Wor
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(root/'module/src/main/java/com/jiusis/mistep/WorkspaceCellReveal.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WorkspaceRegression'],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopControlsCreationRegression'],check=True)

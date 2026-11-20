@@ -26,7 +26,7 @@ def member(signature):
 
 methods = '\n'.join(member(signature) for signature in [
     '    public static void onScreenState(', '    public static void onUserPresent(',
-    '    public static void onNativeWake(',
+    '    public static void onNativeWake(', '    static void onRetainedNativeReady(',
     '    public static void onSystemNavigation(', '    private boolean setKeyguardWindowHidden(',
     '    public static void onLandscapeMode(',
     '    private boolean retainWorkspaceForLock(', '    private void leaveKeyguardPrivacy(',
@@ -46,7 +46,7 @@ import java.util.*;
 public class MiStepHost {
  static int checks;
  static void check(boolean ok,String m){checks++;if(!ok)throw new AssertionError(m);}
- static class View {static final int VISIBLE=0;int layouts;void requestLayout(){layouts++;}
+ static class View {static final int VISIBLE=0,GONE=8;int layouts;void requestLayout(){layouts++;}
   Object getWindowToken(){return this;}void setVisibility(int v){}void closeQuickAppPicker(){}void applyOptions(WorkspaceOptions o){}}
  static class WindowManager {
   static class LayoutParams {static final int FLAG_NOT_TOUCHABLE=16;float alpha=.8f;int flags=64;}
@@ -63,8 +63,10 @@ public class MiStepHost {
  static class MiStepEntryGuard {static boolean unlocked=true;static boolean canOpen(Context c){return unlocked;}}
  static class MiStepUnlockHandoff {boolean active(){return true;}void cancel(){}}
  MiStepUnlockHandoff unlockHandoff;
- static class MiStepRetainedWindow {static void request(Context c,Queue q,Object token,long generation,float s,float x,float y,java.util.function.Consumer<Boolean> ready){ready.accept(false);}}
- boolean retainedWindowPrepared;long retainedWindowGeneration;
+ static class MiStepRetainedWindow {static boolean accepted;static void request(Context c,Queue q,Object token,long generation,float s,float x,float y,java.util.function.Consumer<Boolean> ready){ready.accept(accepted);}}
+ boolean retainedWindowPrepared,retainedGeometryConfirmed;long retainedWindowGeneration;
+ static boolean autoCommit=true;static MiStepHost waitingGeometry;int handoffs;
+ static boolean handoffNativeUnlock(Runnable ready){MiStepHost h=sInstance;h.handoffs++;waitingGeometry=h;if(autoCommit){if(!h.workspaceOptions.keepOnLock){h.retainedForLock=false;h.suspendSession("unlock-exit");}else{h.retainedGeometryConfirmed=true;h.leaveKeyguardPrivacy();}ready.run();}return true;}
  static class MiStepLayout {float mainScale=.75f,mainOffsetX,mainOffsetY=620;}
  MiStepLayout layout=new MiStepLayout();
  static class MiStepClipboard {static MiStepClipboard get(Context c){return new MiStepClipboard();}void close(){}}
@@ -82,7 +84,7 @@ public class MiStepHost {
  WindowManager wm=new WindowManager();WindowManager.LayoutParams lp=new WindowManager.LayoutParams();
  WorkspaceOptions workspaceOptions=WorkspaceOptions.DEFAULT;Context ctx;
  Slot[]slots=new Slot[SLOT_COUNT];StatusBar statusBar=new StatusBar();MiStepSwapTrace swapTrace;
- boolean screenOn=true,keyguardLocked,retainedForLock,keyguardWindowHidden,keyguardWindowNotTouchable,retainedOnExit;
+ boolean lockExitPending;boolean screenOn=true,keyguardLocked,retainedForLock,keyguardWindowHidden,keyguardWindowNotTouchable,retainedOnExit;
  boolean restoredSurfaces,traceNextSwap,workspaceEntering,zoomed=true,suspendRequested,landscapeSuspended,mirror=true;
  float keyguardWindowAlpha,workspaceAlpha=1f;int keyguardResumeIndex=-1,scene=ACTIVE,suspends,entries,repairs,reasserts,adoptions,zooms;
  long sceneEpoch=7,workspaceGeneration,zoomAnimUntil;String lastCommand;Runnable entryReady;
@@ -90,10 +92,11 @@ public class MiStepHost {
  boolean emptyMainHomeFocused(){return false;} // Native Home focus has its separate production-method suite.
  android.animation.ValueAnimator workspaceAnimator;
  MiStepHost(java.io.File f){ctx=new Context(f);for(int i=0;i<SLOT_COUNT;i++){slots[i]=new Slot();slots[i].taskId=200+i;}sInstance=this;}
- static void log(String s){}String describeTasks(){return "same live tasks";}
+  void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane; static void log(String s){}String describeTasks(){return "same live tasks";}
  void closeSwapPreview(){}void closeCellMovePreview(){}void publishDesktopSideTasks(){}void hideIme(){}
  void suspendSession(String reason){suspends++;scene=SUSPENDED;}
  void resumeSession(){}void updateTopBarState(){}void reapplyScale(Slot s){repairs++;}
+ void awaitRetainedWorkspaceFrame(long epoch){confirmRetainedResume(epoch,0);}
  void confirmRetainedResume(long epoch,int attempt){throw new AssertionError("ordinary hidden resume in lock fixture");}
  void scheduleSideVisibilityRepair(Slot s){}void setMirrorLayerVisible(boolean value){mirror=value;}
  void setZoomState(boolean value){zoomed=value;}
@@ -113,7 +116,9 @@ public class MiStepHost {
  public static void main(String[]args)throws Exception{
   java.io.File f=new java.io.File(args[0]);
   MiStepHost h=fresh(f);off(h);
-  check(h.suspends==1&&!h.retainedForLock,"default screen-off follows existing exit");
+  check(h.suspends==0&&h.retainedForLock&&h.keyguardWindowHidden,"exit-on-lock also suspends attached tasks instead of returning them during screen-off");
+  MiStepEntryGuard.unlocked=false;onUserPresent();h.main.drain();check(h.suspends==0,"exit choice waits for actual authentication");
+  MiStepEntryGuard.unlocked=true;onUserPresent();h.main.drain();check(h.suspends==1&&!h.retainedForLock&&h.entries==0,"exit choice closes on authenticated wake without reopening workspace");
   h=fresh(f);h.scene=SUSPENDED;h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);
   check(!h.retainedForLock&&h.entries==0,"locking an exited workspace does not create a session");
   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);
@@ -180,6 +185,23 @@ public class MiStepHost {
   Looper.current=Looper.MAIN;h.main.drain();
   check(!h.retainedForLock&&h.reasserts==1,"marshalled callback restores attached task once");
   h=fresh(f);onNativeWake();check(h.reasserts==0&&h.entries==0,"native callbacks cannot open an exited session");
+  h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);MiStepRetainedWindow.accepted=true;MiStepEntryGuard.unlocked=false;off(h);
+  check(h.retainedWindowPrepared&&h.lp.alpha==0&&h.keyguardWindowHidden,"native retained-window acknowledgement cannot warm the Host at visible compositor alpha");
+  MiStepRetainedWindow.accepted=false;MiStepEntryGuard.unlocked=true;
+  h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);h.retainedForLock=true;h.retainedWindowGeneration=100;h.retainedGeometryConfirmed=false;autoCommit=false;
+  onRetainedNativeReady(99);h.main.drain();check(h.handoffs==0,"stale native readiness cannot restore a newer retained lease");
+  MiStepEntryGuard.unlocked=false;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==0,"native readiness cannot bypass physical authentication");
+  MiStepEntryGuard.unlocked=true;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==1&&h.retainedForLock,"native readiness routes through correlated handoff rather than independent zoom");autoCommit=true;
+
+  for(boolean warm:new boolean[]{false,true}){
+   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);h.retainedWindowPrepared=warm;autoCommit=false;
+   onUserPresent();h.main.drain();check(h.handoffs==1&&h.retainedForLock&&h.keyguardWindowHidden&&h.lp.alpha==0&&!h.zoomed,"warm and cold retained buffers both wait for actual WM geometry");
+   h.retainedGeometryConfirmed=true;h.leaveKeyguardPrivacy();check(!h.retainedForLock&&h.zoomed&&h.lp.alpha==.8f,"delayed confirmed geometry restores original window");autoCommit=true;
+  }
+  h=fresh(f);h.scene=RESUMING;h.lockExitPending=true;h.retainedForLock=true;h.completeWorkspaceResume(h.sceneEpoch,true);
+  check(h.scene==ACTIVE&&h.suspends==0&&h.entries==0,"late readoption completion cannot hand back tasks before authenticated exit commit");
+  h.retainedForLock=false;h.scene=RESUMING;h.completeWorkspaceResume(h.sceneEpoch,true);
+  check(h.suspends==1,"readoption completion after physical exit commit finishes hidden cleanup");
   System.out.println("production lock retention lifecycle checks="+checks+" passed");
  }
 }'''

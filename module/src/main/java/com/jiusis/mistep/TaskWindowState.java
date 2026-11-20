@@ -89,6 +89,15 @@ final class TaskWindowState {
         return UNKNOWN_ROTATION;
     }
 
+    int inheritedMainRotation() {
+        // A temporary side configuration must not mask the last real main state.
+        if(lastFullscreenAppliedRotation==0)return UNKNOWN_ROTATION;
+        if(lastFullscreenAppliedRotation==1||lastFullscreenAppliedRotation==3)return lastFullscreenAppliedRotation;
+        if(lastFullscreenResolvedRotation==1||lastFullscreenResolvedRotation==3)return lastFullscreenResolvedRotation;
+        return lastFullscreenConfigurationOrientation==2?1:UNKNOWN_ROTATION;
+    }
+    boolean inheritsMainLandscape(){return inheritedMainRotation()!=UNKNOWN_ROTATION;}
+
     void forgetRememberedRotation() {
         appliedRotation = 0;
         lastFullscreenConfigurationOrientation = UNKNOWN_ORIENTATION;

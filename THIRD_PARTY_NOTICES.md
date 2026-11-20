@@ -22,3 +22,9 @@ Android SDK、Build Tools、NDK、JDK 和 LSPosed 由使用者另行准备，保
 Mi Step 原创部分采用 [Mi Step 非商用共享源码许可 1.0](LICENSE)，
 详见 [许可说明](docs/许可说明.md)。该许可不重新授权上述第三方组件，
 不限制第三方许可已授予的权利，也不改变其著作权和商标归属。
+
+## NeXtep 视频窗口接入参考
+
+`MiStepVideoDock.java`、`MiStepVideoPane.java` 的原生画中画/视频悬浮窗接入流程参考 [NeXtep](https://github.com/lujinxin/NeXtep) 的 `ControlAreaVideoController`、输入隔离与退出归还机制；本项目使用 Java 和 Xposed API 82 重新适配，没有引入其整任务置顶或商业授权代码。
+
+上游采用 Apache License 2.0，许可原文随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。

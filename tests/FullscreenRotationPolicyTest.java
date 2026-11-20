@@ -60,6 +60,22 @@ final class FullscreenRotationPolicyTest {
                         "new explicit portrait request wins over history " + mode);
             }
         }
+        for (int remembered : new int[]{1, 3}) {
+            for (int request : new int[]{-1, 2, 4, 10, 13, 3, 5, 14}) {
+                for (int resolved : new int[]{-1, 0, 1, 2, 3}) {
+                    check(FullscreenRotationPolicy.taskRotation(request,resolved,false,6,remembered,0,true) == remembered,
+                            "phone side retains main landscape despite unlocked sensor " + request);
+                }
+            }
+            for (int request : new int[]{1, 7, 9, 12}) {
+                check(rotation(request, 0, false, 6, remembered) == 0,
+                        "explicit side portrait request still wins");
+            }
+        }
+        check(rotation(-1, 0, false, 6, -1) == 0,
+                "ordinary side without main landscape stays portrait");
+        check(rotation(-1, 0, false, 1, 3) == 0,
+                "main automatic orientation still follows native sensor");
         check(FullscreenRotationPolicy.observedTaskRotation(2, 11, 0) == 1,
                 "pre-step landscape configuration is captured before display hold");
         check(FullscreenRotationPolicy.observedTaskRotation(2, 8, 0) == 3,
