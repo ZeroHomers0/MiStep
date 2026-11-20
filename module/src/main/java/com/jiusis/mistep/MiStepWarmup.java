@@ -261,12 +261,7 @@ final class MiStepWarmup {
         }
     }
 
-    private static int currentUser() {
-        try {
-            return (Integer) XposedHelpers.callStaticMethod(android.app.ActivityManager.class,
-                    "getCurrentUser");
-        } catch (Throwable unavailable) { return -1; }
-    }
+    private static int currentUser() { return CurrentUser.id(); }
 
     private static Context userContext(Context base, int user) {
         if (user < 0) throw new IllegalStateException("current user unavailable");

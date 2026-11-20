@@ -10,10 +10,7 @@ final class QuickAppPins {
     private static final String KEY = "mistep_quick_app_pins_v1";
     private QuickAppPins() {}
 
-    static int user() {
-        try { return (Integer) XposedHelpers.callStaticMethod(android.app.ActivityManager.class, "getCurrentUser"); }
-        catch (Throwable unavailable) { return -1; }
-    }
+    static int user() { return CurrentUser.id(); }
 
     static List<String> read(Context context, int user) {
         if (user < 0) throw new IllegalStateException("current user unavailable");
