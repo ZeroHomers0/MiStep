@@ -22,7 +22,7 @@ import java.util.*;public class XposedBridge {
 }""",
 'de/robv/android/xposed/XposedHelpers.java':r"""package de.robv.android.xposed;
 public class XposedHelpers {public static Class<?> findClass(String n,ClassLoader cl){return Object.class;}public static Object callMethod(Object o,String n,Object...a)throws Exception{return o.getClass().getMethod(n).invoke(o);}}""",
-'com/jiusis/mistep/KeyguardTransitionRegression.java':r"""package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/KeyguardTransitionRegression.java':r"""package io.github.zerohomers0.onesteplite;
 import java.util.*;import de.robv.android.xposed.*;
 public class KeyguardTransitionRegression {
  public static class Info {int flags;public Info(int f){flags=f;}public int getFlags(){return flags;}}
@@ -36,7 +36,7 @@ public class KeyguardTransitionRegression {
   check(Arrays.equals(original,p.args),"native transactions, targets, and finish callback changed");return p;
  }
  public static void main(String[]a)throws Throwable{
-  List<XC_MethodHook.Unhook> installed=MiStepKeyguardTransition.install(Object.class,o->o==owner&&retained);
+  List<XC_MethodHook.Unhook> installed=KeyguardTransition.install(Object.class,o->o==owner&&retained);
   check(installed.size()==2&&XposedBridge.hooks.size()==2,"request and start hooks missing");
   for(int flags:new int[]{0x100,0x108,0x4100}){
    XC_MethodHook.MethodHookParam request=invoke("handleRequest",2,owner,new Info(flags));
@@ -61,7 +61,7 @@ public class KeyguardTransitionRegression {
   for(int length:new int[]{0,1,3,4,7})check(!invoke("startAnimation",length,owner,new Info(256)).stopped,"unknown start signature intercepted");
   for(int length:new int[]{0,1,3,6})check(!invoke("handleRequest",length,owner,new Info(256)).stopped,"unknown request signature intercepted");
   XposedBridge.hooks.clear();XposedBridge.installed.clear();XposedBridge.fail="startAnimation";
-  try{MiStepKeyguardTransition.install(Object.class,o->true);throw new AssertionError("registration failure hidden");}
+  try{KeyguardTransition.install(Object.class,o->true);throw new AssertionError("registration failure hidden");}
   catch(LinkageError expected){check(XposedBridge.installed.size()==1&&XposedBridge.installed.get(0).removed,"partial registration not rolled back");}
   System.out.println("Native retained keyguard transition: "+checks+" checks passed");
  }
@@ -70,7 +70,7 @@ public class KeyguardTransitionRegression {
 paths=[]
 for rel,body in files.items():
  p=out/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8');paths.append(str(p))
-paths.append(str(src/'MiStepKeyguardTransition.java'))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(src/'KeyguardTransition.java'))
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.KeyguardTransitionRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.KeyguardTransitionRegression'],check=True)

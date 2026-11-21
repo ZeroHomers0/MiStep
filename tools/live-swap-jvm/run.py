@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC=package_dir(ROOT)
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/standalone'
 OUT.mkdir(parents=True, exist_ok=True)
-JDK = Path(os.environ["MISTEP_JAVA_BIN"])
+JDK = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 FILES = {
 'android/graphics/Rect.java': r'''package android.graphics;
 public class Rect {public int left,top,right,bottom;public Rect(){}public Rect(int l,int t,int r,int b){left=l;top=t;right=r;bottom=b;}public Rect(Rect r){this(r.left,r.top,r.right,r.bottom);}public int width(){return right-left;}public int height(){return bottom-top;}public boolean isEmpty(){return width()<=0||height()<=0;}}
@@ -44,28 +44,28 @@ public class ShellTaskOrganizer {public interface TaskListener {
  default void onTaskInfoChanged(Object info){}default void attachChildSurfaceToTask(int id,Object builder){}
  default void reparentChildSurfaceToTask(int id,Object surface,Object tx){}
 }}''',
-'com/jiusis/mistep/MiStepLiveSwapSession.java': r'''package com.jiusis.mistep;
-final class MiStepLiveSwapSession {static final class Ready {Ready(Object a,Object b,Object p,int x,int y,LiveSwapGeometry.Affine t,LiveSwapGeometry.Affine u,LiveSwapGeometry.Affine v){}}}''',
-'com/jiusis/mistep/MiStepLiveSwap.java': r'''package com.jiusis.mistep;
-final class MiStepLiveSwap {static class Result {} static boolean startFlip(Object... a){return false;}static boolean startHome(Object... a){return false;}}''',
-'com/jiusis/mistep/LiveHomeRegression.java': r'''package com.jiusis.mistep;
-import java.util.*;import com.jiusis.mistep.LivePairRegression.*;
+'io/github/zerohomers0/onesteplite/LiveSwapSession.java': r'''package io.github.zerohomers0.onesteplite;
+final class LiveSwapSession {static final class Ready {Ready(Object a,Object b,Object p,int x,int y,LiveSwapGeometry.Affine t,LiveSwapGeometry.Affine u,LiveSwapGeometry.Affine v){}}}''',
+'io/github/zerohomers0/onesteplite/LiveSwap.java': r'''package io.github.zerohomers0.onesteplite;
+final class LiveSwap {static class Result {} static boolean startFlip(Object... a){return false;}static boolean startHome(Object... a){return false;}}''',
+'io/github/zerohomers0/onesteplite/LiveHomeRegression.java': r'''package io.github.zerohomers0.onesteplite;
+import java.util.*;import io.github.zerohomers0.onesteplite.LivePairRegression.*;
 public class LiveHomeRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  public static class Change {Info task;Surface leash;Change(Info t,Surface l){task=t;leash=l;}public Info getTaskInfo(){return task;}public Surface getLeash(){return leash;}}
  public static class Transition {List<Change> changes=new ArrayList<>();public List<Change> getChanges(){return changes;}}
- static class HomeCase {LivePairRegression.Fixture f=new LivePairRegression.Fixture();MiStepLiveHomeTask h;Transition t=new Transition();Info snapshot=new Info(12,"B",1);
+ static class HomeCase {LivePairRegression.Fixture f=new LivePairRegression.Fixture();LiveHomeTask h;Transition t=new Transition();Info snapshot=new Info(12,"B",1);
   HomeCase(){this(0);}HomeCase(int user){
    f.a.type=2;f.b.userId=snapshot.userId=user;h=promotion(user);
    t.changes.add(new Change(snapshot,new Surface(12)));t.changes.add(new Change(f.a,new Surface(11)));
   }
-  MiStepLiveHomeTask promotion(int user,LiveTaskSwapDriver.SideRoot... sideRoots){
+  LiveHomeTask promotion(int user,LiveTaskSwapDriver.SideRoot... sideRoots){
    LiveSwapGeometry.Task app=new LiveSwapGeometry.Task(12,"B",1200,2608,
        new LiveSwapGeometry.Rect(900,600,300,652),new LiveSwapGeometry.Rect(0,600,900,1956));
    LiveTaskSwapDriver.Home request=new LiveTaskSwapDriver.Home(app,11,"A",user,0,
        new android.graphics.Rect(0,0,1200,2608),new Surface(900),
        new LiveSwapZoom.Zoom(1,.75f,0,0),sideRoots,new Object[0],null);
-   return new MiStepLiveHomeTask(f.o,f.views,f.c,new Surface(1),f.c.mSurfaceControl,request);
+   return new LiveHomeTask(f.o,f.views,f.c,new Surface(1),f.c.mSurfaceControl,request);
   }
   LiveTaskSwapDriver.SideRoot addSide(int id,String token,int user){
    Info info=new Info(id,token,6);info.userId=user;
@@ -94,7 +94,7 @@ public class LiveHomeRegression {
   retained.f.o.mTaskListeners.put(23,new Controller());
   LiveTaskSwapDriver.SideRoot unrelated=retained.addSide(24,"nested",0);
   ((Appeared)retained.f.o.mTasks.get(24)).info.parent=true;
-  MiStepLiveHomeTask withPeers=retained.promotion(0,clock,calendar,staleOwner,unrelated);
+  LiveHomeTask withPeers=retained.promotion(0,clock,calendar,staleOwner,unrelated);
   for(boolean reverse:new boolean[]{false,true}){
    List<String> ops=((android.window.WindowContainerTransaction)withPeers.windowTransaction(reverse)).ops;
    for(String peer:new String[]{"clock","calendar"}){
@@ -121,7 +121,7 @@ public class LiveHomeRegression {
   System.out.println("actual live Home transition checks="+checks+" passed");
  }
 }''',
-'com/jiusis/mistep/LivePairRegression.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/LivePairRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.graphics.Rect;import com.android.wm.shell.ShellTaskOrganizer.TaskListener;
 public class LivePairRegression {
  static int checks;static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
@@ -138,7 +138,7 @@ public class LivePairRegression {
  }
  public static class Tx {List<String> ops=new ArrayList<>();public Tx reparent(Object s,Object p){ops.add("parent:"+((Surface)s).id+":"+((Surface)p).id);return this;}public Tx setMatrix(Object s,float a,float b,float c,float d){ops.add("matrix:"+((Surface)s).id+":"+a);return this;}public Tx setPosition(Object s,float x,float y){return this;}public Tx setAlpha(Object s,float a){return this;}public Tx setWindowCrop(Object s,Rect r){return this;}public Tx show(Object s){ops.add("show:"+((Surface)s).id);return this;}public Tx hide(Object s){ops.add("hide:"+((Surface)s).id);return this;}}
  public static class TaskViews {List<Object> mPending=new ArrayList<>();int prepares,registers,unregisters,failRegister,failPrepare;boolean falsePrepare,visible=true;public void updateVisibilityState(Controller c,boolean v){visible=v;}public void registerTaskView(Controller c){if(failRegister-->0)throw new IllegalStateException("injected register failure");c.registered=true;registers++;}public void unregisterTaskView(Controller c){c.registered=false;unregisters++;}public boolean prepareOpenAnimation(Controller c,boolean fresh,Tx start,Tx finish,Info info,Surface canonical,Object wct){prepares++;check(c.mTaskToken==null||c.mTaskToken.equals(info.token),"overwrote occupied controller");c.mTaskInfo=info;c.mTaskToken=info.token;c.mTaskLeash=new Surface(canonical.id);if(failPrepare-->0)throw new IllegalStateException("injected prepare after binding");if(falsePrepare){((android.window.WindowContainerTransaction)wct).setHidden(info.token,true);visible=false;return false;}return true;}}
- static class Fixture {Organizer o=new Organizer();TaskViews views=new TaskViews();Controller c=new Controller();Info a=new Info(11,"A",1),b=new Info(12,"B",6);Surface oldCopy=new Surface(12);MiStepLiveTaskPair pair;Fixture(){this(0,0);}Fixture(int au,int bu){a.userId=au;b.userId=bu;c.mTaskOrganizer=o;o.mTaskListeners.put(-2,o.fullscreen);o.mTasks.put(11,new Appeared(a));o.mTasks.put(12,new Appeared(b));o.mTaskListeners.put(12,c);c.mTaskToken=b.token;c.mTaskInfo=b;c.mTaskLeash=oldCopy;pair=new MiStepLiveTaskPair(o,views,c,11,"A",12,"B",au,bu,new Surface(1),c.mSurfaceControl,new Rect(0,0,1200,2608),s->{});}void arm()throws Exception{pair.arm(LivePairRegression.class.getClassLoader());}void commit(){a.mode=6;b.mode=1;}}
+ static class Fixture {Organizer o=new Organizer();TaskViews views=new TaskViews();Controller c=new Controller();Info a=new Info(11,"A",1),b=new Info(12,"B",6);Surface oldCopy=new Surface(12);LiveTaskPair pair;Fixture(){this(0,0);}Fixture(int au,int bu){a.userId=au;b.userId=bu;c.mTaskOrganizer=o;o.mTaskListeners.put(-2,o.fullscreen);o.mTasks.put(11,new Appeared(a));o.mTasks.put(12,new Appeared(b));o.mTaskListeners.put(12,c);c.mTaskToken=b.token;c.mTaskInfo=b;c.mTaskLeash=oldCopy;pair=new LiveTaskPair(o,views,c,11,"A",12,"B",au,bu,new Surface(1),c.mSurfaceControl,new Rect(0,0,1200,2608),s->{});}void arm()throws Exception{pair.arm(LivePairRegression.class.getClassLoader());}void commit(){a.mode=6;b.mode=1;}}
  public static void main(String[]args)throws Exception {
   // A fullscreen root can hide every root beneath it. Model the role WCT order in both directions.
   Fixture peers=new Fixture();
@@ -189,6 +189,6 @@ for relative, text in FILES.items():
     paths.append(str(path))
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),
                 str(SRC/'ShellCompat.java'),str(SRC/'LiveSwapGeometry.java'),str(SRC/'LiveSwapZoom.java'),
-                str(SRC/'LiveTaskSwapDriver.java'),str(SRC/'MiStepLiveTaskPair.java'),str(SRC/'MiStepLiveHomeTask.java'),*paths],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.LivePairRegression'],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.LiveHomeRegression'],check=True)
+                str(SRC/'LiveTaskSwapDriver.java'),str(SRC/'LiveTaskPair.java'),str(SRC/'LiveHomeTask.java'),*paths],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'io.github.zerohomers0.onesteplite.LivePairRegression'],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'io.github.zerohomers0.onesteplite.LiveHomeRegression'],check=True)

@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import android.view.WindowManager;
 import java.lang.reflect.Method;
@@ -76,10 +76,10 @@ public final class NativeFreeformLayerBridgeTest {
     public static void main(String[] args) throws Exception {
         zoom(true);
         Display display = new Display(); Object transaction = new Object();
-        Window host = new Window("MiStepHost"), bridge = new Window("MiStepTransition");
-        Window mirror = new Window("MiStepMirrorLayer"), clipboard = new Window("MiStepClipboard");
-        Window foreign = new Window("MiStepHost"); foreign.mAttrs.packageName="another.app";
-        Window hidden = new Window("MiStepHost"); hidden.visible=false;
+        Window host = new Window("WorkspaceHost"), bridge = new Window("OneStepLiteTransition");
+        Window mirror = new Window("OneStepLiteMirrorLayer"), clipboard = new Window("Clipboard");
+        Window foreign = new Window("WorkspaceHost"); foreign.mAttrs.packageName="another.app";
+        Window hidden = new Window("WorkspaceHost"); hidden.visible=false;
         display.windows.addAll(List.of(host, bridge, mirror, clipboard, foreign, hidden));
         Task main = new Task(1), side = new Task(6), low = new Task(5), high = new Task(5);
         Task child = new Task(5); child.root=low;
@@ -121,7 +121,7 @@ public final class NativeFreeformLayerBridgeTest {
         check(host.anchor==originalAnchor && host.layer==23 && host.mLastLayer==23);
         check(host.mLastRelativeToLayer==originalAnchor);
 
-        // Leaving Mi Step with an open native float must release our layer as well.
+        // Leaving OneStepLite with an open native float must release our layer as well.
         high.visible=true; apply(display, transaction); zoom(false); apply(display, transaction);
         check(host.anchor==originalAnchor && bridge.anchor==null);
 
@@ -136,7 +136,7 @@ public final class NativeFreeformLayerBridgeTest {
         // Real foreground pin retains BOTH WM visibility flags. No child-layer
         // assignment follows the decision before Shell hides the canonical task.
         Display pinDisplay = new Display(); PinManager manager = new PinManager();
-        Window pinHost = new Window("MiStepHost"), pinMirror = new Window("MiStepMirrorLayer");
+        Window pinHost = new Window("WorkspaceHost"), pinMirror = new Window("OneStepLiteMirrorLayer");
         pinDisplay.windows.addAll(List.of(pinHost, pinMirror));
         Task pinTask = new Task(5); pinDisplay.tasks.add(pinTask);
         setStatic("sNativeFreeformPinManager", manager);
@@ -170,7 +170,7 @@ public final class NativeFreeformLayerBridgeTest {
     static Object fakeTarget(Display display, Object lock) throws Exception {
         var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe"); field.setAccessible(true);
         var unsafe = (sun.misc.Unsafe) field.get(null);
-        Class<?> type = Class.forName("com.jiusis.mistep.HostEntry$ZoomTarget");
+        Class<?> type = Class.forName("io.github.zerohomers0.onesteplite.HostEntry$ZoomTarget");
         Object target = unsafe.allocateInstance(type);
         for (var entry : java.util.Map.<String,Object>of("display", display,
                 "globalLock", lock, "handler", new android.os.Handler()).entrySet()) {

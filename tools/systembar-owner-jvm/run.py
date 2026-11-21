@@ -30,8 +30,8 @@ public class WindowState {
  public Object getTask(){return task;}public int getSystemUiVisibility(){return 0;}
  public boolean canAffectSystemUiFlags(){return nativeAffects;}
 }''',
-'com/jiusis/mistep/MiStepDesktopLaunchBridge.java': '''package com.jiusis.mistep;
-class MiStepDesktopLaunchBridge {
+'io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java': '''package io.github.zerohomers0.onesteplite;
+class DesktopLaunchBridge {
  static Object top;static boolean topAlive=true,fail;
  static final java.util.Map<Object,Lease> recents=new java.util.IdentityHashMap<>();
  public static class Lease{boolean alive=true;}
@@ -39,15 +39,15 @@ class MiStepDesktopLaunchBridge {
  static Object recentsLease(Object task){return recents.get(task);}
  static boolean recentsLeaseAlive(Object lease){return ((Lease)lease).alive;}
 }''',
-'com/jiusis/mistep/HostEntry.java': '''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/HostEntry.java': '''package io.github.zerohomers0.onesteplite;
 import de.robv.android.xposed.*;
 class HostEntry {
  static boolean sZoomed=true,sFullscreenRotationActive=true;static Object sDisplayContent;
  static final java.util.List<String> logs=new java.util.ArrayList<>();
- static void log(String s){logs.add(s);}static boolean isMiStepSideTask(Object t){return MiStepSideRoleChange.isSide(t);}
+ static void log(String s){logs.add(s);}static boolean isSideTask(Object t){return SideRoleChange.isSide(t);}
  static void install(){new HostEntry().installSideSystemBarPolicy(HostEntry.class.getClassLoader());}
 ''' + install + '\n}',
-'com/jiusis/mistep/SystemBarOwnerTest.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/SystemBarOwnerTest.java': r'''package io.github.zerohomers0.onesteplite;
 import de.robv.android.xposed.*;import com.android.server.wm.WindowState;
 public class SystemBarOwnerTest {
  static int checks;static void check(boolean value,String message){checks++;if(!value)throw new AssertionError(message);}
@@ -72,7 +72,7 @@ public class SystemBarOwnerTest {
  public static void main(String[]args)throws Throwable {
   Display d=new Display();HostEntry.sDisplayContent=d;HostEntry.install();
   check(XposedHelpers.hooks.size()==2,"actual Host installation failed");
-  Task top=new Task();top.display=d;MiStepDesktopLaunchBridge.top=top;
+  Task top=new Task();top.display=d;DesktopLaunchBridge.top=top;
   Task main=new Task();main.display=d;main.mode=1;main.translucent=false;
   WindowState tw=new WindowState(d,top,0),mw=new WindowState(d,main,8);
   d.mCurrentFocus=tw;d.mFocusedApp=top;
@@ -88,22 +88,22 @@ public class SystemBarOwnerTest {
   check(affects(tw),"returned TOP must regain its normal native bar policy before publication catches up");
   check(mainAppearance(tw,mw)==8,"returned foreground app uses its own light request");
   top.mode=6;top.translucent=true;
-  MiStepDesktopLaunchBridge.topAlive=false;check(affects(tw),"dead TOP owner preserves native decision");
-  MiStepDesktopLaunchBridge.topAlive=true;MiStepDesktopLaunchBridge.top=null;
+  DesktopLaunchBridge.topAlive=false;check(affects(tw),"dead TOP owner preserves native decision");
+  DesktopLaunchBridge.topAlive=true;DesktopLaunchBridge.top=null;
   check(affects(tw),"native unrelated multi-window is unchanged");
-  MiStepDesktopLaunchBridge.top=top;top.translucent=false;
+  DesktopLaunchBridge.top=top;top.translucent=false;
   check(affects(tw),"foreign non-side mode6 task is unchanged even with a stale row");
-  Object role=MiStepSideRoleChange.enter(top,new Change(),d);
+  Object role=SideRoleChange.enter(top,new Change(),d);
   check(role==top&&!affects(tw),"exact pending TOP native role is isolated before force-translucent publication");
-  MiStepSideRoleChange.exit(role);check(affects(tw),"pending role exit releases the exception");top.translucent=true;
+  SideRoleChange.exit(role);check(affects(tw),"pending role exit releases the exception");top.translucent=true;
   HostEntry.sZoomed=false;check(affects(tw),"workspace exit restores native TOP eligibility");HostEntry.sZoomed=true;
   HostEntry.sFullscreenRotationActive=false;check(affects(tw),"inactive workspace rotation lease preserves native decision");HostEntry.sFullscreenRotationActive=true;
   tw.display=new Display();check(affects(tw),"another display is unchanged");tw.display=d;
   tw.nativeAffects=false;check(!affects(tw),"native rejection is never promoted");tw.nativeAffects=true;
-  MiStepDesktopLaunchBridge.fail=true;check(affects(tw),"stale lookup failure preserves native policy");MiStepDesktopLaunchBridge.fail=false;
+  DesktopLaunchBridge.fail=true;check(affects(tw),"stale lookup failure preserves native policy");DesktopLaunchBridge.fail=false;
   tw.fail=true;check(affects(tw),"detached window preserves native policy");tw.fail=false;
   Task side=new Task();side.display=d;var sw=new WindowState(d,side,8);
-  var lease=new MiStepDesktopLaunchBridge.Lease();MiStepDesktopLaunchBridge.recents.put(side,lease);
+  var lease=new DesktopLaunchBridge.Lease();DesktopLaunchBridge.recents.put(side,lease);
   check(!affects(sw),"existing portrait side color isolation remains");lease.alive=false;
   check(affects(sw),"expired portrait side remains native");
   tw.task=null;check(affects(tw),"non-task system windows remain native");
@@ -118,7 +118,7 @@ for name, body in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding='utf8')
     sources.append(str(path))
-sources.extend(str(SRC / (name + '.java')) for name in ['MiStepSideRoleChange', 'SystemBarVisibilityPolicy'])
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+sources.extend(str(SRC / (name + '.java')) for name in ['SideRoleChange', 'SystemBarVisibilityPolicy'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT), *sources], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.SystemBarOwnerTest'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(OUT), 'io.github.zerohomers0.onesteplite.SystemBarOwnerTest'], check=True)

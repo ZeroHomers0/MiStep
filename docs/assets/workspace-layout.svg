@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="640" viewBox="0 0 1040 640" role="img" aria-labelledby="title desc">
-  <title id="title">Mi Step 工作区布局与三步操作</title>
+  <title id="title">OneStepLite 工作区布局与三步操作</title>
   <desc id="desc">顶部是时钟、One Step 标题栏与常用应用栏。下方为一个主区域和三个副任务格。先打开应用，再点击空格收纳；点击已有副任务交换；向外滑出将任务交还系统后台。</desc>
   <defs>
     <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">

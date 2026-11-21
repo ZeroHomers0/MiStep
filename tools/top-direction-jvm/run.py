@@ -17,11 +17,11 @@ FILES={
 'android/Manifest.java':'package android;public class Manifest {public static class permission {public static final String WRITE_SECURE_SETTINGS="secure";}}',
 'android/content/Intent.java':'''package android.content;import java.util.*;public class Intent {public Map<String,Object> extras=new HashMap<>();public String action,pkg;public Intent(String a){action=a;}public Intent setPackage(String p){pkg=p;return this;}public Intent putExtra(String k,Object v){extras.put(k,v);return this;}}''',
 'android/content/Context.java':'''package android.content;import java.util.*;public class Context {public List<Intent> sent=new ArrayList<>();public void sendBroadcast(Intent i,String permission){if(!"secure".equals(permission))throw new AssertionError("unprotected");sent.add(i);}}''',
-'com/jiusis/mistep/DirectionRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/DirectionRegression.java':'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.os.*;import android.content.*;import de.robv.android.xposed.XposedHelpers;
 public class DirectionRegression {
  static int checks;static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}
- static class MiStepHost {static final String TOP_TASK_STATE_ACTION="direction";}
+ static class WorkspaceHost {static final String TOP_TASK_STATE_ACTION="direction";}
  static class FullscreenRotationPolicy {static boolean requestsLandscape(int r){return r==0;}static boolean usesSensorOrUserRotation(int r){return r==2;}}
  static class Token implements Parcelable {}
  static class Remote {Token token=new Token();Object toWindowContainerToken(){return token;}}
@@ -53,6 +53,6 @@ public class DirectionRegression {
 '''}
 for name,body in FILES.items():
  p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);classes=OUT/'classes';classes.mkdir(exist_ok=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN']);classes=OUT/'classes';classes.mkdir(exist_ok=True)
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-d',str(classes),*[str(OUT/n) for n in FILES]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'com.jiusis.mistep.DirectionRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'io.github.zerohomers0.onesteplite.DirectionRegression'],check=True)

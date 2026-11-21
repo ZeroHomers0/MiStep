@@ -61,34 +61,34 @@ def run(root, out, jdk, trace_source=None):
  public static int getStaticIntField(Class<?> c,String n){try{return field(c,n).getInt(null);}catch(Exception e){throw new RuntimeException(e);}}
  public static Object callMethod(Object o,String n,Object...a){try{Method m=Arrays.stream(o.getClass().getDeclaredMethods()).filter(x->x.getName().equals(n)&&x.getParameterCount()==a.length).findFirst().orElseThrow();m.setAccessible(true);return m.invoke(o,a);}catch(Exception e){throw new RuntimeException(e);}}
  public static Object callStaticMethod(Class<?> c,String n,Object...a){return null;}public static Object newInstance(Class<?> c,Object...a){return null;}}''',
-        'com/jiusis/mistep/TraceDependencies.java': '''package com.jiusis.mistep;
- class MiStepEntryGuard {static boolean canOpen(android.content.Context c){return true;}}
- class MiStepRecentsWallpaper {static int argumentOffset(Object[] a){return -1;}}
- class MiStepHost {static final int SLOT_TOP=0;long sceneEpoch=7;int scene=1;Object topTransition=new Object();Slot[] slots={new Slot()};
+        'io/github/zerohomers0/onesteplite/TraceDependencies.java': '''package io.github.zerohomers0.onesteplite;
+ class EntryGuard {static boolean canOpen(android.content.Context c){return true;}}
+ class RecentsWallpaper {static int argumentOffset(Object[] a){return -1;}}
+ class WorkspaceHost {static final int SLOT_TOP=0;long sceneEpoch=7;int scene=1;Object topTransition=new Object();Slot[] slots={new Slot()};
  static class Slot{int taskId=81;}static float[] activeMainTransform(){return null;}boolean startTopTaskTransition(boolean b){return true;}
  void revealTopTaskTransition(){}void cancelTopTaskTransition(){}void releaseTopTaskNow(){}void returnToSystem(){}
  void handoffPromotedTask(){}void checkPromotion(){}void finishPromotionFocus(){}}
  class HotZoneGesture {void onMotion(android.view.MotionEvent e){}}
- class MiStepStatusBar {static String cornerStateForTrace(){return "";}}
- class MiStepTopBack {static int requests;static void request(android.content.Context c,Object token){requests++;}static Runnable prepare(){return null;}}
- class MiStepTopTaskTransition {boolean closed,collapsed,revealing;void start(){}void collect(){}boolean collectionReady(){return true;}
+ class StatusBar {static String cornerStateForTrace(){return "";}}
+ class TopBack {static int requests;static void request(android.content.Context c,Object token){requests++;}static Runnable prepare(){return null;}}
+ class TopTaskTransition {boolean closed,collapsed,revealing;void start(){}void collect(){}boolean collectionReady(){return true;}
  void handoff(){}void reveal(){revealing=true;}void animate(float a,float b,long c){}void close(){closed=true;}
  boolean applyLiveScale(float f){return true;}void applyCollectionScale(float f){}}
- class MiStepPassiveInputChannel {Object input;static MiStepPassiveInputChannel open(Object s,String n,ClassLoader c){return new MiStepPassiveInputChannel();}void close(){}}
- class MiStepDesktopLaunchBridge {static boolean ownsTopTask(Object task){return false;}static Object recentsLease(Object task){return null;}}
- class MiStepImePolicy {static boolean isTopAppFocused(Object t,Object d){return false;}}
+ class PassiveInputChannel {Object input;static PassiveInputChannel open(Object s,String n,ClassLoader c){return new PassiveInputChannel();}void close(){}}
+ class DesktopLaunchBridge {static boolean ownsTopTask(Object task){return false;}static Object recentsLease(Object task){return null;}}
+ class ImePolicy {static boolean isTopAppFocused(Object t,Object d){return false;}}
  class TransitionMagnificationCompat {static boolean isStart(Object[] a){return false;}}
  ''',
-        'com/jiusis/mistep/RuntimeTraceRegression.java': '''package com.jiusis.mistep;
+        'io/github/zerohomers0/onesteplite/RuntimeTraceRegression.java': '''package io.github.zerohomers0.onesteplite;
  import java.lang.reflect.*;import java.nio.file.*;import de.robv.android.xposed.*;import android.view.MotionEvent;
  public class RuntimeTraceRegression {
  static int checks;static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}
- static Object call(String name,Class<?>[] types,Object...args)throws Exception{Method m=MiStepInputTrace.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(null,args);}
- static String lines()throws Exception{Field f=MiStepInputTrace.class.getDeclaredField("LINES");f.setAccessible(true);return f.get(null).toString();}
+ static Object call(String name,Class<?>[] types,Object...args)throws Exception{Method m=InputTrace.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(null,args);}
+ static String lines()throws Exception{Field f=InputTrace.class.getDeclaredField("LINES");f.setAccessible(true);return f.get(null).toString();}
  static Object edge(TopEdgeBackSwipe s,int action,float x,long at,Object owner)throws Exception{
  return XposedBridge.fire(s,"event",action,1,0,x,120f,at,1000,1000,1f,1,owner);}
  public static void main(String[] args)throws Exception {
- MiStepInputTrace.arm(new android.content.Context(),false,null);
+ InputTrace.arm(new android.content.Context(),false,null);
  String arm=lines();for(String key:new String[]{"bootId=","pid=90","epochMillis=","elapsedRealtime=1000","generation=","duration=6000","maxLines=128"})check(arm.contains(key),"ARM identity missing "+key);
  call("hookSystemUi",new Class<?>[]{ClassLoader.class},RuntimeTraceRegression.class.getClassLoader());
  var receiver=new com.android.systemui.navigationbar.gestural.DisplayBackGestureHandlerImpl$inputEventReceiver$1();
@@ -105,9 +105,9 @@ def run(root, out, jdk, trace_source=None):
  check(captured.contains("decision=1")&&captured.contains("decision=2"),"CLAIM/BACK invisible");
  edge(swipe,0,5,1100,owner);check(edge(swipe,1,85,1200,new Object()).equals(0),"observer altered owner rejection");
  check(lines().contains("currentOwner=false"),"owner rejection invisible");
- var host=new MiStepHost();check(XposedBridge.fire(host,"startTopTaskTransition",true).equals(true),"host result changed");
+ var host=new WorkspaceHost();check(XposedBridge.fire(host,"startTopTaskTransition",true).equals(true),"host result changed");
  check(lines().contains("top-host-phase=startTopTaskTransition:exit epoch=7 scene=1 task=81"),"host epoch/task invisible");
- var transition=new MiStepTopTaskTransition();XposedBridge.fire(transition,"animate",0f,1f,180L);XposedBridge.fire(transition,"reveal");
+ var transition=new TopTaskTransition();XposedBridge.fire(transition,"animate",0f,1f,180L);XposedBridge.fire(transition,"reveal");
  check(lines().contains("from=0.0 to=1.0 duration=180")&&lines().contains("revealing=true"),"live animation phase invisible");
   call("hookSystemServer",new Class<?>[]{ClassLoader.class},RuntimeTraceRegression.class.getClassLoader());
   var input=new android.hardware.input.InputManager();
@@ -120,14 +120,14 @@ def run(root, out, jdk, trace_source=None):
  call("line",new Class<?>[]{String.class},"x".repeat(5000));check(!lines().contains("x".repeat(1025)),"trace line grew beyond cap");
  call("line",new Class<?>[]{String.class},"one\\ntwo\\rthree");check(lines().contains("one two three"),"embedded newline bypassed line cap");
  for(int i=0;i<200;i++)call("line",new Class<?>[]{String.class},"numeric="+i);
- Path file=Path.of(System.getProperty("trace.output"),"mistep-input-traces","ui-1000.txt");
+ Path file=Path.of(System.getProperty("trace.output"),"onesteplite-input-traces","ui-1000.txt");
  String saved=Files.readString(file);check(saved.lines().count()==128&&saved.contains("TRACE_BUDGET_REACHED"),"128 line budget not enforced");
  check(saved.lines().allMatch(s->s.length()<=1024),"physical trace line exceeded 1024 chars");
  check(XposedBridge.unhooks>0,"budget failed to remove observers");
- android.os.SystemClock.now=9000;MiStepInputTrace.arm(new android.content.Context(),false,null);android.app.KeyguardManager.locked=true;
+ android.os.SystemClock.now=9000;InputTrace.arm(new android.content.Context(),false,null);android.app.KeyguardManager.locked=true;
  call("event",new Class<?>[]{String.class,MotionEvent.class},"locked",new MotionEvent(0));
  check(lines().isEmpty(),"lock failed to finish trace");
- System.out.println("Production MiStepInputTrace observer checks="+checks+" passed (JVM fixtures; no ROM/Surface acceptance)");
+ System.out.println("Production InputTrace observer checks="+checks+" passed (JVM fixtures; no ROM/Surface acceptance)");
  }}'''
     }
     for name, data in files.items():
@@ -137,7 +137,7 @@ def run(root, out, jdk, trace_source=None):
     production=package_dir(root)
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(folder),
                     *(str(folder / name) for name in files),
-                    str(trace_source or production / 'MiStepInputTrace.java'),
-                    *(str(production / name) for name in ('InputTraceGate.java', 'TopTaskSwipe.java', 'TopEdgeBackSwipe.java', 'MiStepActions.java'))], check=True)
+                    str(trace_source or production / 'InputTrace.java'),
+                    *(str(production / name) for name in ('InputTraceGate.java', 'TopTaskSwipe.java', 'TopEdgeBackSwipe.java', 'Actions.java'))], check=True)
     subprocess.run([str(jdk / 'java.exe'), '-Dtrace.output=' + str(folder), '-cp', str(folder),
-                    'com.jiusis.mistep.RuntimeTraceRegression'], check=True)
+                    'io.github.zerohomers0.onesteplite.RuntimeTraceRegression'], check=True)

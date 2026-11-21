@@ -1,4 +1,4 @@
-"""Run actual MiStepStatusBar/lease with controlled animator and draw callbacks."""
+"""Run actual StatusBar/lease with controlled animator and draw callbacks."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 from pathlib import Path
@@ -44,13 +44,13 @@ files = {
  public void postOnAnimation(Runnable r){nextFrame.add(r);}public void pulse(){var copy=new ArrayList<>(nextFrame);nextFrame.clear();for(var r:copy)r.run();}
 }''',
 'android/view/inspector/WindowInspector.java': 'package android.view.inspector;import android.view.View;import java.util.*;import java.util.function.Consumer;public class WindowInspector {public static List<View>views=new ArrayList<>();public static List<Consumer<List<View>>>listeners=new ArrayList<>();public static List<View>getGlobalWindowViews(){return views;}public static void addGlobalWindowViewsListener(java.util.concurrent.Executor e,Consumer<List<View>>l){listeners.add(l);}public static void removeGlobalWindowViewsListener(Consumer<List<View>>l){listeners.remove(l);}public static void notifyViews(){for(var l:new ArrayList<>(listeners))l.accept(views);}}',
-'com/jiusis/mistep/StatusFadeRegression.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/StatusFadeRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import android.animation.*;import android.view.*;import android.view.inspector.*;import android.os.*;import java.util.*;
 public class StatusFadeRegression {
  static int checks;static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}static boolean near(float a,float b){return Math.abs(a-b)<.00001;}
- static void nativeState(int display,int window,int state){try{var m=MiStepStatusBar.class.getDeclaredMethod("nativeWindowStateChanged",int.class,int.class,int.class);m.setAccessible(true);m.invoke(null,display,window,state);}catch(NoSuchMethodException old201){/* Replay the real old restoration behavior. */}catch(Exception e){throw new RuntimeException(e);}}
- static void state(String field,Object value){try{var f=MiStepStatusBar.class.getDeclaredField(field);f.setAccessible(true);f.set(null,value);}catch(Exception e){throw new RuntimeException(e);}}
- static void panelChanged(){try{var m=MiStepStatusBar.class.getDeclaredMethod("nativePanelChanged");m.setAccessible(true);m.invoke(null);}catch(Exception e){throw new RuntimeException(e);}}
+ static void nativeState(int display,int window,int state){try{var m=StatusBar.class.getDeclaredMethod("nativeWindowStateChanged",int.class,int.class,int.class);m.setAccessible(true);m.invoke(null,display,window,state);}catch(NoSuchMethodException old201){/* Replay the real old restoration behavior. */}catch(Exception e){throw new RuntimeException(e);}}
+ static void state(String field,Object value){try{var f=StatusBar.class.getDeclaredField(field);f.setAccessible(true);f.set(null,value);}catch(Exception e){throw new RuntimeException(e);}}
+ static void panelChanged(){try{var m=StatusBar.class.getDeclaredMethod("nativePanelChanged");m.setAccessible(true);m.invoke(null);}catch(Exception e){throw new RuntimeException(e);}}
  static void endAll(){for(var a:new ArrayList<>(ValueAnimator.all))if(!a.cancelled&&!a.ended)a.end();}
  public interface ExpansionApi {default float getExpansion(){return ((Expansion)this).expansion;}default float getBlurRatio(){return ((Expansion)this).blur;}default boolean getVisible(){return ((Expansion)this).visible;}}
  public static class Expansion implements ExpansionApi {public float expansion=1,blur=1;public boolean visible=true;}
@@ -58,7 +58,7 @@ public class StatusFadeRegression {
  public static class Service {public int collapses,expands;public void collapsePanels(){collapses++;}public void expandNotificationsPanel(){expands++;}}
  public static class ShadeContext {public Service service=new Service();public Object getSystemService(String name){check(name.equals("statusbar"),"only native statusbar service");return service;}}
  public static void main(String[]args){
-  Handler handler=new Handler();List<String>errors=new ArrayList<>();MiStepStatusBar bar=new MiStepStatusBar(handler,message->{if(!message.startsWith("live status fade ")&&!message.startsWith("native status "))errors.add(message);});View view=new View();WindowInspector.views.add(view);Object originalParams=view.params;
+  Handler handler=new Handler();List<String>errors=new ArrayList<>();StatusBar bar=new StatusBar(handler,message->{if(!message.startsWith("live status fade ")&&!message.startsWith("native status "))errors.add(message);});View view=new View();WindowInspector.views.add(view);Object originalParams=view.params;
   View foreign=new View();foreign.params.type=2038;View otherDisplay=new View();otherDisplay.display.id=2;WindowInspector.views.add(foreign);WindowInspector.views.add(otherDisplay);
   Object one=new Object(),two=new Object();int[]started={0};bar.hideFor(one,()->{});
   check(near(view.alpha,.63f),"hide begins from the live alpha instead of snapping to zero");
@@ -125,7 +125,7 @@ for name, body in files.items():
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(body, encoding='utf8')
     paths.append(str(p))
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-                str(src / 'WindowRootsCompat.java'),str(src / 'MiStepStatusBar.java'), str(src / 'SwapStatusBarLease.java'), str(src / 'SwapPanelLease.java'), *paths], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.StatusFadeRegression'], check=True)
+                str(src / 'WindowRootsCompat.java'),str(src / 'StatusBar.java'), str(src / 'SwapStatusBarLease.java'), str(src / 'SwapPanelLease.java'), *paths], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.StatusFadeRegression'], check=True)

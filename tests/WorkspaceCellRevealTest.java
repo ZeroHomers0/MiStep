@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class WorkspaceCellRevealTest {
     private static int checks;
@@ -8,7 +8,7 @@ public final class WorkspaceCellRevealTest {
     }
     public static void main(String[] args) {
         for (boolean right : new boolean[]{false, true}) {
-            MiStepLayout layout = MiStepLayout.of(1200, 2608, right, 3f);
+            WorkspaceLayout layout = WorkspaceLayout.of(1200, 2608, right, 3f);
             for (int step = 0; step <= 100; step++) {
                 float p = step / 100f, scale = 1f + (layout.mainScale - 1f) * p;
                 float ml = layout.mainOffsetX * p, mt = layout.mainOffsetY * p;

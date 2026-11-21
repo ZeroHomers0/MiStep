@@ -6,7 +6,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 src=package_dir(root)
-source=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+source=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 start=source.index('    private void handoffPromotedTask(')
 brace=source.index('{',start);end=brace+1;depth=1
 while depth:
@@ -42,7 +42,7 @@ public class SurfaceControl {
   public void apply(){for(var op:ops)op.run();ops.clear();commits.addAll(callbacks);callbacks.clear();}public void close(){closed=true;}
  }
 }''',
-'com/jiusis/mistep/NativeHandoffRegression.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/NativeHandoffRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.Rect;import android.view.SurfaceControl;import java.util.*;import java.util.concurrent.Executor;
 public class NativeHandoffRegression {
  static int checks;static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
@@ -129,6 +129,6 @@ public class NativeHandoffRegression {
 paths=[]
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskHandoffPolicy.java'),str(src/'HandoffOwner.java'),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.NativeHandoffRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.NativeHandoffRegression'],check=True)

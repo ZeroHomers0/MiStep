@@ -7,7 +7,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]); out.mkdir(parents=True,exist_ok=True)
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 files={
 'android/os/Binder.java':'package android.os; public class Binder {}',
 'android/os/InputConfig.java':'package android.os; public class InputConfig {public static int DO_NOT_PILFER=1048576;}',
@@ -32,7 +32,7 @@ public class XposedHelpers {
  public static int getStaticIntField(Class<?> c,String n){try{return c.getField(n).getInt(null);}catch(Exception e){throw new RuntimeException(e);}}
  public static void setIntField(Object o,String n,int v){try{o.getClass().getField(n).setInt(o,v);}catch(Exception e){throw new RuntimeException(e);}}
 }''',
-'com/jiusis/mistep/PassiveInputRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/PassiveInputRegression.java':'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.view.SurfaceControl.Transaction;
 public class PassiveInputRegression {
  static int checks;static ClassLoader loader=PassiveInputRegression.class.getClassLoader();
@@ -49,24 +49,24 @@ public class PassiveInputRegression {
  public static class Legacy extends Modern {public Channel legacy=new Channel();public Channel monitorInput(String n,int d){return legacy;}}
  public static class Broken extends Modern {public Channel monitorInput(String n,int d){throw new IllegalStateException("existing API failed");}}
  public static void main(String[]args){
-  Legacy old=new Legacy();var a=MiStepPassiveInputChannel.open(old,"old",loader);
+  Legacy old=new Legacy();var a=PassiveInputChannel.open(old,"old",loader);
   check(a.input==old.legacy,"legacy channel retained");check(old.calls==0,"no new monitor on old ROM");
   a.close();a.close();check(old.legacy.disposed==1,"legacy close once");
   Modern modern=new Modern();Spy foreign=new Spy();modern.mInputMonitors.put("foreign",foreign);
-  var b=MiStepPassiveInputChannel.open(modern,"MiStepBottomReplay",loader);
+  var b=PassiveInputChannel.open(modern,"OneStepLiteBottomReplay",loader);
   check(b.input==modern.monitor.input,"actual new input channel");check(modern.calls==1,"one owned monitor");
-  check(modern.name.equals("MiStepBottomReplay"),"own name");check(modern.spy.mWindowHandle.inputConfig==1064964,"preserve bits plus passive");
+  check(modern.name.equals("OneStepLiteBottomReplay"),"own name");check(modern.spy.mWindowHandle.inputConfig==1064964,"preserve bits plus passive");
   check(foreign.mWindowHandle.inputConfig==16388,"foreign window untouched");
   check(Transaction.last.surface==modern.spy.mInputSurface&&Transaction.last.handle==modern.spy.mWindowHandle,"only own window published");
   check(Transaction.last.applied==1&&Transaction.last.closed==1,"transaction applied and closed");
   b.close();b.close();check(modern.monitor.disposed==1&&modern.monitor.input.disposed==1,"new owner closed once");
-  Broken broken=new Broken();try{MiStepPassiveInputChannel.open(broken,"broken",loader);throw new AssertionError();}
+  Broken broken=new Broken();try{PassiveInputChannel.open(broken,"broken",loader);throw new AssertionError();}
   catch(IllegalStateException expected){check(broken.calls==0,"runtime error not mistaken for missing method");}
   Modern missing=new Modern();missing.missing=true;
-  try{MiStepPassiveInputChannel.open(missing,"missing",loader);throw new AssertionError();}
+  try{PassiveInputChannel.open(missing,"missing",loader);throw new AssertionError();}
   catch(IllegalStateException expected){check(missing.monitor.disposed==1,"missing handle closes owner");}
   Modern failed=new Modern();Transaction.fail=true;
-  try{MiStepPassiveInputChannel.open(failed,"failure",loader);throw new AssertionError();}
+  try{PassiveInputChannel.open(failed,"failure",loader);throw new AssertionError();}
   catch(IllegalStateException expected){check(failed.monitor.disposed==1,"publication failure closes owner");check(Transaction.last.closed==1,"failed transaction closed");}
   Transaction.fail=false;
   System.out.println("Passive input adapter checks passed: "+checks);
@@ -75,7 +75,7 @@ public class PassiveInputRegression {
 }
 for path,text in files.items():
     dest=out/path; dest.parent.mkdir(parents=True,exist_ok=True); dest.write_text(text,encoding='utf8')
-source=package_dir(root)/'MiStepPassiveInputChannel.java'
+source=package_dir(root)/'PassiveInputChannel.java'
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),
                 *[str(out/p) for p in files],str(source)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.PassiveInputRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.PassiveInputRegression'],check=True)

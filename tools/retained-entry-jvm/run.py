@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-source = (src / 'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (src / 'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 
 
 def member(signature):
@@ -45,7 +45,7 @@ public class SurfaceControl {public static class Transaction {
  public void apply(){applied=true;}public void close(){}
  public void commit(){if(!applied)throw new AssertionError();committed=true;executor.execute(callback);}
 }}''',
-    'com/jiusis/mistep/RetainedEntryRegression.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/RetainedEntryRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.view.SurfaceControl.Transaction;
 public class RetainedEntryRegression {
  static final int ACTIVE=1,RESUMING=2,SUSPENDED=3,SLOT_MAIN=0,CELL_SLOT_COUNT=4;
@@ -67,7 +67,7 @@ public class RetainedEntryRegression {
   static boolean getBooleanField(Object o,String n){return (Boolean)getObjectField(o,n);}
   static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new RuntimeException(e);}}
  }
- static class MiStepEntryGuard {static boolean canOpen(Object c){return true;}}
+ static class EntryGuard {static boolean canOpen(Object c){return true;}}
  static class DeviceProfile {static boolean isTablet(Object c){return false;}}
  Object ctx=new Object();View root=new View();Slot[] slots={new Slot(1),new Slot(2),new Slot(3)};
  Queue main=new Queue(),shell=new Queue();Transitions transitions=new Transitions();
@@ -125,6 +125,6 @@ for name, body in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding='utf-8')
     paths.append(str(path))
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.RetainedEntryRegression'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.RetainedEntryRegression'], check=True)

@@ -29,12 +29,12 @@ files={
  public void deliver(Intent i){if(receiver!=null)receiver.onReceive(this,i);}}''',
 'android/view/SurfaceControl.java':'''package android.view;public class SurfaceControl {public static class Transaction implements AutoCloseable {public long mNativeObject=11;public int closes,merges,applies;public static Transaction waiting;private java.util.concurrent.Executor executor;private Runnable committed;
 public Transaction addTransactionCommittedListener(java.util.concurrent.Executor e,Runnable r){executor=e;committed=r;waiting=this;return this;}public static void commitLatest(){Transaction t=waiting;waiting=null;if(t!=null)t.executor.execute(t.committed);}public Transaction merge(Object other){merges++;return this;}public void apply(){applies++;}public void close(){closes++;mNativeObject=0;}}}''',
-'com/jiusis/mistep/UnlockHandoffRegression.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/UnlockHandoffRegression.java':r'''package io.github.zerohomers0.onesteplite;
 import android.content.*;import android.os.Handler;import android.view.SurfaceControl.Transaction;import java.util.*;
 public class UnlockHandoffRegression {
  static int checks;static void check(boolean ok,String message){checks++;if(!ok)throw new AssertionError(message);}
- static Context ctx;static Handler handler;static int ready,hides;static MiStepUnlockHandoff current;static LiveSwapZoom.Ack received;
- static void fresh(){ctx=new Context();handler=new Handler();ready=0;hides=0;received=null;current=new MiStepUnlockHandoff(ctx,handler,.7f,0,606,a->{ready++;received=a;check(hides==0,"native shade hidden before retained Host was ready");},()->{hides++;ctx.events.add("NATIVE_HIDE");});}
+ static Context ctx;static Handler handler;static int ready,hides;static UnlockHandoff current;static LiveSwapZoom.Ack received;
+ static void fresh(){ctx=new Context();handler=new Handler();ready=0;hides=0;received=null;current=new UnlockHandoff(ctx,handler,.7f,0,606,a->{ready++;received=a;check(hides==0,"native shade hidden before retained Host was ready");},()->{hides++;ctx.events.add("NATIVE_HIDE");});}
  static Intent ack(long generation,boolean committed,float scale,Transaction replay){return new Intent(LiveSwapZoomProtocol.ACK)
   .putExtra(LiveSwapZoomProtocol.GENERATION,generation).putExtra(LiveSwapZoomProtocol.TRANSACTION,99L)
   .putExtra(LiveSwapZoomProtocol.SCALE,Float.floatToIntBits(scale)).putExtra(LiveSwapZoomProtocol.X,0)
@@ -45,14 +45,14 @@ public class UnlockHandoffRegression {
   fresh();current.start();long generation=generation();
   check(current.active()&&hides==0&&ready==0,"native hide proceeds before WMS commit");
   check(ctx.permission.equals(LiveSwapZoomProtocol.PERMISSION)&&ctx.sent.pkg.equals("android"),"bridge must be scoped and permission protected");
-  check(ctx.sent.getBooleanExtra(MiStepUnlockHandoff.PHYSICAL_KEYGUARD,false),"native shade must retain physical geometry while WM prepares workspace");
+  check(ctx.sent.getBooleanExtra(UnlockHandoff.PHYSICAL_KEYGUARD,false),"native shade must retain physical geometry while WM prepares workspace");
   ctx.deliver(ack(generation+1,true,.7f,new Transaction()));check(ready==0&&hides==0,"wrong generation grants reveal");
   Transaction replay=new Transaction();ctx.deliver(ack(generation,true,.7f,replay));
   check(ready==1&&hides==0&&current.active(),"WMS commit is not the existing Host hardware frame");
   check(received.transactionId==99&&received.committed&&replay.closes==1,"exact WM operations consumed and closed");
   ctx.deliver(ack(generation,true,.7f,new Transaction()));check(ready==1,"duplicate WM acknowledgement delivered twice");
   current.finish();check(hides==1&&!current.active()&&ctx.unregistered==1,"Host frame releases native hide once");
-  check(ctx.events.get(ctx.events.size()-2).equals("NATIVE_HIDE")&&ctx.events.get(ctx.events.size()-1).equals(MiStepUnlockHandoff.RELEASE),"native hide precedes physical-shade release");check(ctx.sent.getBooleanExtra(MiStepUnlockHandoff.COMPLETED,false),"completed release carries native reveal permission");
+  check(ctx.events.get(ctx.events.size()-2).equals("NATIVE_HIDE")&&ctx.events.get(ctx.events.size()-1).equals(UnlockHandoff.RELEASE),"native hide precedes physical-shade release");check(ctx.sent.getBooleanExtra(UnlockHandoff.COMPLETED,false),"completed release carries native reveal permission");
   current.finish();handler.timeout();check(hides==1&&ctx.unregistered==1,"late watchdog repeats native hide");
   for(int failure=0;failure<5;failure++){
    fresh();current.start();long g=generation();Transaction t=new Transaction();if(failure==3)t.mNativeObject=0;
@@ -63,14 +63,14 @@ public class UnlockHandoffRegression {
   fresh();current.start();handler.timeout();check(ready==0&&hides==1&&!current.active(),"missing WM acknowledgement must release native system");
   fresh();current.start();ctx.deliver(ack(generation(),true,.7f,new Transaction()));handler.timeout();
   check(ready==1&&hides==1,"missing Host frame cannot leave native hide blocked forever");
-  fresh();current.start();current.cancel();handler.timeout();check(hides==0&&!current.active()&&ctx.unregistered==1,"relock cancels stale native hide without revealing previous session");check(!ctx.sent.getBooleanExtra(MiStepUnlockHandoff.COMPLETED,true),"cancel does not authorize native main-surface reveal");
+  fresh();current.start();current.cancel();handler.timeout();check(hides==0&&!current.active()&&ctx.unregistered==1,"relock cancels stale native hide without revealing previous session");check(!ctx.sent.getBooleanExtra(UnlockHandoff.COMPLETED,true),"cancel does not authorize native main-surface reveal");
   fresh();ctx.failRegister=true;current.start();check(hides==1&&!current.active(),"receiver registration failure cannot block native hide");
   fresh();ctx.failSend=true;current.start();check(hides==1&&!current.active(),"dispatch failure cannot block native hide");
   System.out.println("Production authenticated unlock handoff: "+checks+" checks passed");
  }
 }'''
 }
-host_source=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host_source=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 start=host_source.index('    static boolean handoffNativeUnlock(')
 end=host_source.index('{',start)+1;depth=1
 while depth:
@@ -79,17 +79,17 @@ helper_start=host_source.index('    private boolean handoffLockExit(')
 helper_end=host_source.index('{',helper_start)+1;helper_depth=1
 while helper_depth:
  helper_depth+=(host_source[helper_end]=='{')-(host_source[helper_end]=='}');helper_end+=1
-files['com/jiusis/mistep/MiStepHost.java']=r'''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/WorkspaceHost.java']=r'''package io.github.zerohomers0.onesteplite;
 import android.content.Context;import android.os.*;import android.view.SurfaceControl.Transaction;import java.util.*;
-public class MiStepHost {
- static final int ACTIVE=2,RESUMING=1;static MiStepHost sInstance;Context ctx=new Context();Handler main=new Handler();
+public class WorkspaceHost {
+ static final int ACTIVE=2,RESUMING=1;static WorkspaceHost sInstance;Context ctx=new Context();Handler main=new Handler();
  boolean lockExitPending;int keyguardResumeIndex;static class Options {boolean keepOnLock=true;}Options workspaceOptions=new Options();boolean retainedGeometryConfirmed;boolean retainedForLock=true,keyguardWindowHidden=true,keyguardLocked=true,screenOn,workspaceEntering=true,zoomed;
  int scene=ACTIVE;long sceneEpoch=7,workspaceGeneration,zoomAnimUntil=800;float alpha;
- MiStepUnlockHandoff unlockHandoff;MiStepLayout layout=new MiStepLayout();Root root=new Root();int parents,closes;
- static class MiStepLayout {float mainScale=.7f,mainOffsetX,mainOffsetY=606;}
+ UnlockHandoff unlockHandoff;WorkspaceLayout layout=new WorkspaceLayout();Root root=new Root();int parents,closes;
+ static class WorkspaceLayout {float mainScale=.7f,mainOffsetX,mainOffsetY=606;}
  static class View {static final int GONE=8;}
  static class Root {boolean gone;void setVisibility(int v){gone=v==8;}Runnable frame;Root getViewTreeObserver(){return this;}void registerFrameCommitCallback(Runnable r){frame=r;}void invalidate(){}void commit(){Runnable r=frame;frame=null;if(r!=null)r.run();}}
- static class MiStepEntryGuard {static boolean unlocked=true;static boolean canOpen(Context c){return unlocked;}}
+ static class EntryGuard {static boolean unlocked=true;static boolean canOpen(Context c){return unlocked;}}
  static class XposedHelpers {static Object callMethod(Object o,String n,Object...args)throws Exception{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==args.length)return m.invoke(o,args);throw new IllegalStateException(n);}}
  void leaveKeyguardPrivacy(){check(retainedGeometryConfirmed,"completion without committed geometry");retainedForLock=false;}void suspendSession(String s){check(root.gone,"failed handoff must hide Host before normal cleanup");suspends++;}int suspends;
  static void log(String s){}void setWorkspaceAlpha(float a){alpha=a;}
@@ -99,23 +99,23 @@ public class MiStepHost {
  ACTUAL
  EXIT_ACTUAL
  static int checks,hides;static void check(boolean ok,String message){checks++;if(!ok)throw new AssertionError(message);}
- static MiStepHost fresh(){MiStepEntryGuard.unlocked=true;Looper.current=Looper.MAIN;hides=0;sInstance=new MiStepHost();return sInstance;}
- static android.content.Intent ack(MiStepHost h){long g=h.ctx.sent.getLongExtra(LiveSwapZoomProtocol.GENERATION,0);return UnlockHandoffRegression.ack(g,true,.7f,new Transaction());}
+ static WorkspaceHost fresh(){EntryGuard.unlocked=true;Looper.current=Looper.MAIN;hides=0;sInstance=new WorkspaceHost();return sInstance;}
+ static android.content.Intent ack(WorkspaceHost h){long g=h.ctx.sent.getLongExtra(LiveSwapZoomProtocol.GENERATION,0);return UnlockHandoffRegression.ack(g,true,.7f,new Transaction());}
  public static void main(String[]args){
-  MiStepHost h=fresh();check(handoffNativeUnlock(()->hides++),"retained authenticated hide not deferred");
+  WorkspaceHost h=fresh();check(handoffNativeUnlock(()->hides++),"retained authenticated hide not deferred");
   check(hides==0&&h.keyguardLocked&&h.keyguardWindowHidden,"WM request alone revealed workspace");
   h.ctx.deliver(ack(h));check(h.keyguardWindowHidden&&!h.zoomed&&h.root.frame==null&&!h.retainedGeometryConfirmed,"WM tuple acknowledgement alone cannot reveal before real geometry transaction commit");
   Transaction.commitLatest();check(!h.keyguardLocked&&!h.keyguardWindowHidden&&h.zoomed&&h.alpha==1&&h.parents==1&&h.closes==1,"committed WMS tuple must prepare real original Host");
   check(hides==0&&h.root.frame!=null,"WMS ack cannot replace actual Host frame commit");
   h.root.commit();check(hides==1&&h.unlockHandoff==null,"Host frame must release native hide once");
   for(int gate=0;gate<7;gate++){
-   h=fresh();if(gate==0)MiStepEntryGuard.unlocked=false;if(gate==1)h.retainedForLock=false;
+   h=fresh();if(gate==0)EntryGuard.unlocked=false;if(gate==1)h.retainedForLock=false;
    if(gate==2)h.keyguardWindowHidden=false;if(gate==3)h.root=null;if(gate==4)h.layout=null;if(gate==5)h.scene=0;if(gate==6)Looper.current=null;
    check(!handoffNativeUnlock(()->hides++)&&h.ctx.sent==null&&hides==0,"native hide changed without exact admission and retained owner");
   }
   h=fresh();handoffNativeUnlock(()->hides++);h.sceneEpoch++;h.ctx.deliver(ack(h));check(h.parents==0&&h.keyguardWindowHidden&&hides==1,"stale scene cannot reveal original Host");
-  h=fresh();handoffNativeUnlock(()->hides++);MiStepEntryGuard.unlocked=false;h.ctx.deliver(ack(h));check(h.parents==0&&h.keyguardWindowHidden&&hides==0,"relock after request cannot run stale native hide or reveal workspace");
-  h=fresh();handoffNativeUnlock(()->hides++);h.ctx.deliver(ack(h));Transaction.commitLatest();MiStepEntryGuard.unlocked=false;h.root.commit();check(hides==0,"relock between WM commit and Host frame cannot dismiss new keyguard");
+  h=fresh();handoffNativeUnlock(()->hides++);EntryGuard.unlocked=false;h.ctx.deliver(ack(h));check(h.parents==0&&h.keyguardWindowHidden&&hides==0,"relock after request cannot run stale native hide or reveal workspace");
+  h=fresh();handoffNativeUnlock(()->hides++);h.ctx.deliver(ack(h));Transaction.commitLatest();EntryGuard.unlocked=false;h.root.commit();check(hides==0,"relock between WM commit and Host frame cannot dismiss new keyguard");
   for(int gate=0;gate<3;gate++){
    h=fresh();handoffNativeUnlock(()->hides++);
    if(gate>=1)h.ctx.deliver(ack(h));if(gate==2)Transaction.commitLatest();
@@ -125,14 +125,14 @@ public class MiStepHost {
   }
   h=fresh();handoffNativeUnlock(()->hides++);h.ctx.deliver(ack(h));Transaction.commitLatest();Runnable oldFrame=h.root.frame;
   h.unlockHandoff.cancel();h.unlockHandoff=null;h.keyguardWindowHidden=true;h.keyguardLocked=true;
-  handoffNativeUnlock(()->hides++);MiStepUnlockHandoff next=h.unlockHandoff;oldFrame.run();
+  handoffNativeUnlock(()->hides++);UnlockHandoff next=h.unlockHandoff;oldFrame.run();
   check(h.unlockHandoff==next&&next.active()&&!h.retainedGeometryConfirmed,"old frame cannot finish a new unlock generation");
   h=fresh();h.workspaceOptions.keepOnLock=false;check(handoffNativeUnlock(()->hides++),"exit choice has an authenticated physical-geometry handoff");
   check(h.root.gone&&h.alpha==0&&h.lockExitPending&&h.ctx.sent.getIntExtra(LiveSwapZoomProtocol.SCALE,0)==Float.floatToIntBits(1f),"deferred exit hides Host and requests physical fullscreen, never workspace zoom");
   android.content.Intent exitAck=ack(h).putExtra(LiveSwapZoomProtocol.SCALE,Float.floatToIntBits(1f)).putExtra(LiveSwapZoomProtocol.Y,0);
   h.ctx.deliver(exitAck);check(h.suspends==0&&hides==0&&h.root.frame==null,"exit ack alone cannot release native visibility");
   Transaction.commitLatest();check(h.suspends==1&&h.root.gone&&!h.zoomed&&!h.retainedForLock&&h.parents==0&&hides==1,"committed exit cleans up behind hidden Host without a workspace reveal");
-  h=fresh();h.workspaceOptions.keepOnLock=false;handoffNativeUnlock(()->hides++);MiStepEntryGuard.unlocked=false;h.main.timeout();check(h.suspends==0&&hides==0&&h.retainedForLock&&h.root.gone,"relock cannot complete a stale deferred exit");
+  h=fresh();h.workspaceOptions.keepOnLock=false;handoffNativeUnlock(()->hides++);EntryGuard.unlocked=false;h.main.timeout();check(h.suspends==0&&hides==0&&h.retainedForLock&&h.root.gone,"relock cannot complete a stale deferred exit");
   h=fresh();h.workspaceOptions.keepOnLock=false;handoffNativeUnlock(()->hides++);h.main.timeout();check(h.suspends==1&&h.root.gone&&hides==1,"missing physical ack falls back to normal hidden cleanup, never clipped workspace");
   h=fresh();handoffNativeUnlock(()->hides++);h.ctx.deliver(ack(h));h.workspaceOptions.keepOnLock=false;Transaction.commitLatest();check(h.root.gone&&h.lockExitPending&&h.parents==1&&hides==0&&h.unlockHandoff!=null&&h.unlockHandoff.active(),"changing to exit before SF commit switches to hidden physical handoff without revealing Host");
   System.out.println("Production Host authenticated handoff: "+checks+" checks passed");
@@ -141,8 +141,8 @@ public class MiStepHost {
 paths=[]
 for rel,body in files.items():
  p=out/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8');paths.append(str(p))
-for name in ['MiStepUnlockHandoff','LiveSwapZoom','LiveSwapZoomProtocol','MiStepActions']:paths.append(str(src/(name+'.java')))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+for name in ['UnlockHandoff','LiveSwapZoom','LiveSwapZoomProtocol','Actions']:paths.append(str(src/(name+'.java')))
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.UnlockHandoffRegression'],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.MiStepHost'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.UnlockHandoffRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.WorkspaceHost'],check=True)

@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.lang.reflect.*;
 import java.util.Map;
 import de.robv.android.xposed.XposedBridge;
@@ -110,7 +110,7 @@ public class TaskRotationBridgeTest {
         Activity containedLandscape = new Activity(0); display.top = containedLandscape;
         check(Boolean.TRUE.equals(apply(display, containedLandscape))
                         && containedLandscape.starts == 1,
-                "landscape app opened in the active main area must stay inside Mi Step");
+                "landscape app opened in the active main area must stay inside OneStepLite");
         call("endFixedMainRotationLocked", new Class[]{Object.class}, display);
         call("beginFixedMainRotationLocked", new Class[]{Object.class}, display);
         field("sZoomed").set(null, false);
@@ -122,7 +122,7 @@ public class TaskRotationBridgeTest {
         check(Boolean.FALSE.equals(apply(display, launcher)), "home does not acquire app transform");
         check(!exitingMain.transformed && exitingMain.finishes == 0 && owned().isEmpty(),
                 "native fullscreen main never acquired workspace ownership");
-        check(field("sMiStepFixedRotationApp").get(null) == null,
+        check(field("sFixedRotationApp").get(null) == null,
                 "home transition clears stale main rotation owner");
 
         Activity side = new Activity(0); side.task.mode = 6; display.top = side;
@@ -131,7 +131,7 @@ public class TaskRotationBridgeTest {
         Activity home = new Activity(1); home.home = true;
         apply(display, home);
         check(side.transformed, "home handoff preserves side token");
-        check(field("sMiStepFixedRotationApp").get(null) == null,
+        check(field("sFixedRotationApp").get(null) == null,
                 "home handoff clears main pointer without releasing promoted side token");
         Activity main = new Activity(8); display.top = main;
         apply(display, main);
@@ -142,7 +142,7 @@ public class TaskRotationBridgeTest {
         check(!main.transformed && side.transformed, "portrait main remains unowned");
         check(owned().size() == 1, "side rotation ownership retained");
         side.request = 1; display.top = home;
-        call("refreshMiStepTaskRotationLocked", new Class[]{Object.class}, display);
+        call("refreshTaskRotationLocked", new Class[]{Object.class}, display);
         check(!side.transformed, "an explicit portrait change clears a non-top side token");
 
         main.request = 0; display.top = main; apply(display, main);
@@ -227,11 +227,11 @@ public class TaskRotationBridgeTest {
             TaskWindowState history=(TaskWindowState)((Map<?,?>)field("sTaskWindowStates").get(null)).get(staged.task);
             check(history.inheritedMainRotation()==3,"source direction captured before native mode/bounds change "+route);
             history.update(1,1,-1,0,6,false,true,0);staged.request=-1;staged.configuration.orientation=1;
-            Object pending=MiStepSideRoleChange.enter(staged.task,new SideChange(),display);
+            Object pending=SideRoleChange.enter(staged.task,new SideChange(),display);
             apply(display,staged); // mode is still 1, force-translucency not yet visible
             check(history.windowingMode==6&&history.lastFullscreenAppliedRotation==3,
                     "pending WCT callback cannot overwrite source main history "+route);
-            staged.task.mode=6;MiStepSideRoleChange.exit(pending);display.mDisplayRotation.proposed=0;
+            staged.task.mode=6;SideRoleChange.exit(pending);display.mDisplayRotation.proposed=0;
             apply(display,staged);
             check(staged.transformed&&staged.rotation==3,"staged portrait cannot mask inherited side rotation "+route);
             call("beforeApplicationOrientationRequest",new Class[]{Object.class,int.class},staged,1);staged.request=1;apply(display,staged);
@@ -263,7 +263,7 @@ public class TaskRotationBridgeTest {
                         "background portrait cannot overwrite task direction");
             }
         }
-        check(field("sMiStepFixedRotationApp").get(null) == video,
+        check(field("sFixedRotationApp").get(null) == video,
                 "promoted video retains the same main owner");
         video.task.top = page; display.top = page;
         apply(display, page);
@@ -343,7 +343,7 @@ public class TaskRotationBridgeTest {
         System.out.println("TaskRotationBridge checks=" + checks + " passed (fake WM; no device rendering)");
     }
     static Object apply(Display display, Activity activity) throws Exception {
-        return call("applyMiStepFixedRotationLocked", new Class[]{Object.class, Object.class, String.class},
+        return call("applyFixedRotationLocked", new Class[]{Object.class, Object.class, String.class},
                 display, activity, "jvm-test");
     }
     static Object call(String name, Class<?>[] types, Object... args) throws Exception {

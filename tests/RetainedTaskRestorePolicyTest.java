@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import java.util.Set;
 
@@ -6,7 +6,7 @@ public final class RetainedTaskRestorePolicyTest {
     static int checks;
     public static void main(String[] args) {
         Object a = new Object(), b = new Object(), c = new Object();
-        // Three retained tasks; the user opened B from Home while Mi Step was closed.
+        // Three retained tasks; the user opened B from Home while OneStepLite was closed.
         Set<Object> current = Set.of(b);
         check(RetainedTaskRestorePolicy.reclaim(true, true, a, current));
         check(!RetainedTaskRestorePolicy.reclaim(true, true, b, current));

@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/tests/island-input-jvm'
 SRC = OUT / 'src'
 CLASSES = OUT / 'classes'
-JDK = Path(os.environ["MISTEP_JAVA_BIN"])
+JDK = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 sources = {
 'android/content/Context.java': '''package android.content;
 public class Context { public Object getContentResolver(){ return this; } }
@@ -58,17 +58,17 @@ public class XposedHelpers {public static String selected;
  public static Object callMethod(Object o,String n){return ((android.view.MotionEvent)o).getDisplayId();}
 }
 ''',
-'com/jiusis/mistep/MiStepHost.java': '''package com.jiusis.mistep;
-class MiStepHost {static float[] zoom={.74654907f,661f,0f};
+'io/github/zerohomers0/onesteplite/WorkspaceHost.java': '''package io.github.zerohomers0.onesteplite;
+class WorkspaceHost {static float[] zoom={.74654907f,661f,0f};
  static float[] activeIslandMonitorTransform(){return zoom;}}
 ''',
-'com/jiusis/mistep/IslandMonitorHookTest.java': '''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/IslandMonitorHookTest.java': '''package io.github.zerohomers0.onesteplite;
 import android.view.MotionEvent;import android.content.Context;import android.provider.Settings;
 import de.robv.android.xposed.*;
 public class IslandMonitorHookTest {
  static int checks;static boolean outsideCollapse;static MotionEvent original;
  public static void main(String[] args)throws Throwable{
-  MiStepIslandMonitorInput.install(IslandMonitorHookTest.class.getClassLoader(),Context::new);
+  IslandMonitorInput.install(IslandMonitorHookTest.class.getClassLoader(),Context::new);
   check(XposedHelpers.selected.equals("com.android.systemui.statusbar.notification.island.DynamicIslandGestureMonitor$listener$1"));
   check(XposedBridge.name.equals("onPointerEvent"));
   original=event(0,0);XC_MethodHook.MethodHookParam p=param(original);XposedBridge.before(p);
@@ -80,7 +80,7 @@ public class IslandMonitorHookTest {
   near(original.x,740);near(original.y,872);near(original.rawX,740);near(original.rawY,872);
   for(int action:new int[]{1,2,3})unchanged(event(action,0));
   unchanged(event(0,1));
-  MiStepHost.zoom=null;unchanged(event(0,0));MiStepHost.zoom=new float[]{.74654907f,661f,0f};
+  WorkspaceHost.zoom=null;unchanged(event(0,0));WorkspaceHost.zoom=new float[]{.74654907f,661f,0f};
   Settings.Secure.oneHand=1;unchanged(event(0,0));Settings.Secure.oneHand=0;
   Settings.Secure.fail=true;unchanged(event(0,0));Settings.Secure.fail=false;
   MotionEvent.failObtain=true;unchanged(event(0,0));MotionEvent.failObtain=false;
@@ -111,7 +111,7 @@ for name, content in sources.items():
     p.write_text(content, encoding='utf8')
     paths.append(str(p))
 prod=package_dir(ROOT)
-paths += [str(prod / n) for n in ['IslandMonitorInputPolicy.java', 'MiStepIslandMonitorInput.java']]
+paths += [str(prod / n) for n in ['IslandMonitorInputPolicy.java', 'IslandMonitorInput.java']]
 CLASSES.mkdir(parents=True, exist_ok=True)
 compile_result = subprocess.run([str(JDK / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17',
                                  '-d', str(CLASSES), *paths], capture_output=True)
@@ -120,7 +120,7 @@ if compile_result.returncode:
     print(compile_result.stderr.decode('gbk', 'replace')[:3000])
     sys.exit(compile_result.returncode)
 test = subprocess.run([str(JDK / 'java.exe'), '-cp', str(CLASSES),
-                       'com.jiusis.mistep.IslandMonitorHookTest'], capture_output=True)
+                       'io.github.zerohomers0.onesteplite.IslandMonitorHookTest'], capture_output=True)
 (OUT / 'tests.log').write_bytes(test.stdout + test.stderr)
 print((test.stdout + test.stderr).decode('utf8', 'replace'))
 sys.exit(test.returncode)

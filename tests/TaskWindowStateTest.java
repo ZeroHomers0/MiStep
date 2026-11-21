@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 /** Regression checks for independent per-task state and slot ownership. */
 public final class TaskWindowStateTest {

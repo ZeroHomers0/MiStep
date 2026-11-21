@@ -6,7 +6,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1])
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([sys.executable, '-X', 'utf8', str(root/'tools/live-collect-jvm/run.py'), str(out)], check=True)
 
 def member(path, signature):
@@ -19,23 +19,23 @@ def member(path, signature):
         end += 1
     return text[start:end]
 
-resolve = member(src/'MiStepLiveCollect.java', '    @Override public MiStepLiveSwapSession.Ready resolve(')
-peer = member(src/'MiStepLiveSwap64.java', '        Object peer(int i)')
+resolve = member(src/'LiveCollect.java', '    @Override public LiveSwapSession.Ready resolve(')
+peer = member(src/'LiveSwap64.java', '        Object peer(int i)')
 files = {
 'android/graphics/Point.java': 'package android.graphics; public class Point {public int x,y;}',
-'com/jiusis/mistep/MiStepLiveSwap.java': '''package com.jiusis.mistep;
-final class MiStepLiveSwap {static class Result {} static boolean startFlip(Object... a){return false;}static boolean startHome(Object... a){return false;}}''',
-'com/jiusis/mistep/MiStepLiveSwapSession.java': '''package com.jiusis.mistep;
-final class MiStepLiveSwapSession {static class Ready {
+'io/github/zerohomers0/onesteplite/LiveSwap.java': '''package io.github.zerohomers0.onesteplite;
+final class LiveSwap {static class Result {} static boolean startFlip(Object... a){return false;}static boolean startHome(Object... a){return false;}}''',
+'io/github/zerohomers0/onesteplite/LiveSwapSession.java': '''package io.github.zerohomers0.onesteplite;
+final class LiveSwapSession {static class Ready {
  final Object[] surfaces;
  Ready(Object[] s,Object parent,int[] layers,LiveSwapGeometry.Affine affine,LiveSwapGeometry.Affine[] content){surfaces=s;}
  Ready(Object a,Object b,Object p,int x,int y,LiveSwapGeometry.Affine t,LiveSwapGeometry.Affine u,LiveSwapGeometry.Affine v){surfaces=new Object[]{a,b};}
 }}''',
-'com/jiusis/mistep/CloneUsersRegression.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/CloneUsersRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 import android.graphics.Rect;
 import de.robv.android.xposed.XposedHelpers;
-import com.jiusis.mistep.LivePairRegression.*;
+import io.github.zerohomers0.onesteplite.LivePairRegression.*;
 public class CloneUsersRegression {
  static int checks;
  static void check(boolean b,String message){checks++;if(!b)throw new AssertionError(message);}
@@ -70,7 +70,7 @@ public class CloneUsersRegression {
   final Object homeToken="HOME",collectedToken="A",hostRoot=new Surface(900);
   final int homeUserId=0;int rootX,rootY;
   final LiveCollectRegression.Case collected=new LiveCollectRegression.Case(999);
-  final MiStepLiveCollectTask task=collected.task;
+  final LiveCollectTask task=collected.task;
   final Transition transition=new Transition();final Info app=new Info(11,"A",6),home=new Info(90,"HOME",1);
   CollectScene(){app.userId=999;home.type=2;
    transition.changes.add(new LiveHomeRegression.Change(app,new Surface(11)));
@@ -109,4 +109,4 @@ for name, text in files.items():
     paths.append(str(path))
 paths += [str(src/'LiveSwapZoom.java'),str(src/'LiveTaskSwapDriver.java')]
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.CloneUsersRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.CloneUsersRegression'],check=True)

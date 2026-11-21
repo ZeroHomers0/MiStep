@@ -6,7 +6,7 @@ import sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root = Path(__file__).resolve().parents[2]
-host = (package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host = (package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 
@@ -29,9 +29,9 @@ methods = '\n'.join(member(s) for s in [
     '    private static final class CellMovePlan',
     '    private static int compactionHintMask(',
     '    private void animateCellMoves(',
-]).replace('MiStepHost::log', 'CompactionChromeRegression::log')
+]).replace('WorkspaceHost::log', 'CompactionChromeRegression::log')
 body = r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.*;
 import java.util.function.*;
 public class CompactionChromeRegression {
@@ -48,35 +48,35 @@ public class CompactionChromeRegression {
   View view=new View(),hint=new View();int[]rect={0,100,100,200};boolean occupied;
   Slot(int i){index=i;taskId=20+i;}
  }
- static class MiStepLayout {}
+ static class WorkspaceLayout {}
  static class XposedHelpers {static Object callMethod(Object o,String n,Object...args){return true;}}
- static class MiStepLiveBackdrop {
-  static boolean fail;static MiStepLiveBackdrop latest;int closes;
-  static MiStepLiveBackdrop create(Object s,Object b,int w,int h,Rect a,Rect z,Consumer<Object> draw,Consumer<String> log){
+ static class LiveBackdrop {
+  static boolean fail;static LiveBackdrop latest;int closes;
+  static LiveBackdrop create(Object s,Object b,int w,int h,Rect a,Rect z,Consumer<Object> draw,Consumer<String> log){
    if(fail)throw new IllegalStateException("backdrop");
-   return latest=new MiStepLiveBackdrop();
+   return latest=new LiveBackdrop();
   }
   void closeAfterFrame(View v){closes++;}
  }
- static class MiStepCellMotion {
+ static class CellMotion {
   record Move(View view,int x,int y,int toX,int toY,BooleanSupplier current){}
   Runnable commit,release;boolean started;
-  MiStepCellMotion(FrameLayout root,List<Move> moves,Runnable c,Runnable r,Consumer<String> log){commit=c;release=r;}
+  CellMotion(FrameLayout root,List<Move> moves,Runnable c,Runnable r,Consumer<String> log){commit=c;release=r;}
   void start(){started=true;}
   void finish(){commit.run();release.run();}
  }
  static final int SLOT_MAIN=0,SLOT_COUNT=6;int CELL_SLOT_COUNT=4;
  FrameLayout root=new FrameLayout();long sceneEpoch=7;Slot[]slots=new Slot[6];
- View[]sideBackingViews=new View[6];MiStepLayout layout=new MiStepLayout();
+ View[]sideBackingViews=new View[6];WorkspaceLayout layout=new WorkspaceLayout();
  Object wallpaperBackdrop=new Object();int screenW=1080,screenH=2460;
- MiStepCellMotion cellMotion;boolean transferBusy,compactPending;int layouts;
+ CellMotion cellMotion;boolean transferBusy,compactPending;int layouts;
  CompactionChromeRegression(){for(int i=0;i<6;i++){slots[i]=new Slot(i);sideBackingViews[i]=new View();}}
  Object getSurfaceField(Object c,String n){return c;}
  boolean canRender(Slot s){return true;}
  boolean cellMoveCurrent(Slot s,FrameLayout r,long e,long b,int id,Object t,Object c,View v,Object surface){return true;}
  Object liveHostRootSurface(){return new Object();}
- Rect liveSideStrip(MiStepLayout l){return new Rect(0,100);}
- void drawLiveEmptyHints(Object c,MiStepLayout a,MiStepLayout b,int mask){}
+ Rect liveSideStrip(WorkspaceLayout l){return new Rect(0,100);}
+ void drawLiveEmptyHints(Object c,WorkspaceLayout a,WorkspaceLayout b,int mask){}
  void finishCellLayout(){layouts++;}
  void updateCellSurfaceVisibility(Slot s){}
  void compactCells(){compactPending=false;}
@@ -96,16 +96,16 @@ public class CompactionChromeRegression {
   for(int i=1;i<cells;i++)check(sideBackingViews[i].alpha==0&&slots[i].hint.alpha==0,
     "ordinary strip has one temporary wallpaper/hint owner");
   LiveSwapVisualLease.writeAlpha(slots[1].hint,.35f);
-  MiStepCellMotion running=cellMotion;running.finish();
+  CellMotion running=cellMotion;running.finish();
   check(cellMotion==null&&!transferBusy&&layouts==1,"commit and release settle once");
   check(slots[1].hint.alpha==.35f,"restoration keeps the latest workspace fade");
   check(sideBackingViews[5].alpha==.73f&&slots[5].hint.alpha==.61f,"TOP remains unchanged after commit");
-  check(MiStepLiveBackdrop.latest.closes==2,"temporary wallpaper retirement is requested at both lifecycle gates");
+  check(LiveBackdrop.latest.closes==2,"temporary wallpaper retirement is requested at both lifecycle gates");
  }
  public static void main(String[] args){
   for(int cells:new int[]{4,5})for(boolean top:new boolean[]{false,true})
    new CompactionChromeRegression().checkRange(cells,top);
-  var h=new CompactionChromeRegression();MiStepLiveBackdrop.fail=true;
+  var h=new CompactionChromeRegression();LiveBackdrop.fail=true;
   h.animateCellMoves(List.of(new CellMovePlan(h.slots[1],new Rect(0,300))),0);
   check(h.cellMotion==null&&!h.transferBusy&&h.layouts==1,"failed backdrop retains live owner layout");
   check(h.sideBackingViews[5].alpha==1&&h.slots[5].hint.alpha==1,"failure leaves TOP untouched");
@@ -115,6 +115,6 @@ public class CompactionChromeRegression {
 '''.replace('__METHODS__', methods)
 source = out / 'CompactionChromeRegression.java'
 source.write_text(body, encoding='utf-8')
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), str(source)], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.CompactionChromeRegression'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.CompactionChromeRegression'], check=True)

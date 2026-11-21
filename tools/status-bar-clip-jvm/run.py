@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/status-bar-clip-jvm'
-JDK = Path(os.environ["MISTEP_JAVA_BIN"])
+JDK = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 tree = ast.parse((ROOT / 'tools/live-swap-jvm/run.py').read_text(encoding='utf-8-sig'))
 files = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
              and any(isinstance(t, ast.Name) and t.id == 'FILES' for t in n.targets))
@@ -26,9 +26,9 @@ public final class Rect {
  public int hashCode(){return left+31*top+961*right+29791*bottom;}
  public String toString(){return left+","+top+","+right+","+bottom;}
 }''', encoding='utf8')
-source = package_dir(ROOT)/'MiStepStatusBarClip.java'
+source = package_dir(ROOT)/'StatusBarClip.java'
 test = Path(__file__).with_name('StatusBarClipRegression.java')
 subprocess.run([str(JDK / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT),
-                str(fake), str(rect), str(source), str(test), str(package_dir(ROOT)/'MiStepPackages.java')], check=True)
+                str(fake), str(rect), str(source), str(test), str(package_dir(ROOT)/'Packages.java')], check=True)
 subprocess.run([str(JDK / 'java.exe'), '-cp', str(OUT),
-                'com.jiusis.mistep.StatusBarClipRegression'], check=True)
+                'io.github.zerohomers0.onesteplite.StatusBarClipRegression'], check=True)

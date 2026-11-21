@@ -13,7 +13,7 @@ source = (src / 'HostEntry.java').read_text(encoding='utf8')
 start = source.index('    private static final class ZoomCommit {')
 end = source.index('    /** Snapshot operations only.', start)
 actual = source[start:end].replace('private static final class ZoomCommit', 'static final class ZoomCommit')
-wrapper = r'''package com.jiusis.mistep;
+wrapper = r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public final class ZoomAckRegression {
  static final String SYSTEMUI="com.android.systemui";
@@ -61,9 +61,9 @@ public final class ZoomAckRegression {
 }'''.replace('ACTUAL', actual)
 target = out / 'ZoomAckRegression.java'
 target.write_text(wrapper, encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
-android = Path(os.environ["MISTEP_ANDROID_JAR"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
+android = Path(os.environ["ONESTEPLITE_ANDROID_JAR"])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', str(android),
-                '-d', str(out), str(src / 'LiveSwapZoom.java'), str(src / 'LiveSwapZoomProtocol.java'), str(src / 'MiStepActions.java'), str(target)], check=True)
+                '-d', str(out), str(src / 'LiveSwapZoom.java'), str(src / 'LiveSwapZoomProtocol.java'), str(src / 'Actions.java'), str(target)], check=True)
 subprocess.run([str(jdk / 'java.exe'), '-cp', str(out) + ';' + str(android),
-                'com.jiusis.mistep.ZoomAckRegression'], check=True)
+                'io.github.zerohomers0.onesteplite.ZoomAckRegression'], check=True)

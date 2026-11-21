@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class FitScaleTest {
     private static int checks;
@@ -12,7 +12,7 @@ public final class FitScaleTest {
                 {1220,2712}, {1080,1920}, {1200,2000}, {2608,1200}};
         for (int[] screen : screens) for (float density : new float[]{2f, 2.75f, 3f, 4f}) {
             for (boolean right : new boolean[]{false, true}) {
-                MiStepLayout l = MiStepLayout.of(screen[0], screen[1], right, density);
+                WorkspaceLayout l = WorkspaceLayout.of(screen[0], screen[1], right, density);
                 String tag = screen[0] + "x" + screen[1] + "@" + density + "/" + right;
                 check(l.fillsScreen(), "fills screen " + tag);
                 check(l.mainWidth - l.mainDispWidth <= 1, "no main side bands " + tag);
@@ -27,7 +27,7 @@ public final class FitScaleTest {
                 }
             }
         }
-        MiStepLayout pm = MiStepLayout.of(1200, 2608, false, 3f);
+        WorkspaceLayout pm = WorkspaceLayout.of(1200, 2608, false, 3f);
         check(pm.mainOffsetX == 0 && pm.mainDispWidth == pm.mainWidth,
                 "17PM formerly had 22px black edges");
         check(pm.topStrip < 744, "toolbar cannot impose old 744px floor");

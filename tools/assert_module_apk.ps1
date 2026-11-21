@@ -12,7 +12,7 @@ try {
     }
     $reader = [IO.StreamReader]::new($archive.GetEntry('assets/xposed_init').Open())
     try { $entryClass = $reader.ReadToEnd().Trim() } finally { $reader.Dispose() }
-    if ($entryClass -cne 'com.jiusis.mistep.HostEntry') {
+    if ($entryClass -cne 'io.github.zerohomers0.onesteplite.HostEntry') {
         throw "Unexpected Xposed entry: $entryClass"
     }
     $dexEntry = $archive.GetEntry('classes.dex')
@@ -21,12 +21,12 @@ try {
     try { $dexStream.CopyTo($dexBytes) } finally { $dexStream.Dispose() }
     try {
         if ([Text.Encoding]::ASCII.GetString($dexBytes.ToArray()).IndexOf(
-                'Lcom/jiusis/mistep/HostEntry;', [StringComparison]::Ordinal) -lt 0) {
+                'Lio/github/zerohomers0/onesteplite/HostEntry;', [StringComparison]::Ordinal) -lt 0) {
             throw 'The Xposed entry descriptor is missing from classes.dex.'
         }
     } finally { $dexBytes.Dispose() }
     if ($RequireNative) {
-        foreach ($name in @('assets/native_init', 'lib/arm64-v8a/libmistep_raw.so')) {
+        foreach ($name in @('assets/native_init', 'lib/arm64-v8a/libonesteplite_raw.so')) {
             $entries = @($archive.Entries | Where-Object FullName -CEQ $name)
             if ($entries.Count -ne 1 -or $entries[0].Length -eq 0) {
                 throw "Native APK requires exactly one nonempty $name"
@@ -34,8 +34,8 @@ try {
         }
         $reader = [IO.StreamReader]::new($archive.GetEntry('assets/native_init').Open())
         try { $nativeEntry = $reader.ReadToEnd().Trim() } finally { $reader.Dispose() }
-        if ($nativeEntry -cne 'libmistep_raw.so') { throw 'Unexpected native entry.' }
-        $library = $archive.GetEntry('lib/arm64-v8a/libmistep_raw.so')
+        if ($nativeEntry -cne 'libonesteplite_raw.so') { throw 'Unexpected native entry.' }
+        $library = $archive.GetEntry('lib/arm64-v8a/libonesteplite_raw.so')
         if ($library.CompressedLength -ne $library.Length) {
             throw 'Native library must be stored uncompressed for APK loading.'
         }
@@ -47,7 +47,7 @@ try {
     }
     foreach ($notice in @('LICENSE','THIRD_PARTY_NOTICES.md','SOURCE.txt','APACHE-2.0.txt',
             'XposedBridge-NOTICE.txt','libcxx-LICENSE.txt','libcxxabi-LICENSE.txt')) {
-        $legal = @($archive.Entries | Where-Object FullName -CEQ "assets/mistep/licenses/$notice")
+        $legal = @($archive.Entries | Where-Object FullName -CEQ "assets/onesteplite/licenses/$notice")
         if ($legal.Count -ne 1 -or $legal[0].Length -eq 0) { throw "Missing packaged license: $notice" }
     }
     [pscustomobject]@{

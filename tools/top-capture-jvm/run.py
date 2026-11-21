@@ -20,12 +20,12 @@ files={
  public Bitmap copy(Config c,boolean mutable){copied=new Bitmap(w,h);return copied;}public void recycle(){recycled=true;}}''',
 'android/view/SurfaceControl.java':'''package android.view;public class SurfaceControl {}''',
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;public class XposedHelpers {
- public static Class<?>findClass(String n,ClassLoader cl){return n.endsWith("SurfaceControl")?android.view.SurfaceControl.class:n.endsWith("$Builder")?com.jiusis.mistep.TopCaptureRegression.Builder.class:n.endsWith("WindowManagerGlobal")?com.jiusis.mistep.TopCaptureRegression.Global.class:com.jiusis.mistep.TopCaptureRegression.Capture.class;}
+ public static Class<?>findClass(String n,ClassLoader cl){return n.endsWith("SurfaceControl")?android.view.SurfaceControl.class:n.endsWith("$Builder")?io.github.zerohomers0.onesteplite.TopCaptureRegression.Builder.class:n.endsWith("WindowManagerGlobal")?io.github.zerohomers0.onesteplite.TopCaptureRegression.Global.class:io.github.zerohomers0.onesteplite.TopCaptureRegression.Capture.class;}
  public static Object newInstance(Class<?>c,Object...a){try{return c.getConstructor().newInstance();}catch(Exception e){throw new RuntimeException(e);}}
  public static Object callMethod(Object o,String n,Object...a){return call(o.getClass(),o,n,a);}
  public static Object callStaticMethod(Class<?>c,String n,Object...a){return call(c,null,n,a);}
  static Object call(Class<?>c,Object o,String n,Object[]a){try{for(var m:c.getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new RuntimeException(e);}}}''',
-'com/jiusis/mistep/TopCaptureRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/TopCaptureRegression.java':'''package io.github.zerohomers0.onesteplite;
 import android.graphics.*;import de.robv.android.xposed.XposedHelpers;
 public class TopCaptureRegression {
  static int checks;static void check(boolean v,String s){checks++;if(!v)throw new AssertionError(s);}
@@ -68,6 +68,6 @@ public class TopCaptureRegression {
 paths=[]
 for name,text in files.items():
     path=out/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text,encoding='utf-8');paths.append(str(path))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopCaptureRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopCaptureRegression'],check=True)

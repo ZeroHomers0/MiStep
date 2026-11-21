@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-body=r"""package com.jiusis.mistep;
+body=r"""package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class NativeSideReleaseTest {
  static int checks;static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
@@ -16,7 +16,7 @@ public class NativeSideReleaseTest {
  public static class Transitions{int unreg,reg;public void unregisterTaskView(Object c){unreg++;}public void registerTaskView(Object c){reg++;}}
  Info info=new Info();Organizer o=new Organizer();Controller c=new Controller(o,info);Transitions t=new Transitions();Object fallback=new Object();Appeared appeared=new Appeared(info);
  NativeSideReleaseTest(){o.mTasks.map.put(42,appeared);o.mTaskListeners.map.put(42,c);o.mTaskListeners.map.put(-5,fallback);}
- boolean release(){return MiStepNativeSideRelease.release(c,t,42,info.token);}
+ boolean release(){return NativeSideRelease.release(c,t,42,info.token);}
  static void rejected(NativeSideReleaseTest h,String s){check(!h.release(),s);check(h.o.removes==0&&h.t.unreg==0&&h.c.vanished==0,"rejection is read only");}
  public static void main(String[]args){
   var h=new NativeSideReleaseTest();check(h.release(),"native5 releases side owner");check(h.o.getTaskListener(h.info,false)==h.fallback&&h.o.nativeAppeared==1,"existing mode5 fallback owns canonical task");check(h.c.vanished==1&&h.c.mTaskToken==null&&h.appeared.leash.releases==0,"only controller copy released; native canonical lives");check(h.t.unreg==1&&h.t.reg==1,"repository detached then idle controller registered");check(h.release()&&h.o.removes==1,"late repeat leaves settled native task alone");
@@ -41,8 +41,8 @@ public class XposedHelpers{
  public static void setBooleanField(Object o,String n,boolean v){try{java.lang.reflect.Field f=o.getClass().getDeclaredField(n);f.setAccessible(true);f.setBoolean(o,v);}catch(Exception e){throw new IllegalStateException(n,e);}}
 public static Object getObjectField(Object o,String n){try{Field f=o.getClass().getField(n);return f.get(o);}catch(Exception e){throw new RuntimeException(e);}}public static int getIntField(Object o,String n){return (Integer)getObjectField(o,n);}public static Object callMethod(Object o,String n,Object...a){for(Method m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)try{return m.invoke(o,a);}catch(Exception e){throw new RuntimeException(e);}throw new IllegalArgumentException(n);}}
 """
-files={'com/jiusis/mistep/NativeSideReleaseTest.java':body,'de/robv/android/xposed/XposedHelpers.java':helper}
+files={'io/github/zerohomers0/onesteplite/NativeSideReleaseTest.java':body,'de/robv/android/xposed/XposedHelpers.java':helper}
 for n,s in files.items():p=out/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(s,encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(package_dir(root)/'ShellCompat.java'),str(package_dir(root)/'MiStepNativeSideRelease.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.NativeSideReleaseTest'],check=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(package_dir(root)/'ShellCompat.java'),str(package_dir(root)/'NativeSideRelease.java')],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.NativeSideReleaseTest'],check=True)

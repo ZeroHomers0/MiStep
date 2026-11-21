@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 public final class VisibilityRepairTest {
     private static int checks;
     private static void check(boolean value, String message) {

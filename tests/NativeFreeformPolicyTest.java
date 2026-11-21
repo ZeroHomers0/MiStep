@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class NativeFreeformPolicyTest {
     public static void main(String[] args) {

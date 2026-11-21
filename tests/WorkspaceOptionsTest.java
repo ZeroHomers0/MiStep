@@ -1,15 +1,15 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class WorkspaceOptionsTest {
     private static int checks;
     private static void check(boolean value, String message) {
         checks++; if (!value) throw new AssertionError(message);
     }
-    private static LiveSwapGeometry.Rect main(MiStepLayout layout) {
+    private static LiveSwapGeometry.Rect main(WorkspaceLayout layout) {
         return new LiveSwapGeometry.Rect(layout.mainOffsetX, layout.mainOffsetY,
                 layout.width * layout.mainScale, layout.height * layout.mainScale);
     }
-    private static LiveSwapGeometry.Rect side(MiStepLayout layout, int slot) {
+    private static LiveSwapGeometry.Rect side(WorkspaceLayout layout, int slot) {
         int[] b = layout.cellBounds(slot);
         return new LiveSwapGeometry.Rect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
     }
@@ -25,9 +25,9 @@ public final class WorkspaceOptionsTest {
             check(options.mainOnRightAfterSwap(right) == (mode == WorkspaceOptions.FIXED_MAIN ? right : !right), "wrong target main side");
             for (int width : new int[]{720, 1080, 1200, 1440}) {
                 int height = width * 22 / 10;
-                MiStepLayout before = MiStepLayout.of(width, height, right, width / 393f);
-                MiStepLayout after = MiStepLayout.of(width, height, options.mainOnRightAfterSwap(right), width / 393f);
-                for (int slot = 0; slot < MiStepLayout.CELL_COUNT; slot++) {
+                WorkspaceLayout before = WorkspaceLayout.of(width, height, right, width / 393f);
+                WorkspaceLayout after = WorkspaceLayout.of(width, height, options.mainOnRightAfterSwap(right), width / 393f);
+                for (int slot = 0; slot < WorkspaceLayout.CELL_COUNT; slot++) {
                     LiveSwapGeometry.Task a = new LiveSwapGeometry.Task(1, "A", width, height, main(before), side(after, slot));
                     LiveSwapGeometry.Task b = new LiveSwapGeometry.Task(2, "B", width, height, side(before, slot), main(after));
                     LiveSwapGeometry.Task peer = new LiveSwapGeometry.Task(3, "C", width, height, side(before, (slot + 1) % 3), side(after, (slot + 1) % 3));

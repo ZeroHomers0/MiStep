@@ -3,7 +3,7 @@ import ast, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-JDK = Path(os.environ['MISTEP_JAVA_BIN'])
+JDK = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 phone = ROOT/'tools/phone-rotation-jvm/run.py'
 ns = {'__file__': str(phone), '__name__': 'fixture'}
 exec(compile(phone.read_text(encoding='utf-8').split('sources=[]')[0], str(phone), 'exec'), ns)
@@ -45,7 +45,7 @@ files['de/robv/android/xposed/XposedBridge.java'] = files['de/robv/android/xpose
  public static java.util.Map<String,XC_MethodHook> hooks=new java.util.HashMap<>();
  public static java.util.Set<XC_MethodHook.Unhook> hookAllMethods(Class<?> type,String name,XC_MethodHook hook){hooks.put(name,hook);return java.util.Collections.emptySet();}
  ''')
-files['com/jiusis/mistep/PhoneWorkspaceTest.java'] = r'''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/PhoneWorkspaceTest.java'] = r'''package io.github.zerohomers0.onesteplite;
 import android.os.*;import android.content.Intent;import android.content.res.Configuration;import android.graphics.Rect;import java.lang.reflect.*;import java.util.*;import com.android.server.wm.WindowContainer;
 public class PhoneWorkspaceTest {
  static HostEntry host=new HostEntry();static int checks;static Binder owner;static long sequence;
@@ -74,15 +74,15 @@ public class PhoneWorkspaceTest {
  static class Service{Object mGlobalLock=new Object();}
  static class Display{PhoneRotationTest.Info info=new PhoneRotationTest.Info();Rotation mDisplayRotation=new Rotation();Service mWmService=new Service();Activity top;Display(){mDisplayRotation.mDisplayContent=this;}Object getDisplayInfo(){return info;}Activity topRunningActivity(){return top;}void startFixedRotationTransform(Activity a,int r){a.starts++;a.install();}}
  static Bundle row(Activity a){Bundle b=new Bundle();b.putBinder(@task@,a.task.info.token.binder);b.putInt(@taskId@,a.task.mTaskId);b.putInt(@userId@,a.task.mUserId);b.putInt(@displayId@,0);return b;}
- static void register(Activity main,Activity side,Activity top){owner=new Binder();Bundle b=new Bundle();b.putBinder(@owner@,owner);b.putLong(@sequence@,++sequence);b.putParcelableArrayList(@rows@,new ArrayList<>(List.of(row(side))));b.putBundle(@rotationMain@,row(main));b.putBundle(@topInput@,row(top));check(MiStepDesktopLaunchBridge.update(new Intent(@register@).putExtra(@state@,b)),@registry accepted@);}
- static void refresh(Display d)throws Exception{call(@refreshMiStepTaskRotationLocked@,new Class[]{Object.class},d);}
+ static void register(Activity main,Activity side,Activity top){owner=new Binder();Bundle b=new Bundle();b.putBinder(@owner@,owner);b.putLong(@sequence@,++sequence);b.putParcelableArrayList(@rows@,new ArrayList<>(List.of(row(side))));b.putBundle(@rotationMain@,row(main));b.putBundle(@topInput@,row(top));check(DesktopLaunchBridge.update(new Intent(@register@).putExtra(@state@,b)),@registry accepted@);}
+ static void refresh(Display d)throws Exception{call(@refreshTaskRotationLocked@,new Class[]{Object.class},d);}
  static boolean retain(Object a)throws Exception{return (Boolean)call(@retainTaskRotationOnNativeFinishLocked@,new Class[]{Object.class},a);}
  static de.robv.android.xposed.XC_MethodHook.MethodHookParam param(Object a,Object result,Object...args){var p=new de.robv.android.xposed.XC_MethodHook.MethodHookParam();p.thisObject=a;p.result=result;p.args=args;return p;}
  public static void main(String[]args)throws Throwable{
   Display d=new Display();Activity main=new Activity(new Task(d,7,1)),side=new Activity(new Task(d,8,6)),top=new Activity(new Task(d,9,6));side.task.bounds=new Rect(0,0,1080,2460);top.request=0;d.top=top;
   f(@sDisplayContent@).set(null,d);f(@sFullscreenRotationActive@).set(null,true);f(@sHeldDisplayRotation@).set(null,0);f(@sZoomed@).set(null,true);f(@sTaskRotationResolver@).set(null,Rotation.class.getDeclaredMethod(@rotationForOrientation@,int.class,int.class));register(main,side,top);
   int messages=android.util.Log.messages.size();check(!retain(new WindowToken(d))&&android.util.Log.messages.size()==messages,@ordinary IME WindowToken finishes natively without an Activity getTask error@);
-  check(MiStepDesktopLaunchBridge.rotationActivities(d).size()==3,@all zero-transform active roles found@);check(main.task.queries+side.task.queries+top.task.queries==0,@enumeration avoids TaskInfo aggregation@);
+  check(DesktopLaunchBridge.rotationActivities(d).size()==3,@all zero-transform active roles found@);check(main.task.queries+side.task.queries+top.task.queries==0,@enumeration avoids TaskInfo aggregation@);
   refresh(d);check(main.starts==0&&side.starts==0&&top.starts==0,@portrait requires no local state@);
   d.mDisplayRotation.proposed=1;refresh(d);check(main.starts==1&&side.starts==1&&top.starts==1,@first sensor turn refreshes main side TOP@);check(top.config.orientation==1&&top.config.windowConfiguration.bounds.width()==1725&&top.config.windowConfiguration.bounds.height()==3000,@TOP real portrait viewport in landscape carrier@);
   check(top.entryKept,@first native synchronous config dispatch keeps TOP before lease registration@);
@@ -98,7 +98,7 @@ public class PhoneWorkspaceTest {
   d.mDisplayRotation.proposed=0;call(@applyTopRotationLocked@,new Class[]{Object.class,Object.class,Object.class,String.class},d,top,top.task,@foreign adapter return test@);
   check(top.mFixedRotationTransformState==state&&top.mWmService.animators.size()==1,@blocked portrait release cannot animate an unfinished transform@);
   activeAnimator.current=activeAdapter;d.mDisplayRotation.proposed=1;
-  Activity nextMain=new Activity(new Task(d,10,1));register(nextMain,side,top);refresh(d);check(main.mFixedRotationTransformState==null&&f(@sMiStepFixedRotationApp@).get(null)==nextMain&&retain(nextMain),@departing owner cleaned before confirmed new main@);main=nextMain;
+  Activity nextMain=new Activity(new Task(d,10,1));register(nextMain,side,top);refresh(d);check(main.mFixedRotationTransformState==null&&f(@sFixedRotationApp@).get(null)==nextMain&&retain(nextMain),@departing owner cleaned before confirmed new main@);main=nextMain;
   Handler handler=new Handler();f(@sZoomBridgeHandler@).set(null,handler);for(int i=0;i<4;i++)call(@queueWorkspaceRotationRefresh@,new Class[]{Object.class},d.mDisplayRotation);check(handler.pending.size()==1,@sensor proposals coalesced@);d.mDisplayRotation.proposed=3;handler.pending.remove(0).run();check(top.starts==2&&top.finishes==1&&top.config.windowConfiguration.rotation==3,@reverse turn replaces owned local state@);
   d.mDisplayRotation.frozen=true;d.mDisplayRotation.lockedRotation=3;d.mDisplayRotation.proposed=0;refresh(d);check(top.starts==2&&retain(top),@native user rotation lock respected@);d.mDisplayRotation.frozen=false;refresh(d);check(main.mFixedRotationTransformState==null&&side.mFixedRotationTransformState==null&&top.mFixedRotationTransformState==null,@portrait return releases all owned transforms@);
   check(top.returnKept,@native finish config dispatch keeps live TOP after state reset@);
@@ -106,25 +106,25 @@ public class PhoneWorkspaceTest {
   check(!(Boolean)call(@keepTopActivityForRotationConfig@,new Class[]{Object.class,int.class,Object.class},top,0x1580,oldPortrait),@release guard cannot leak beyond synchronous native finish@);
   check(main.mWmService.animators.size()==3&&top.mWmService.animators.size()==3,@portrait return also animates through native WM@);
   d.mDisplayRotation.proposed=1;refresh(d);FakeRotationActivity.State foreign=new FakeRotationActivity.State();top.mFixedRotationTransformState=foreign;int finishes=top.finishes;refresh(d);check(top.mFixedRotationTransformState==foreign&&top.finishes==finishes&&!retain(top),@foreign native state never finished@);
-  top.mFixedRotationTransformState=null;refresh(d);top.task.mode=1;call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},d,top,@role test@);check(!((Map<?,?>)f(@sTopRotationBounds@).get(null)).containsKey(top),@TOP to main drops local viewport ownership@);
-  top.task.mode=6;main.task.mUserId=10;check(!MiStepDesktopLaunchBridge.rotationActivities(d).contains(main),@wrong user rejects stale binding@);main.task.mUserId=0;side.task.display=new Display();check(!MiStepDesktopLaunchBridge.rotationActivities(d).contains(side),@foreign display rejected@);side.task.display=d;side.task.mode=5;check(!MiStepDesktopLaunchBridge.rotationActivities(d).contains(side),@native freeform remains separate@);owner.alive=false;check(MiStepDesktopLaunchBridge.rotationActivities(d).isEmpty(),@dead owner rejected@);
+  top.mFixedRotationTransformState=null;refresh(d);top.task.mode=1;call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},d,top,@role test@);check(!((Map<?,?>)f(@sTopRotationBounds@).get(null)).containsKey(top),@TOP to main drops local viewport ownership@);
+  top.task.mode=6;main.task.mUserId=10;check(!DesktopLaunchBridge.rotationActivities(d).contains(main),@wrong user rejects stale binding@);main.task.mUserId=0;side.task.display=new Display();check(!DesktopLaunchBridge.rotationActivities(d).contains(side),@foreign display rejected@);side.task.display=d;side.task.mode=5;check(!DesktopLaunchBridge.rotationActivities(d).contains(side),@native freeform remains separate@);owner.alive=false;check(DesktopLaunchBridge.rotationActivities(d).isEmpty(),@dead owner rejected@);
   call(@releaseAllTaskRotationsLocked@,new Class[]{String.class},@fixture cleanup@);
   Display pages=new Display();Activity pageMain=new Activity(new Task(pages,70,1)),pageSide=new Activity(new Task(pages,80,6)),first=new Activity(new Task(pages,90,6));pageSide.task.bounds=new Rect(0,0,1080,2460);first.request=0;pages.top=first;pages.mDisplayRotation.proposed=1;
   f(@sDisplayContent@).set(null,pages);register(pageMain,pageSide,first);refresh(pages);Object shared=first.mFixedRotationTransformState;check(shared!=null,@first TOP page owns native state@);
   Activity second=new Activity(first.task);second.config=new Configuration(first.config);second.mFixedRotationTransformState=first.mFixedRotationTransformState;second.mFixedRotationTransformState.mAssociatedTokens.add(second);pages.top=second;
-  check(Boolean.TRUE.equals(call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,second,@native linked page@)),@new TOP page adopts only its task's already-owned shared state@);
+  check(Boolean.TRUE.equals(call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,second,@native linked page@)),@new TOP page adopts only its task's already-owned shared state@);
   check(second.starts==0&&second.mFixedRotationTransformState==shared,@shared native link must not create another transform or animation@);
   check(second.leashes==1&&second.fixed!=null,@linked TOP page needs its own real native fixed-rotation leash@);
   refresh(pages);check(second.leashes==1,@unchanged TOP refresh reuses the existing fixed leash@);
   check(call(@ownedTopRotationConfigurationLocked@,new Class[]{Object.class,Object.class},second,second.task)==((LocalState)shared).mRotatedOverrideConfiguration,@linked page resolves from the owned local configuration@);
-  call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,first,@old page configuration@);
+  call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,first,@old page configuration@);
   check(first.mFixedRotationTransformState==shared&&second.mFixedRotationTransformState==shared&&first.finishes==0,@old page callback must not finish the new page's shared transform@);
   first.finishing=true;check(retain(first)&&retain(second),@finishing old page cannot cancel current TOP's shared state@);first.finishing=false;
   first.task.top=first;pages.top=first;refresh(pages);check(first.starts==1&&first.mFixedRotationTransformState==shared&&retain(second),@Back reuses shared native state without landscape flash@);
   pages.mDisplayRotation.proposed=0;refresh(pages);check(first.mFixedRotationTransformState==null&&second.mFixedRotationTransformState==null,@sensor return finishes the entire native association@);
   check(!((Map<?,?>)f(@sTopRotationBounds@).get(null)).containsKey(first)&&!((Map<?,?>)f(@sTopRotationBounds@).get(null)).containsKey(second),@group return clears every TOP lease@);
   pages.mDisplayRotation.proposed=1;refresh(pages);shared=first.mFixedRotationTransformState;second.mFixedRotationTransformState=first.mFixedRotationTransformState;second.mFixedRotationTransformState.mAssociatedTokens.add(second);first.task.top=second;pages.top=second;
-  call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,second,@second native linked page@);
+  call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},pages,second,@second native linked page@);
   f(@sZoomed@).set(null,false);f(@sFullscreenRotationActive@).set(null,false);call(@releaseAllTaskRotationsLocked@,new Class[]{String.class},@host exit@);
   check(first.mFixedRotationTransformState==null&&second.mFixedRotationTransformState==null&&((Map<?,?>)f(@sTaskRotations@).get(null)).isEmpty(),@exit clears all linked page states and ownership@);
   check(first.config.densityDpi==first.task.config.densityDpi&&second.config.densityDpi==first.task.config.densityDpi,@exit sends parent density back to every linked page@);
@@ -149,9 +149,9 @@ public class PhoneWorkspaceTest {
   f(@sDisplayContent@).set(null,independent);register(independentMain,independentSide,bottom);refresh(independent);
   Object bottomState=bottom.mFixedRotationTransformState;int portraitDpi=bottom.config.densityDpi;
   Activity foreground=new Activity(bottom.task);independent.top=foreground;
-  call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},independent,foreground,@independent foreground@);
+  call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},independent,foreground,@independent foreground@);
   check(foreground.mFixedRotationTransformState!=null&&foreground.mFixedRotationTransformState!=bottomState,@independent native page states are both supported@);
-  call(@applyMiStepFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},independent,bottom,@bottom configuration callback@);
+  call(@applyFixedRotationLocked@,new Class[]{Object.class,Object.class,String.class},independent,bottom,@bottom configuration callback@);
   check(bottom.mFixedRotationTransformState==bottomState&&bottom.config.orientation==1&&bottom.config.densityDpi==portraitDpi&&foreground.config.densityDpi==portraitDpi,@interactive Back bottom keeps portrait layout and density before commit@);
   check(retain(bottom)&&retain(foreground),@native lifetime keeps independent pages of the same live TOP task@);
   call(@installFixedMainRotationHooks@,new Class[]{ClassLoader.class},PhoneWorkspaceTest.class.getClassLoader());
@@ -196,15 +196,15 @@ public class PhoneWorkspaceTest {
   call(@releaseAllTaskRotationsLocked@,new Class[]{String.class},@independent exit@);
   check(bottom.mFixedRotationTransformState==null&&foreground.mFixedRotationTransformState==null&&bottom.config.densityDpi==480&&foreground.config.densityDpi==480,@exit restores both independent pages and density@);
   call(@releaseAllTaskRotationsLocked@,new Class[]{String.class},@independent final cleanup@);
-  check(MiStepRotationAnimation.start(bottom,1,0)&&((Map<?,?>)f(@sTaskRotations@).get(null)).isEmpty(),
+  check(RotationAnimation.start(bottom,1,0)&&((Map<?,?>)f(@sTaskRotations@).get(null)).isEmpty(),
         @return animation can outlive every fixed rotation state@);
   var last=bottom.mWmService.lastAnimator;var originalAdapter=last.current;
   last.current=new com.android.server.wm.LocalAnimationAdapter(null,null);
   call(@releaseAllTaskRotationsLocked@,new Class[]{String.class},@animation-only exit@);
   handler.pending.clear();call(@queueInactiveRotationCleanupLocked@,new Class[]{Object.class},independent);
-  check(handler.pending.size()==1&&MiStepRotationAnimation.owns(bottom),@animation-only exit has bounded follow-up@);
+  check(handler.pending.size()==1&&RotationAnimation.owns(bottom),@animation-only exit has bounded follow-up@);
   last.current=originalAdapter;handler.pending.remove(0).run();
-  check(handler.pending.isEmpty()&&!MiStepRotationAnimation.owns(bottom),@animation-only exit cleans its carrier without a fixed state@);
+  check(handler.pending.isEmpty()&&!RotationAnimation.owns(bottom),@animation-only exit cleans its carrier without a fixed state@);
   System.out.println(@PhoneWorkspace checks=@+checks+@ passed (production HostEntry plus registry; fake WM only)@);
  }
 }'''.replace('@',chr(34))
@@ -213,6 +213,6 @@ files['android/os/Handler.java'] = files['android/os/Handler.java'].replace(
 sources=[]
 for name,text in files.items():
  p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');sources.append(str(p))
-cp=os.pathsep.join([str(OUT),os.environ['MISTEP_CLASSES'],os.environ['MISTEP_ANDROID_JAR'],str(ROOT/'libs/xposed-api-82.jar')])
+cp=os.pathsep.join([str(OUT),os.environ['ONESTEPLITE_CLASSES'],os.environ['ONESTEPLITE_ANDROID_JAR'],str(ROOT/'libs/xposed-api-82.jar')])
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',cp,'-d',str(OUT),*sources],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',cp,'com.jiusis.mistep.PhoneWorkspaceTest'],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',cp,'io.github.zerohomers0.onesteplite.PhoneWorkspaceTest'],check=True)

@@ -7,10 +7,10 @@ $jdk=Join-Path $JavaHome 'bin'
 $android=Join-Path $SdkPath 'platforms\android-35\android.jar'
 $classes=Join-Path $root 'build\classes'
 if (-not (Test-Path -LiteralPath $classes)) { throw 'Run build.ps1 first.' }
-$env:MISTEP_JAVA_BIN=$jdk
-$env:MISTEP_ANDROID_JAR=$android
-$env:MISTEP_CLASSES=$classes
-foreach($tool in @('java','javac','javap','jar')) { Set-Item -Path "env:MISTEP_$($tool.ToUpperInvariant())" -Value (Join-Path $jdk "$tool.exe") }
+$env:ONESTEPLITE_JAVA_BIN=$jdk
+$env:ONESTEPLITE_ANDROID_JAR=$android
+$env:ONESTEPLITE_CLASSES=$classes
+foreach($tool in @('java','javac','javap','jar')) { Set-Item -Path "env:ONESTEPLITE_$($tool.ToUpperInvariant())" -Value (Join-Path $jdk "$tool.exe") }
 $out=Join-Path $root 'build\tests'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $tests=@(Get-ChildItem -LiteralPath (Join-Path $root 'tests') -Filter '*.java' | ForEach-Object FullName)
@@ -20,7 +20,7 @@ if($LASTEXITCODE -ne 0){throw 'JVM geometry fake compilation failed.'}
 & (Join-Path $jdk 'javac.exe') -encoding UTF-8 --release 17 -cp $cp -d $out @tests
 if($LASTEXITCODE -ne 0){throw 'Policy test compilation failed.'}
 foreach($test in $tests){
-    & (Join-Path $jdk 'java.exe') -cp "$out;$cp" ('com.jiusis.mistep.'+[IO.Path]::GetFileNameWithoutExtension($test))
+    & (Join-Path $jdk 'java.exe') -cp "$out;$cp" ('io.github.zerohomers0.onesteplite.'+[IO.Path]::GetFileNameWithoutExtension($test))
     if($LASTEXITCODE -ne 0){throw "Policy test failed: $test"}
 }
 $failedSuites=@()

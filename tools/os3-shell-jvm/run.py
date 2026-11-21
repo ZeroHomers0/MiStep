@@ -3,12 +3,12 @@ from pathlib import Path
 import os,subprocess,sys
 r=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([sys.executable,'-X','utf8',str(r/'tools/live-collect-jvm/run.py'),str(out)],check=True)
-source=out/'com/jiusis/mistep/Os3ShellRegression.java'
-source.write_text(r'''package com.jiusis.mistep;
+source=out/'io/github/zerohomers0/onesteplite/Os3ShellRegression.java'
+source.write_text(r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.graphics.Rect;
-import com.jiusis.mistep.LivePairRegression.*;
+import io.github.zerohomers0.onesteplite.LivePairRegression.*;
 import com.android.wm.shell.ShellTaskOrganizer.TaskListener;
 public class Os3ShellRegression {
  static int checks;static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}
@@ -79,7 +79,7 @@ public class Os3ShellRegression {
   Object ctx=new Object();OldConstraints oldConstraints=new OldConstraints();NewConstraints newConstraints=new NewConstraints();ShellCompat.loadConstraints(oldConstraints,ctx,42);ShellCompat.loadConstraints(newConstraints,ctx,43);check(oldConstraints.context==ctx&&oldConstraints.xml==42&&newConstraints.context==ctx&&newConstraints.xml==43,"constraint XML loader changed resources or argument order");
   // Run the actual two-task ownership implementation with absent organizer APIs and void native open.
   o=new Os3Organizer();a=new Info(11,"A",1);b=new Info(12,"B",6);aa=new Appeared(a);bb=new Appeared(b);o.mTasks.put(11,aa);o.mTasks.put(12,bb);o.mTaskListeners.put(-2,o.fullscreen);c=new Controller();c.mTaskOrganizer=o;c.mTaskInfo=b;c.mTaskToken=b.token;c.mTaskLeash=new Surface(12);o.mTaskListeners.put(12,c);
-  Os3PairViews pairViews=new Os3PairViews();MiStepLiveTaskPair pair=new MiStepLiveTaskPair(o,pairViews,c,11,"A",12,"B",0,new Surface(1),c.mSurfaceControl,new Rect(0,0,1200,2608),s->{});
+  Os3PairViews pairViews=new Os3PairViews();LiveTaskPair pair=new LiveTaskPair(o,pairViews,c,11,"A",12,"B",0,new Surface(1),c.mSurfaceControl,new Rect(0,0,1200,2608),s->{});
   check(pair.preflight(),"OS3 actual pair preflight refused");pair.arm(Os3ShellRegression.class.getClassLoader());a.mode=6;b.mode=1;pair.prepare(new Tx(),new Tx());check(pair.sideOwned()&&o.getTaskListener(a,false)==c,"OS3 actual pair failed ownership transfer");pair.finish(new Tx(),.25f);check(o.mTaskListeners.get(-2)==o.fullscreen&&aa.leash.releases==0&&bb.leash.releases==0,"OS3 pair damaged organizer/canonical surfaces");
   System.out.println("actual OS3 missing-interface/lifecycle checks="+checks+" passed");
  }
@@ -107,11 +107,11 @@ s=s.replace(' public static class Os3PairViews', r''' public static class Factor
  public static class Os3PairViews''')
 source.write_text(s,encoding='utf8')
 additional=[]
-file=out/'android/view/SurfaceControl.java';file.parent.mkdir(parents=True,exist_ok=True);file.write_text('package android.view;public class SurfaceControl {public static class Transaction extends com.jiusis.mistep.LivePairRegression.Tx {public static int applies,closes;public void apply(){applies++;}public void close(){closes++;}}}',encoding='utf8');additional.append(str(file))
+file=out/'android/view/SurfaceControl.java';file.parent.mkdir(parents=True,exist_ok=True);file.write_text('package android.view;public class SurfaceControl {public static class Transaction extends io.github.zerohomers0.onesteplite.LivePairRegression.Tx {public static int applies,closes;public void apply(){applies++;}public void close(){closes++;}}}',encoding='utf8');additional.append(str(file))
 for name,body in {
  'TaskViewTaskController': 'public final Object organizer,sync;public TaskViewTaskController(Object context,Object o,Object transitions,Object s){organizer=o;sync=s;}',
  'TaskView': 'public final Object context,transitions;public final TaskViewTaskController controller;public TaskView(Object c,Object t,TaskViewTaskController own){context=c;transitions=t;controller=own;}'
 }.items():
  file=out/('com/android/wm/shell/taskview/'+name+'.java');file.parent.mkdir(parents=True,exist_ok=True);file.write_text('package com.android.wm.shell.taskview;public class '+name+'{'+body+'}',encoding='utf8');additional.append(str(file))
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(source),*additional],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.Os3ShellRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.Os3ShellRegression'],check=True)

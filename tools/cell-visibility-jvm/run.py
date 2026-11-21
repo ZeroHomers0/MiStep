@@ -4,7 +4,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2]
-host=(package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 def method(signature):
     a=host.index(signature);b=host.index('{',a)+1;depth=1
@@ -12,7 +12,7 @@ def method(signature):
         depth+=(host[b]=='{')-(host[b]=='}');b+=1
     return host[a:b]
 body=r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import android.view.SurfaceControl;import android.graphics.Rect;
 import de.robv.android.xposed.XposedHelpers;
 public class CellVisibilityRegression {
@@ -89,7 +89,7 @@ public class CellVisibilityRegression {
 '''.replace('__METHODS__','\n'.join(method(s) for s in ['    private boolean presentsSlot(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility(', '    private void prepareCellSurface(', '    private void stageCellPresentation(']))
 files={
 'android/graphics/Rect.java':'package android.graphics;public class Rect {public boolean isEmpty(){return false;}}',
-'com/jiusis/mistep/CellVisibilityRegression.java':body,
+'io/github/zerohomers0/onesteplite/CellVisibilityRegression.java':body,
 'android/view/SurfaceControl.java':r'''package android.view;import java.util.*;
 public class SurfaceControl {public SurfaceControl child;public boolean valid=true,shown;public float alpha;public boolean isValid(){return valid;}public static final List<String> ops=new ArrayList<>();
  public static class Transaction implements AutoCloseable {
@@ -113,7 +113,7 @@ assert 'slot.hint.setOnClickListener(v -> { if (!taskCellsCovered)' in created
 assert 'view.setOnClickListener(v -> { if (!taskCellsCovered)' in created
 # Explicit shortcut/settings commands must still reuse the existing task dispatcher.
 assert 'taskCellsCovered' not in method('    private void onSlotTapped(')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-d',str(out),*[str(out/p) for p in files]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.CellVisibilityRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.CellVisibilityRegression'],check=True)
 print('Actual entry/retirement ordering checks=4 passed')

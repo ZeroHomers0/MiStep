@@ -3,7 +3,7 @@ from pathlib import Path
 import os,subprocess,sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];src=package_dir(root);out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-s=(src/'MiStepHost.java').read_text(encoding='utf-8')
+s=(src/'WorkspaceHost.java').read_text(encoding='utf-8')
 def member(n):
  a=s.index('    private void '+n+'(');i=s.index('{',a)+1;d=1
  while d:d+=(s[i]=='{')-(s[i]=='}');i+=1
@@ -15,7 +15,7 @@ files={
 'android/animation/ValueAnimator.java':'''package android.animation;import java.util.*;import java.util.function.*;public class ValueAnimator extends Animator {public static boolean enabled=true;public float value;public long duration,delay;List<Consumer<ValueAnimator>> updates=new ArrayList<>();List<AnimatorListenerAdapter> ends=new ArrayList<>();public static boolean areAnimatorsEnabled(){return enabled;}public static ValueAnimator ofFloat(float...v){return new ValueAnimator();}public void setDuration(long d){duration=d;}public void setCurrentPlayTime(long time){tick(time/300f);}public void setStartDelay(long d){delay=d;}public void setInterpolator(Object i){}public Object getAnimatedValue(){return value;}public void addUpdateListener(Consumer<ValueAnimator> u){updates.add(u);}public void addListener(AnimatorListenerAdapter l){ends.add(l);}public void start(){tick(0);}public void tick(float p){value=p;for(var u:updates)u.accept(this);}public void end(){tick(1);for(var l:ends)l.onAnimationEnd(this);}public void cancel(){for(var l:ends)l.onAnimationEnd(this);}}''',
 'android/view/animation/PathInterpolator.java':'package android.view.animation;public class PathInterpolator {public PathInterpolator(float a,float b,float c,float d){}}',
 'android/os/SystemClock.java':'package android.os;public class SystemClock {public static long now=1000;public static long uptimeMillis(){return now;}}',
-'com/jiusis/mistep/SideSwitchRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/SideSwitchRegression.java':'''package io.github.zerohomers0.onesteplite;
 import android.animation.ValueAnimator;import android.os.SystemClock;
 public class SideSwitchRegression {
  static int checks;static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
@@ -66,5 +66,5 @@ public class SideSwitchRegression {
 }'''}
 for name,body in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(src/'WorkspaceMotionSpec.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideSwitchRegression'],check=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN']);subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],str(src/'WorkspaceMotionSpec.java')],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.SideSwitchRegression'],check=True)

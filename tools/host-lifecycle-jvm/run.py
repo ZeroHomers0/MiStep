@@ -12,7 +12,7 @@ root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/standalone'
 out.mkdir(parents=True, exist_ok=True)
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 
 
 def method(text, signature):
@@ -32,7 +32,7 @@ def method(text, signature):
 preview = (src / "SwapPreview.java").read_text(encoding="utf-8-sig")
 close = "\n".join(method(preview, s) for s in ("    void close() {", "    void close(Runnable onDetached) {"))
 # Runtime-independent logger; method control flow is otherwise unmodified.
-close = close.replace('android.util.Log.w("MiStepProbe", "bridge window removal failed", error);', "removalErrors++;")
+close = close.replace('android.util.Log.w("OneStepLiteProbe", "bridge window removal failed", error);', "removalErrors++;")
 bridge_test = r'''
 import java.util.*;
 public class BridgeCloseCompletionTest {
@@ -96,7 +96,7 @@ public class BridgeCloseCompletionTest {
 }
 '''.replace("__CLOSE_METHODS__", close)
 
-host = (src / "MiStepHost.java").read_text(encoding="utf-8-sig")
+host = (src / "WorkspaceHost.java").read_text(encoding="utf-8-sig")
 host_methods = "\n".join(method(host, s) for s in (
     "    private void closeSwapPreview() {",
     "    private void closeSwapPreview(Object fallbackStatusOwner) {",

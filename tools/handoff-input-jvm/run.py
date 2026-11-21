@@ -46,8 +46,8 @@ public class RegionSamplingHelper{public Object mCallback;public Object mSamplin
 'com/miui/systemui/statusbar/core/StatusBarRegionSamplingInteractor$regionSamplingHelper$1.java': '''package com.miui.systemui.statusbar.core;import android.graphics.Rect;
 public class StatusBarRegionSamplingInteractor$regionSamplingHelper$1{public Owner this$0=new Owner();public static class Owner{public Rect samplingBounds=new Rect(0,0,1080,100);}}
 ''',
-'com/jiusis/mistep/MiStepHost.java': '''package com.jiusis.mistep;public class MiStepHost{public static float[]geometry;static float[]activeStatusBarTransform(){return geometry;}}''',
-'com/jiusis/mistep/HandoffRegression.java': r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/WorkspaceHost.java': '''package io.github.zerohomers0.onesteplite;public class WorkspaceHost{public static float[]geometry;static float[]activeStatusBarTransform(){return geometry;}}''',
+'io/github/zerohomers0/onesteplite/HandoffRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.*;import de.robv.android.xposed.*;import com.android.server.wm.*;
 import com.android.wm.shell.shared.handles.RegionSamplingHelper;
 import com.miui.systemui.statusbar.core.StatusBarRegionSamplingInteractor$regionSamplingHelper$1;
@@ -59,7 +59,7 @@ public class HandoffRegression{
  static XC_MethodHook.MethodHookParam invoke(String key,Object target,Object result,Object...args)throws Throwable{
   var p=new XC_MethodHook.MethodHookParam();p.thisObject=target;p.result=result;p.args=args;var h=XposedHelpers.hooks.get(key);h.before(p);h.after(p);return p;}
  public static void main(String[]args)throws Throwable{
-  float[][] geometry={null};MiStepRecentsInput.install(HandoffRegression.class.getClassLoader(),()->geometry[0]);
+  float[][] geometry={null};RecentsInput.install(HandoffRegression.class.getClassLoader(),()->geometry[0]);
   String consumer="com.android.server.wm.InputConsumerImpl.";var c=new InputConsumerImpl();Tx tx=new Tx();
   invoke(consumer+"layout",c,null,tx,new Rect(0,0,1080,2460));check(tx.writes==0,"outside workspace native geometry untouched");
   geometry[0]=new float[]{.75f,600,270};invoke(consumer+"show",c,null,tx,new Object());
@@ -72,17 +72,17 @@ public class HandoffRegression{
   int writes=tx.writes;invoke(consumer+"show",c,null,tx,new Object());check(tx.writes==writes+2&&tx.x==279,"repeated show does not accumulate scale/position");
   var other=new InputConsumerImpl();other.mName="pip_input_consumer";Tx foreign=new Tx();invoke(consumer+"show",other,null,foreign,new Object());check(foreign.writes==0,"PiP and other native consumers unchanged");
   other.mName=c.mName;other.mWindowHandle.displayId=2;invoke(consumer+"show",other,null,foreign,new Object());check(foreign.writes==0,"external display unchanged");
-  tx=new Tx();MiStepRecentsInput.geometryChanged(tx,.8f,500,0);check(tx.scale==.8f&&tx.x==9.6f&&tx.y==524,"already live consumer follows display zoom in the same supplied transaction");
-  geometry[0]=null;tx=new Tx();MiStepRecentsInput.geometryChanged(tx,1,0,0);check(tx.scale==1&&tx.x==12&&tx.y==30,"exit restores exact native origin and identity");
+  tx=new Tx();RecentsInput.geometryChanged(tx,.8f,500,0);check(tx.scale==.8f&&tx.x==9.6f&&tx.y==524,"already live consumer follows display zoom in the same supplied transaction");
+  geometry[0]=null;tx=new Tx();RecentsInput.geometryChanged(tx,1,0,0);check(tx.scale==1&&tx.x==12&&tx.y==30,"exit restores exact native origin and identity");
   tx=new Tx();invoke(consumer+"show",c,null,tx,new Object());check(tx.writes==0,"restored consumer no longer overridden outside workspace");
-  geometry[0]=new float[]{.75f,600,0};invoke(consumer+"show",c,null,tx,new Object());c.mInputSurface.valid=false;tx=new Tx();MiStepRecentsInput.geometryChanged(tx,1,0,0);check(tx.writes==0,"destroyed consumer surface never touched");
+  geometry[0]=new float[]{.75f,600,0};invoke(consumer+"show",c,null,tx,new Object());c.mInputSurface.valid=false;tx=new Tx();RecentsInput.geometryChanged(tx,1,0,0);check(tx.writes==0,"destroyed consumer surface never touched");
 
-  MiStepStatusBarSampling.install(HandoffRegression.class.getClassLoader());
+  StatusBarSampling.install(HandoffRegression.class.getClassLoader());
   String cb="com.miui.systemui.statusbar.core.StatusBarRegionSamplingInteractor$regionSamplingHelper$1";
   var callback=new StatusBarRegionSamplingInteractor$regionSamplingHelper$1();Rect logical=callback.this$0.samplingBounds;
   var helper=new RegionSamplingHelper();helper.mCallback=callback;
   invoke("com.android.wm.shell.shared.handles.RegionSamplingHelper.<init>",helper,null);
-  MiStepHost.geometry=new float[]{.75f,600,270};
+  WorkspaceHost.geometry=new float[]{.75f,600,270};
   Rect sample=(Rect)invoke(cb+".getSampledRegion",callback,logical,new android.view.View()).result;
   check(sample.equals(new Rect(270,600,1080,675)),"native night sampler reads the real magnified status bar");
   check(logical.equals(new Rect(0,0,1080,100))&&logical!=sample,"native icon-area bounds remain logical and unmodified");
@@ -92,25 +92,25 @@ public class HandoffRegression{
   check(started.args[0]==sample,"an already physical sampler start is never transformed twice");
   var unrelated=new RegionSamplingHelper();unrelated.mCallback=new Object();started=invoke("com.android.wm.shell.shared.handles.RegionSamplingHelper.start",unrelated,null,logical);
   check(started.args[0]==logical,"navigation and unrelated native samplers untouched");
-  MiStepStatusBarSampling.geometryChanged();check(helper.updates==1&&!helper.enabled,"refresh retargets native helper without enabling a paused sampler");
+  StatusBarSampling.geometryChanged();check(helper.updates==1&&!helper.enabled,"refresh retargets native helper without enabling a paused sampler");
   Object stop=new Object();String register="android.view.CompositionSamplingListener.register";
   var sampled=invoke(register,null,null,helper.mSamplingListener,0,stop,sample);check(sampled.args[2]==null,"owned native sampler retained hidden Home stop layer");check(sampled.args[3]==sample,"registered physical sample rectangle changed");
   sampled=invoke(register,null,null,new Object(),0,stop,sample);check(sampled.args[2]==stop,"foreign sampler stop layer changed");
   sampled=invoke(register,null,null,helper.mSamplingListener,1,stop,sample);check(sampled.args[2]==stop,"foreign display sampler changed");
 
-  MiStepHost.geometry=null;sample=(Rect)invoke(cb+".getSampledRegion",callback,logical,new android.view.View()).result;
+  WorkspaceHost.geometry=null;sample=(Rect)invoke(cb+".getSampledRegion",callback,logical,new android.view.View()).result;
   check(sample==logical,"exit/keyguard returns native coordinates");
   sampled=invoke(register,null,null,helper.mSamplingListener,0,stop,logical);check(sampled.args[2]==stop,"exit failed to restore native sampling stop layer");
-  check(MiStepStatusBarSampling.physical(logical,new float[]{Float.NaN,0,0})==logical,"invalid geometry rejected");
-  check(MiStepStatusBarSampling.physical(new Rect(1,1,1,1),new float[]{.75f,600,0}).isEmpty(),"empty sampling region remains empty");
+  check(StatusBarSampling.physical(logical,new float[]{Float.NaN,0,0})==logical,"invalid geometry rejected");
+  check(StatusBarSampling.physical(new Rect(1,1,1,1),new float[]{.75f,600,0}).isEmpty(),"empty sampling region remains empty");
   System.out.println("actual recents input/native status sampling hook checks="+checks+" passed");
  }
 }'''
 }
 for name, text in files.items():
     p = out/name; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(text, encoding='utf-8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+
                [str(out/name) for name in files]+[str(src/name) for name in
-                ['ShellCompat.java','MiStepRecentsInput.java','MiStepStatusBarSampling.java']],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.HandoffRegression'],check=True)
+                ['ShellCompat.java','RecentsInput.java','StatusBarSampling.java']],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.HandoffRegression'],check=True)

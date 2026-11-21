@@ -6,7 +6,7 @@ import subprocess
 import sys
 root=Path(__file__).resolve().parents[2]; src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def member(signature):
  a=host.index(signature);b=host.index('{',a);d=1;i=b+1
  while d:
@@ -36,10 +36,10 @@ import java.util.*;public class SurfaceControl {public boolean valid=true,visibl
 }''',
 'de/robv/android/xposed/XposedHelpers.java':r'''package de.robv.android.xposed;
 public class XposedHelpers {public static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new IllegalStateException(e);}}}''',
-'com/jiusis/mistep/WorkspaceRegression.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/WorkspaceRegression.java':r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.view.SurfaceControl;import android.graphics.Rect;import de.robv.android.xposed.XposedHelpers;
 public class WorkspaceRegression {
- void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane;boolean lockExitPending;
+ void cancelMainSideSwitch(){}void refreshVideoPane(){}static class VideoPane {void releaseForPrivacy(){}}VideoPane videoPane;boolean lockExitPending;
  static class LiveSwapVisualLease {static void writeAlpha(View v,float a){v.setAlpha(a);}}
  static class SideDismiss {boolean isTracking(){return false;}void settle(boolean b){}}
  SideDismiss sideDismiss;
@@ -55,7 +55,7 @@ public class WorkspaceRegression {
  static class Slot {int index=1,sideRow=-1;int taskId=1;Object taskToken;boolean occupied=true,parked,promoting,launching,sidePrepared,frozen;Controller controller=new Controller();View hint=new View(),view=new View();int[] rect=new int[]{0,508,762,900};Slot(){taskToken=controller.token;}}
  static class Bitmap {void recycle(){}}
  static class StatusBar {void restore(){}}
- static class Clipboard {void close(){}}static class MiStepClipboard {static Clipboard get(Object c){return new Clipboard();}}
+ static class Clipboard {void close(){}static Clipboard get(Object c){return new Clipboard();}}
  static class SystemClock {static long uptimeMillis(){return 10000;}}
  static class Promotion {boolean nativeSwap,cancelled;}
  static final int ACTIVE=1,RESUMING=2,SUSPENDING=3,SUSPENDED=4,SLOT_COUNT=4,CELL_SLOT_COUNT=4,SLOT_MAIN=0,SLOT_TOP=4;static final long ZOOM_ANIM_MS=300;
@@ -186,18 +186,18 @@ public class WorkspaceRegression {
 }'''.replace('__METHODS__',methods)
 }
 # Java closures in the fixture must capture an immutable owner, just as production does.
-files['com/jiusis/mistep/TopControlsCreationRegression.java']=r'''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/TopControlsCreationRegression.java']=r'''package io.github.zerohomers0.onesteplite;
 import java.util.function.Consumer;
 public class TopControlsCreationRegression {
  static class View {float alpha=1f;boolean visible;void setAlpha(float a){alpha=a;}void setOnClickListener(Consumer<View> c){}void bringToFront(){}}
  static class FrameLayout extends View {float attachedAlpha=-1;View child;static class LayoutParams{LayoutParams(int w,int h){}}void addView(View v,LayoutParams p){child=v;attachedAlpha=v.alpha;}}
- static class MiStepTopTaskPane extends View {View hint;MiStepTopTaskPane(Object c,View h){hint=h;}}
- static class MiStepTopRoll extends View {MiStepTopRoll(Object c,Runnable settled,Consumer<Float> render){}}
+ static class TopTaskPane extends View {View hint;TopTaskPane(Object c,View h){hint=h;}}
+ static class TopRoll extends View {TopRoll(Object c,Runnable settled,Consumer<Float> render){}}
  static class Slot {View hint,view=new View();Object controller=new Object(),taskToken=new Object();}
  static class Layout {boolean tabletLandscape;int topStrip=450;}
  static final int SLOT_TOP=5;Slot[] slots={new Slot(),new Slot(),new Slot(),new Slot(),new Slot(),new Slot()};
  Object ctx=new Object();float workspaceAlpha;FrameLayout root=new FrameLayout(),topLiveClip=new FrameLayout();View topBar=new View();
- MiStepTopTaskPane topTaskPane;MiStepTopRoll topRoll;Layout layout=new Layout();boolean topFace;
+ TopTaskPane topTaskPane;TopRoll topRoll;Layout layout=new Layout();boolean topFace;
  View makeEmptyHint(){return new View();}void captureMainIntoTop(){}void topRollSettled(){}void renderTopRollFrame(float p){}
  void updateTopTaskGeometry(){topTaskPane.visible=true;}
  __CREATE__
@@ -212,10 +212,10 @@ public class TopControlsCreationRegression {
   if(upper.view!=liveView||upper.controller!=controller||upper.taskToken!=token)throw new AssertionError("creation changes the real task owner");checks++;
  }System.out.println("actual asynchronous TOP controls creation checks="+checks+" passed");}
 }'''.replace('__CREATE__',member('    private void createTopTaskControls()'))
-files['com/jiusis/mistep/WorkspaceRegression.java']=files['com/jiusis/mistep/WorkspaceRegression.java'].replace('h.beginWorkspaceEntry(()->h.ready++);','WorkspaceRegression initial=h;h.beginWorkspaceEntry(()->initial.ready++);')
+files['io/github/zerohomers0/onesteplite/WorkspaceRegression.java']=files['io/github/zerohomers0/onesteplite/WorkspaceRegression.java'].replace('h.beginWorkspaceEntry(()->h.ready++);','WorkspaceRegression initial=h;h.beginWorkspaceEntry(()->initial.ready++);')
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(package_dir(root)/'WorkspaceCellReveal.java'),str(package_dir(root)/'WorkspaceMotionSpec.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WorkspaceRegression'],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopControlsCreationRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.WorkspaceRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopControlsCreationRegression'],check=True)

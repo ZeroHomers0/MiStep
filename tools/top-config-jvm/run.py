@@ -5,13 +5,13 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root=Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-source=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+source=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def member(signature):
  start=source.index(signature);end=source.index('{',start)+1;depth=1
  while depth:
   depth+=(source[end]=='{')-(source[end]=='}');end+=1
  return source[start:end]
-body='''package com.jiusis.mistep;
+body='''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.graphics.Rect;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -159,7 +159,7 @@ public class TopConfigRegression {
   System.out.println("Production top density/return/default-focus checks="+checks+" passed");
  }
 }'''
-files={'com/jiusis/mistep/TopConfigRegression.java':body,
+files={'io/github/zerohomers0/onesteplite/TopConfigRegression.java':body,
  'android/window/WindowContainerTransaction.java':'package android.window;public class WindowContainerTransaction {public java.util.List<String>calls=new java.util.ArrayList<>();}',
  'android/view/WindowInsets.java':'package android.view;public class WindowInsets {public static class Type {public static int captionBar(){return 32;}}}',
  'android/graphics/Rect.java':'package android.graphics;public class Rect {int a,b,c,d;public Rect(){}public Rect(int a,int b,int c,int d){this.a=a;this.b=b;this.c=c;this.d=d;}public String toString(){return a+","+b+","+c+","+d;}}',
@@ -167,6 +167,6 @@ files={'com/jiusis/mistep/TopConfigRegression.java':body,
 paths=[]
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths,str(src/'TopTaskGeometry.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopConfigRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopConfigRegression'],check=True)

@@ -13,12 +13,12 @@ OUT.mkdir(parents=True, exist_ok=True)
 tree = ast.parse((ROOT / 'tools/desktop-route-jvm/run.py').read_text(encoding='utf-8-sig'))
 files = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
              and any(isinstance(t, ast.Name) and t.id == 'files' for t in n.targets))
-del files['com/jiusis/mistep/DesktopRouteRegression.java']
+del files['io/github/zerohomers0/onesteplite/DesktopRouteRegression.java']
 files['android/os/Bundle.java'] = files['android/os/Bundle.java'].replace(
     'Map<String,Object>m=', 'public Bundle getBundle(String k){return (Bundle)m.get(k);}'
     'public float getFloat(String k,float d){return m.containsKey(k)?(Float)m.get(k):d;} Map<String,Object>m=')
-files['com/jiusis/mistep/NativeRawInputBridge.java'] = 'package com.jiusis.mistep;class NativeRawInputBridge {static void updateTop(int u,float s){}static void updateTop(int u,float s,float l,float t){}}'
-files['com/jiusis/mistep/MiStepTopRawInput.java'] = 'package com.jiusis.mistep;import android.os.Bundle;class MiStepTopRawInput {static int uid(Bundle b,ClassLoader l){return -1;}}'
+files['io/github/zerohomers0/onesteplite/NativeRawInputBridge.java'] = 'package io.github.zerohomers0.onesteplite;class NativeRawInputBridge {static void updateTop(int u,float s){}static void updateTop(int u,float s,float l,float t){}}'
+files['io/github/zerohomers0/onesteplite/TopRawInput.java'] = 'package io.github.zerohomers0.onesteplite;import android.os.Bundle;class TopRawInput {static int uid(Bundle b,ClassLoader l){return -1;}}'
 files['android/content/pm/PackageManager.java'] = '''package android.content.pm;
 public class PackageManager {public ActivityInfo getActivityInfo(android.content.ComponentName c,int f){return new ActivityInfo();}public boolean fail;public String[] getPackagesForUid(int uid){
  if(fail)throw new IllegalStateException();return new String[]{uid==100?"com.miui.home":"other"};}}
@@ -42,7 +42,7 @@ files['de/robv/android/xposed/XposedHelpers.java'] = files['de/robv/android/xpos
  public static void findAndHookMethod(Class<?> c,String n,Class<?> arg,XC_MethodHook h){XposedBridge.hooks.put(n,h);}
 ''')
 files['com/android/server/wm/Task.java'] = '''package com.android.server.wm;
-import android.os.*;import com.jiusis.mistep.RunningTasksTest;
+import android.os.*;import io.github.zerohomers0.onesteplite.RunningTasksTest;
 public class Task {
  public int mode=6;public Object display;public Info info=new Info();public boolean fail;public Runnable onInfo;
  public boolean translucent=true;public android.graphics.Rect bounds=new android.graphics.Rect(0,0,1494,2357);
@@ -69,7 +69,7 @@ public class RunningTasks {
 }
 '''
 files['com/android/server/wm/ActivityTaskManagerServiceImpl.java'] = '''package com.android.server.wm;
-import java.util.*;import com.jiusis.mistep.RunningTasksTest;
+import java.util.*;import io.github.zerohomers0.onesteplite.RunningTasksTest;
 public class ActivityTaskManagerServiceImpl {
  public Atms mAtmService;public List<Task> cached;public int reads;
  public ActivityTaskManagerServiceImpl(RunningTasksTest host,List<Task> tasks){mAtmService=new Atms(host);cached=tasks;}
@@ -85,13 +85,13 @@ public class ActivityTaskManagerServiceImpl {
 host = (SRC / 'HostEntry.java').read_text(encoding='utf-8-sig')
 start = host.index('    private void installWorkspaceRunningTasks(ClassLoader cl) {')
 end = host.index('\n    private void ', start + 10)
-files['com/jiusis/mistep/HostEntry.java'] = '''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/HostEntry.java'] = '''package io.github.zerohomers0.onesteplite;
 import android.content.Context;import android.os.Binder;import de.robv.android.xposed.*;
 class HostEntry {static boolean sZoomed=true;static Object sDisplayContent;
  static Object sSystemContext=new Context();static ThreadLocal<Boolean> sWorkspaceLauncherTaskQuery=new ThreadLocal<>();
  static void log(String s){}static void install(){new HostEntry().installWorkspaceRunningTasks(HostEntry.class.getClassLoader());}
 ''' + host[start:end] + '\n}'
-files['com/jiusis/mistep/RunningTasksTest.java'] = '''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/RunningTasksTest.java'] = '''package io.github.zerohomers0.onesteplite;
 import android.os.*;import android.content.*;import com.android.server.wm.*;import de.robv.android.xposed.*;import java.util.*;
 public class RunningTasksTest {
  static int checks;static void check(boolean ok,String message){checks++;if(!ok)throw new AssertionError(message);}
@@ -110,7 +110,7 @@ public class RunningTasksTest {
   b.putParcelableArrayList("rows",new ArrayList<Bundle>());
   b.putParcelableArrayList("recents",new ArrayList<Bundle>(withSide?List.of(sideRow):List.of()));
   if(withTop)b.putParcelable("topInput",topRow);
-  check(MiStepDesktopLaunchBridge.update(new Intent("state").putExtra("state",b)),"protected registration accepted");}
+  check(DesktopLaunchBridge.update(new Intent("state").putExtra("state",b)),"protected registration accepted");}
  public List<Task> query(int uid,int max){var out=new ArrayList<Task>();var p=new XC_MethodHook.MethodHookParam();
   p.args=new Object[]{max,out,2,null,display,uid,new HashSet<Integer>()};p.thisObject=scan;
   var hook=XposedBridge.hooks.get("getTasks");hook.before(p);
@@ -174,9 +174,9 @@ public class RunningTasksTest {
   var h=new RunningTasksTest();h.topRow.putInt("width",1494);h.topRow.putInt("height",2357);
   h.first(h.main,"tablet portrait TOP must not replace main in Launcher maxNum=1");
   check(h.query(100,8).equals(List.of(h.main)),"ordinary cells and TOP filtered before truncation");
-  check(MiStepDesktopLaunchBridge.ownsTopTask(h.top),"TOP keeps its separate active input identity");
-  check(MiStepDesktopLaunchBridge.recentsLease(h.top)==null,"TOP not changed into a passive IME/recents cell");
-  check(!MiStepDesktopLaunchBridge.beforeRecents((Context)HostEntry.sSystemContext,new Object(),new Object[]{26,null}),"TOP not a desktop promotion row");
+  check(DesktopLaunchBridge.ownsTopTask(h.top),"TOP keeps its separate active input identity");
+  check(DesktopLaunchBridge.recentsLease(h.top)==null,"TOP not changed into a passive IME/recents cell");
+  check(!DesktopLaunchBridge.beforeRecents((Context)HostEntry.sSystemContext,new Object(),new Object[]{26,null}),"TOP not a desktop promotion row");
   h=new RunningTasksTest();h.topRow.putInt("width",3048);h.topRow.putInt("height",1720);h.first(h.main,"phone landscape TOP shares the exact query filter");
   h=new RunningTasksTest();h.register(false,true);h.first(h.top,"unregistered TOP stays native");
   h=new RunningTasksTest();check(h.query(200,1).equals(List.of(h.top)),"unrelated caller retains native order");
@@ -196,8 +196,8 @@ public class RunningTasksTest {
   h=new RunningTasksTest();h.scan.candidates.add(0,h.floating);h.first(h.floating,"unrelated native floating task remains first");
   h=new RunningTasksTest();check(h.query(100,0).isEmpty(),"maxNum zero remains empty");
   h=new RunningTasksTest();h.scan.candidates=List.of(h.top,h.side);check(h.query(100,1).isEmpty(),"no main means empty, not an arbitrary replacement");
-  h=new RunningTasksTest();var sideLease=MiStepDesktopLaunchBridge.recentsLease(h.side);h.register(true,true);
-  check(!MiStepDesktopLaunchBridge.recentsLeaseAlive(sideLease),"new scene invalidates old query lease");
+  h=new RunningTasksTest();var sideLease=DesktopLaunchBridge.recentsLease(h.side);h.register(true,true);
+  check(!DesktopLaunchBridge.recentsLeaseAlive(sideLease),"new scene invalidates old query lease");
   h=new RunningTasksTest();HostEntry.sWorkspaceLauncherTaskQuery.set(true);check(h.query(200,1).get(0)==h.top,"nested unrelated query not filtered");
   check(Boolean.TRUE.equals(HostEntry.sWorkspaceLauncherTaskQuery.get()),"nested query restores outer scope");
   h=new RunningTasksTest();h.scan.fail=true;try{h.query(100,1);throw new AssertionError("native failure swallowed");}catch(IllegalStateException expected){}
@@ -216,9 +216,9 @@ for name, source in files.items():
     path = OUT / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(source, encoding='utf-8')
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
-production = ['MiStepDesktopLaunchBridge.java', 'DesktopIconLaunchPolicy.java', 'TaskLaunchIdentity.java', 'MiStepSideRoleChange.java',
-              'MiStepImePolicy.java', 'ZoomChannelState.java', 'ZoomCommand.java', 'ZoomAnimCommand.java', 'MiStepActions.java', 'MiStepPackages.java']
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
+production = ['DesktopLaunchBridge.java', 'DesktopIconLaunchPolicy.java', 'TaskLaunchIdentity.java', 'SideRoleChange.java',
+              'ImePolicy.java', 'ZoomChannelState.java', 'ZoomCommand.java', 'ZoomAnimCommand.java', 'Actions.java', 'Packages.java']
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT)]
                + [str(OUT / name) for name in files] + [str(SRC / name) for name in production], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.RunningTasksTest'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(OUT), 'io.github.zerohomers0.onesteplite.RunningTasksTest'], check=True)

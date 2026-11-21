@@ -6,19 +6,19 @@ import subprocess,sys
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 subprocess.run([sys.executable,'-X','utf8',str(root/'tools/live-swap-jvm/run.py'),str(out)],check=True)
-src=out/'com/jiusis/mistep/SideCloseRegression.java'
-src.write_text(r'''package com.jiusis.mistep;
+src=out/'io/github/zerohomers0/onesteplite/SideCloseRegression.java'
+src.write_text(r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import java.util.function.*;
-class MiStepLiveSwapSession {
+class LiveSwapSession {
  interface Animation {void cancel();}
  interface Backend {Object newTransaction();void apply(Object t);void close(Object t);Animation animate(long d,Consumer<Double> frame,Runnable end);void await(BooleanSupplier condition,long ms,Consumer<Boolean> result);}
 }
 public class SideCloseRegression {
  public static class Surface {public boolean valid=true;public boolean isValid(){return valid;}}
  public static class Tx {Map<Object,float[]> geometry=new HashMap<>();float scale,x,y,alpha;Object parent,leash;boolean show,hide;int applies;public void reparent(Object l,Object p){leash=l;parent=p;}public void setLayer(Object l,int n){}public void setMatrix(Object l,float a,float b,float c,float d){leash=l;scale=a;}public void setPosition(Object l,float a,float b){x=a;y=b;geometry.put(l,new float[]{scale,x,y});}public void setAlpha(Object l,float a){alpha=a;}public void show(Object l){show=true;}public void hide(Object l){hide=true;}}
- static class Backend implements MiStepLiveSwapSession.Backend {Consumer<Double> frame;Runnable end,deadline;Tx last;int starts,closes;boolean fail;public Object newTransaction(){return last=new Tx();}public void apply(Object t){if(fail)throw new IllegalStateException("transaction");((Tx)t).applies++;}public void close(Object t){closes++;}public MiStepLiveSwapSession.Animation animate(long ms,Consumer<Double> f,Runnable e){check(ms==220,"bounded close duration");starts++;frame=f;end=e;f.accept(0.0);return e::run;}public void await(BooleanSupplier c,long ms,Consumer<Boolean> r){deadline=()->r.accept(c.getAsBoolean());}}
+ static class Backend implements LiveSwapSession.Backend {Consumer<Double> frame;Runnable end,deadline;Tx last;int starts,closes;boolean fail;public Object newTransaction(){return last=new Tx();}public void apply(Object t){if(fail)throw new IllegalStateException("transaction");((Tx)t).applies++;}public void close(Object t){closes++;}public LiveSwapSession.Animation animate(long ms,Consumer<Double> f,Runnable e){check(ms==220,"bounded close duration");starts++;frame=f;end=e;f.accept(0.0);return e::run;}public void await(BooleanSupplier c,long ms,Consumer<Boolean> r){deadline=()->r.accept(c.getAsBoolean());}}
  static int checks;static void check(boolean v,String m){checks++;if(!v)throw new AssertionError(m);}
- Backend b=new Backend();Surface leash=new Surface(),parent=new Surface(),background=new Surface();boolean current=true;int released,finished;MiStepSideClose run=new MiStepSideClose(b,new Object(),leash,parent,background,.25f,300,650,()->current,()->released++,s->{});
+ Backend b=new Backend();Surface leash=new Surface(),parent=new Surface(),background=new Surface();boolean current=true;int released,finished;SideClose run=new SideClose(b,new Object(),leash,parent,background,.25f,300,650,()->current,()->released++,s->{});
  void prepare(){Tx start=new Tx(),finish=new Tx();run.prepare(start,finish);check(start.parent==parent&&start.geometry.containsKey(leash)&&start.show&&start.alpha==1&&start.geometry.get(leash)[0]==.25f&&start.geometry.get(background)[0]==1f&&finish.hide,"same real leash overrides native hide, final native transaction hides it");}
  public static void main(String[]args){
   var h=new SideCloseRegression();h.prepare();h.run.animate(()->h.finished++);check(h.finished==0&&h.released==0,"native finish held while app is visible");h.b.frame.accept(.5);check(h.b.last.geometry.get(h.leash)[0]==.125f&&h.b.last.geometry.get(h.background)[0]==.5f&&h.b.last.x==75&&h.b.last.y==162.5f&&h.b.last.alpha==.5f,"real app shrinks around unchanged cell center");h.b.end.run();h.b.deadline.run();h.run.abandon();check(h.finished==1&&h.released==1&&h.b.last.hide,"native finish and cell release exactly once");
@@ -31,6 +31,6 @@ public class SideCloseRegression {
   System.out.println("actual real close lifecycle checks="+checks+" passed");
  }
 }''',encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(src),str(package_dir(root)/'MiStepSideClose.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideCloseRegression'],check=True)
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(src),str(package_dir(root)/'SideClose.java')],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.SideCloseRegression'],check=True)

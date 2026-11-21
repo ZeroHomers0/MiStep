@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[2]
-source = package_dir(root)/'MiStepHost.java'
+source = package_dir(root)/'WorkspaceHost.java'
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/standalone'
 out.mkdir(parents=True, exist_ok=True)
 text = source.read_text(encoding='utf-8-sig')
@@ -33,7 +33,7 @@ methods = '\n'.join(member(s) for s in [
 ])
 
 body = r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class LiveHostRegression {
  static int checks;
@@ -62,7 +62,7 @@ public class LiveHostRegression {
   OwnedTask previousMainCandidate;
   Promotion(Slot s){slot=s;taskId=s.taskId;token=s.taskToken;}
  }
- static class MiStepLiveSwap {
+ static class LiveSwap {
   static int cancels; static Object cancelled;
   static void cancel(Object c){cancels++;cancelled=c;}
   static class Result {
@@ -121,13 +121,13 @@ public class LiveHostRegression {
  void updateHint(Slot s){}
  void updateTouchRegion(Slot s){}
  void finishPromotionFocus(Promotion p,Runnable done,int attempt){focuses++;focus=done;}
- void finishLiveHome(Promotion p, MiStepLiveSwap.Result r){}
+ void finishLiveHome(Promotion p, LiveSwap.Result r){}
  __METHODS__
  void collectCompletion(){
-  Promotion p=promotion;p.nativeCollect=true;finishLiveCollect(p,new MiStepLiveSwap.Result(true,true,null));
+  Promotion p=promotion;p.nativeCollect=true;finishLiveCollect(p,new LiveSwap.Result(true,true,null));
   check(promotion==p&&!p.cancelled&&p.nativeCompleting&&focuses==1&&inputPass,"collect retains input and ticket until Home focus handoff");
   check(statusBar.finishes==0&&compactions==0,"collect must not expose input or compact before Home focus");
-  finishLiveCollect(p,new MiStepLiveSwap.Result(true,true,null));
+  finishLiveCollect(p,new LiveSwap.Result(true,true,null));
   check(focuses==1,"duplicate native finish must not request Home focus twice");
   focus.run();
   check(promotion==null&&p.slot.occupied&&!p.slot.promoting&&!p.slot.frozen,"collected binding not released for next tap");
@@ -135,7 +135,7 @@ public class LiveHostRegression {
   check(compactions==0&&main.queue.size()==1,"collection queues placement reconciliation after cleanup");
   main.flush();
   check(compactions==1,"real collection settles before reconciling cell placement");
-  finishLiveCollect(p,new MiStepLiveSwap.Result(true,true,null));check(statusBar.finishes==1,"collection completed twice");
+  finishLiveCollect(p,new LiveSwap.Result(true,true,null));check(statusBar.finishes==1,"collection completed twice");
  }
  void collectCancellation(){
   Promotion p=promotion;p.nativeCollect=true;requestLiveSwapCancellation(p,"before submission");shell.flush();main.flush();
@@ -144,51 +144,51 @@ public class LiveHostRegression {
  void nativeRoleCompletion(){
   Promotion p=promotion;Object old=p.token,next=p.previousMain.token;LiveSwapVisualLease visual=p.liveVisual;
   p.slot.controller.mTaskToken=next;
-  finishLiveSwap(p,new MiStepLiveSwap.Result(true,true,null));
+  finishLiveSwap(p,new LiveSwap.Result(true,true,null));
   check(promotion==p&&!p.cancelled&&p.nativeCompleting,"retain ticket through final focus");
   check(clears==1&&binds==1&&p.slot.taskToken==next&&p.slot.taskId==1,"adopt facade-owned A logically exactly once");
   check(!ownedTasks.containsKey(old)&&ownedTasks.containsKey(next),"old B ownership retired, A retained");
   check(inputPass&&!visual.restored,"leave visual hole until facade commit plus focus");
-  finishLiveSwap(p,new MiStepLiveSwap.Result(true,true,null));check(clears==1&&focuses==1,"duplicate recovery cannot bind twice");
+  finishLiveSwap(p,new LiveSwap.Result(true,true,null));check(clears==1&&focuses==1,"duplicate recovery cannot bind twice");
   focus.run();check(promotion==null&&p.cancelled&&!inputPass&&visual.restored&&statusBar.finishes==1&&suspends==1,"unique final cleanup restores visuals/input then deferred exit");
  }
  void cancellation(){
-  Promotion p=promotion;p.nativeSubmitted=true;MiStepLiveSwap.cancels=0;
+  Promotion p=promotion;p.nativeSubmitted=true;LiveSwap.cancels=0;
   requestLiveSwapCancellation(p,"screen lock");
   check(promotion==p&&!p.cancelled&&p.cancelRequested&&inputPass,"cancellation preserves logical owner and input until recovery");
   requestLiveSwapCancellation(p,"timeout");check(shell.queue.size()==1,"repeat cancellation coalesces");
-  shell.flush();check(MiStepLiveSwap.cancels==1&&MiStepLiveSwap.cancelled==p.slot.controller&&suspends==0,"cancel original controller only; no premature suspend");
+  shell.flush();check(LiveSwap.cancels==1&&LiveSwap.cancelled==p.slot.controller&&suspends==0,"cancel original controller only; no premature suspend");
   p.slot.controller.mTaskToken=p.previousMain.token;
-  finishLiveSwap(p,new MiStepLiveSwap.Result(false,true,new RuntimeException("cancelled")));
+  finishLiveSwap(p,new LiveSwap.Result(false,true,new RuntimeException("cancelled")));
   check(p.slot.taskToken==p.previousMain.token&&promotion==p,"late A6/B1 recovery accepted after cancellation");
   focus.run();check(promotion==null&&suspends==1,"recovered new owner available to deferred exit");
  }
  void beforeSubmission(){
-  Promotion p=promotion;MiStepLiveSwap.cancels=0;requestLiveSwapCancellation(p,"before frame");shell.flush();
+  Promotion p=promotion;LiveSwap.cancels=0;requestLiveSwapCancellation(p,"before frame");shell.flush();
   check(promotion==p&&main.queue.size()==1,"unsubmitted cancellation waits for serialized Shell result");
-  main.flush();check(promotion==null&&p.slot.taskId==2&&!p.slot.frozen&&!p.slot.promoting&&!inputPass&&MiStepLiveSwap.cancels==0,"preflight cancellation preserves original side binding");
+  main.flush();check(promotion==null&&p.slot.taskId==2&&!p.slot.frozen&&!p.slot.promoting&&!inputPass&&LiveSwap.cancels==0,"preflight cancellation preserves original side binding");
   check(!ownedTasks.containsKey(p.previousMain.token),"confirmed original roles release the A recovery candidate only");
  }
- void uncertainCollect(){Promotion p=promotion;p.nativeCollect=true;var r=new MiStepLiveSwap.Result(false,false,new RuntimeException("inverse timeout"));r.rolesConfirmed=false;finishLiveCollect(p,r);check(p.slot.frozen&&p.slot.occupied&&!p.slot.promoting&&!p.slot.launching,"terminal uncertain collect must not block every empty cell");main.flush();check(promotion==null&&!p.slot.promoting,"collect releases global promotion even when one cell is quarantined");}
- void uncertainRoles(){Promotion p=promotion;p.nativeSubmitted=true;var r=new MiStepLiveSwap.Result(false,false,new RuntimeException("role timeout"));r.rolesConfirmed=false;finishLiveSwap(p,r);check(p.slot.frozen&&p.slot.promoting&&ownedTasks.containsKey(p.previousMain.token)&&ownedTasks.containsKey(p.token),"unconfirmed role timeout preserves both A/B recovery ledger entries");}
- void staleCompletion(){Promotion old=promotion;promotion=new Promotion(slots[2]);finishLiveSwap(old,new MiStepLiveSwap.Result(true,true,null));check(clears==0&&binds==0&&promotion.slot==slots[2],"stale callback cannot mutate a newer ticket");}
- void staleEpoch(){Promotion old=promotion;old.slot.taskEpoch++;finishLiveSwap(old,new MiStepLiveSwap.Result(true,true,null));check(clears==0&&binds==0&&!old.nativeCompleting,"stale binding epoch cannot retire a replacement task");}
+ void uncertainCollect(){Promotion p=promotion;p.nativeCollect=true;var r=new LiveSwap.Result(false,false,new RuntimeException("inverse timeout"));r.rolesConfirmed=false;finishLiveCollect(p,r);check(p.slot.frozen&&p.slot.occupied&&!p.slot.promoting&&!p.slot.launching,"terminal uncertain collect must not block every empty cell");main.flush();check(promotion==null&&!p.slot.promoting,"collect releases global promotion even when one cell is quarantined");}
+ void uncertainRoles(){Promotion p=promotion;p.nativeSubmitted=true;var r=new LiveSwap.Result(false,false,new RuntimeException("role timeout"));r.rolesConfirmed=false;finishLiveSwap(p,r);check(p.slot.frozen&&p.slot.promoting&&ownedTasks.containsKey(p.previousMain.token)&&ownedTasks.containsKey(p.token),"unconfirmed role timeout preserves both A/B recovery ledger entries");}
+ void staleCompletion(){Promotion old=promotion;promotion=new Promotion(slots[2]);finishLiveSwap(old,new LiveSwap.Result(true,true,null));check(clears==0&&binds==0&&promotion.slot==slots[2],"stale callback cannot mutate a newer ticket");}
+ void staleEpoch(){Promotion old=promotion;old.slot.taskEpoch++;finishLiveSwap(old,new LiveSwap.Result(true,true,null));check(clears==0&&binds==0&&!old.nativeCompleting,"stale binding epoch cannot retire a replacement task");}
  void zoomGuardCompletion(){
   Promotion p=promotion;p.nativeFlip=true;p.liveZoomGuardUntil=zoomAnimUntil=1200;
   p.slot.controller.mTaskToken=p.previousMain.token;
-  finishLiveSwap(p,new MiStepLiveSwap.Result(true,true,null));
+  finishLiveSwap(p,new LiveSwap.Result(true,true,null));
   check(zoomAnimUntil==0,"confirmed native finish releases its own 1200ms request deadline immediately");
   check(promotion==p&&inputPass,"deadline release does not bypass final focus/input recovery");
  }
  void newerZoomGuard(){
   Promotion p=promotion;p.nativeFlip=true;p.liveZoomGuardUntil=1200;zoomAnimUntil=1500;
   p.slot.controller.mTaskToken=p.previousMain.token;
-  finishLiveSwap(p,new MiStepLiveSwap.Result(true,true,null));
+  finishLiveSwap(p,new LiveSwap.Result(true,true,null));
   check(zoomAnimUntil==1500,"old completion cannot release another zoom animation deadline");
  }
  void uncertainZoomGuard(){
   Promotion p=promotion;p.nativeFlip=true;p.liveZoomGuardUntil=zoomAnimUntil=1200;
-  var r=new MiStepLiveSwap.Result(false,false,new RuntimeException("role timeout"));r.rolesConfirmed=false;
+  var r=new LiveSwap.Result(false,false,new RuntimeException("role timeout"));r.rolesConfirmed=false;
   finishLiveSwap(p,r);check(zoomAnimUntil==1200,"unconfirmed recovery cannot release zoom guard");
  }
  void guard(){
@@ -232,6 +232,6 @@ java.write_text(body, encoding='utf8')
 sparse = out / 'android/util/SparseArray.java'
 sparse.parent.mkdir(parents=True, exist_ok=True)
 sparse.write_text('package android.util; public class SparseArray<T> {private final java.util.Map<Integer,T> map=new java.util.HashMap<>(); public T get(int k){return map.get(k);} public void put(int k,T v){map.put(k,v);}}',encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), str(sparse), str(java)],check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.LiveHostRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.LiveHostRegression'],check=True)

@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-source = (src / 'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (src / 'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def extract(name):
     start = source.index('    private void ' + name + '(')
     brace = source.index('{', start)
@@ -34,7 +34,7 @@ public class Canvas {
  public void drawLine(float a,float b,float c,float d,Paint paint){plusLines++;}public void drawCircle(float x,float y,float r,Paint p){}
  public boolean clipRect(int a,int b,int c,int d){if(c<=0||d<=0)throw new AssertionError("invalid empty crop");clips++;return true;}
 }'''
-body = r'''package com.jiusis.mistep;
+body = r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.Canvas;
 public class EmptyHostRegression {
  static class LiveSwapVisualLease {static void writeAlpha(View v,float a){v.setAlpha(a);}}
@@ -52,7 +52,7 @@ public class EmptyHostRegression {
  __HIGHLIGHT__
  __PLUS__
  void run(boolean right){
-  var a=MiStepLayout.of(1200,2608,right,2.75f);var b=MiStepLayout.of(1200,2608,!right,2.75f);Canvas c=new Canvas();
+  var a=WorkspaceLayout.of(1200,2608,right,2.75f);var b=WorkspaceLayout.of(1200,2608,!right,2.75f);Canvas c=new Canvas();
   drawLiveEmptyHints(c,a,b,0);
   check(slots[1].hint.draws==0,"occupied task content is never drawn into wallpaper");
   check(slots[2].hint.draws==2&&slots[3].hint.draws==2,"both empty controls exist at original and target columns");
@@ -69,7 +69,7 @@ public class EmptyHostRegression {
   check(c.draws.isEmpty(),"hidden hints and newly occupied cells never enter background");
  }
  void reveal(boolean right){
-  var geometry=MiStepLayout.of(1200,2608,right,2.75f);
+  var geometry=WorkspaceLayout.of(1200,2608,right,2.75f);
   for(int selected=1;selected<SLOT_COUNT;selected++){
    for(int i=1;i<SLOT_COUNT;i++){slots[i].occupied=i==selected;slots[i].hint.visibility=i==selected?8:0;slots[i].hint.draws=0;}
    Canvas c=new Canvas();drawLiveEmptyHints(c,geometry,geometry,1<<selected);
@@ -96,7 +96,7 @@ dpath.parent.mkdir(parents=True, exist_ok=True)
 dpath.write_text('package android.graphics.drawable; public class Drawable {}', encoding='utf8')
 hpath = out / 'EmptyHostRegression.java'
 hpath.write_text(body, encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-                str(src/'MiStepLayout.java'), str(src/'WorkspaceCellStyle.java'), str(cpath), str(ppath), str(dpath), str(hpath)], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.EmptyHostRegression'], check=True)
+                str(src/'WorkspaceLayout.java'), str(src/'WorkspaceCellStyle.java'), str(cpath), str(ppath), str(dpath), str(hpath)], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.EmptyHostRegression'], check=True)

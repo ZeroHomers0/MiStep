@@ -1,21 +1,21 @@
-Mi Step 非商用共享源码许可 1.0
-Mi Step Noncommercial Share-Alike Source License 1.0
+OneStepLite 非商用共享源码许可 1.0
+OneStepLite Noncommercial Share-Alike Source License 1.0
 
 Copyright (c) 2026 JIUSIS 及相关贡献者
-许可标识：LicenseRef-MiStep-NC-SA-1.0
+许可标识：LicenseRef-OneStepLite-NC-SA-1.0
 发布日期：2026-10-29
 
-这是为 Mi Step 制定的自定义软件许可，不是 GNU GPL、AGPL 或 Creative
+这是为 OneStepLite 制定的自定义软件许可，不是 GNU GPL、AGPL 或 Creative
 Commons 许可，也不是经 OSI 批准的开源许可证。上述 LicenseRef 是本项目
 的自定义标识，不表示该许可已被 SPDX 或其他组织批准。
 
 一、适用范围
 
-本许可适用于 Mi Step 仓库中由权利人有权按本许可授权的原创代码、构建
+本许可适用于 OneStepLite 仓库中由权利人有权按本许可授权的原创代码、构建
 与测试脚本、文档及项目素材。明确标注其他许可的第三方组件不受本许可
 重新授权，继续遵循其原许可，详见 THIRD_PARTY_NOTICES.md。
 
-原作者 JIUSIS 同时将本许可适用于官方 Mi Step 1.0.0 发行包以及对应
+原作者 JIUSIS 同时将本许可适用于官方 OneStepLite 1.0.0 发行包以及对应
 源码中的上述原创部分；早期发行附件或标签中尚未附带本许可文本，不影响
 本次许可授权的适用范围。第三方权利、商标与依法享有的例外不受影响。
 
@@ -93,9 +93,9 @@ Commons 许可，也不是经 OSI 批准的开源许可证。上述 LicenseRef �
 
 六、署名和项目标识
 
-应保留 Mi Step、JIUSIS 及已有贡献者的适当来源说明和著作权声明。
+应保留 OneStepLite、JIUSIS 及已有贡献者的适当来源说明和著作权声明。
 衍生版本可以使用新的名称，但不得以改名规避本许可。本许可不授予
-第三方商标权，也不授予冒充 Mi Step 官方发行或原作者背书的权利。
+第三方商标权，也不授予冒充 OneStepLite 官方发行或原作者背书的权利。
 
 七、专利
 

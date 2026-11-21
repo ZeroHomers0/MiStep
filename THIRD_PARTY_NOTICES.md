@@ -13,24 +13,24 @@
 
 Android SDK、Build Tools、NDK、JDK 和 LSPosed 由使用者另行准备，保留其上游许可，不包含在本源码仓库中。ARM64 库使用 NDK 提供的 C++ 运行库，相关许可见随附 Android NDK libc++ / libc++abi 文本。
 
-构建脚本同时将项目完整许可、本说明和 `libs/licenses/` 内的全部上游许可/NOTICE 原文放入 APK 的 `assets/mistep/licenses/`，使单独取得 APK 的接收者也能获取相关声明。该目录内 `SOURCE.txt` 标明项目源码位置；源码 ZIP 另附同样的许可与依赖资料。
+构建脚本同时将项目完整许可、本说明和 `libs/licenses/` 内的全部上游许可/NOTICE 原文放入 APK 的 `assets/onesteplite/licenses/`，使单独取得 APK 的接收者也能获取相关声明。该目录内 `SOURCE.txt` 标明项目源码位置；源码 ZIP 另附同样的许可与依赖资料。
 
 本项目包含对系统接口和行为的适配，未上传小米、锤子等厂商 ROM、APK、反编译类或研究采集材料。产品名、服务名与商标属于各自权利人。
 
-## Mi Step 自有内容
+## OneStepLite 自有内容
 
-Mi Step 原创部分采用 [Mi Step 非商用共享源码许可 1.0](LICENSE)，
+OneStepLite 原创部分采用 [OneStepLite 非商用共享源码许可 1.0](LICENSE)，
 详见 [许可说明](docs/许可说明.md)。该许可不重新授权上述第三方组件，
 不限制第三方许可已授予的权利，也不改变其著作权和商标归属。
 
 ## NeXtep 视频窗口接入参考
 
-`MiStepVideoDock.java`、`MiStepVideoPane.java` 的原生画中画/视频悬浮窗接入流程参考 [NeXtep](https://github.com/lujinxin/NeXtep) 的 `ControlAreaVideoController`、输入隔离与退出归还机制；本项目使用 Java 和 Xposed API 82 重新适配，没有引入其整任务置顶或商业授权代码。
+`VideoDock.java`、`VideoPane.java` 的原生画中画/视频悬浮窗接入流程参考 [NeXtep](https://github.com/lujinxin/NeXtep) 的 `ControlAreaVideoController`、输入隔离与退出归还机制；本项目使用 Java 和 Xposed API 82 重新适配，没有引入其整任务置顶或商业授权代码。
 
 上游采用 Apache License 2.0，许可原文随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。
 
 ## NeXtep 跨窗分享与壁纸参考
 
-`MiStepContentShare.java`、`MiStepDropPermissions.java` 参考 NeXtep 的 `SlotContentDragController`、`ContentDropShare`、`ContentDropPermissionContract` 和 `ContentDropPermissionHook`，以 Java / Xposed API 82 重新适配至本项目的原生任务注册表；目前仅接入同用户的定向分享。
+`ContentShare.java`、`DropPermissions.java` 参考 NeXtep 的 `SlotContentDragController`、`ContentDropShare`、`ContentDropPermissionContract` 和 `ContentDropPermissionHook`，以 Java / Xposed API 82 重新适配至本项目的原生任务注册表；目前仅接入同用户的定向分享。
 
-`MiStepWallpaperSnapshot.java` 参考 `WorkspaceWallpaperBackdrop` 的仅捕获壁纸图层、锁屏保护与动态壁纸回退策略。上游 Apache License 2.0 原文已随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。
+`WallpaperSnapshot.java` 参考 `WorkspaceWallpaperBackdrop` 的仅捕获壁纸图层、锁屏保护与动态壁纸回退策略。上游 Apache License 2.0 原文已随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。

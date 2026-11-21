@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class TabletSixWindowTest {
     private static int checks;
@@ -12,10 +12,10 @@ public final class TabletSixWindowTest {
                 for (float density : new float[]{1,1.5f,2,2.5f,3})
                     for (boolean right : new boolean[]{false,true}) {
                     int w=Math.round(h*ratio);
-                    MiStepLayout l=MiStepLayout.of(w,h,right,density,true);
+                    WorkspaceLayout l=WorkspaceLayout.of(w,h,right,density,true);
                     check(l.tabletLandscape && l.mainOnRight==right && l.cellCount==4,
                             "landscape preserves the main side selected by the entry gesture");
-                    check(l.gap==Math.max(2,Math.round(MiStepLayout.DESIGN_GAP_DP*density)),
+                    check(l.gap==Math.max(2,Math.round(WorkspaceLayout.DESIGN_GAP_DP*density)),
                             "tablet uses the same physical gap rule as portrait");
                     check(l.fillsScreen(),"regions reach display edges");
                     int end=0;
@@ -48,7 +48,7 @@ public final class TabletSixWindowTest {
                     if (h>=600*density) check(g.logicalWidth<g.logicalHeight,"portrait app configuration");
                     check(Math.abs(g.logicalWidth*g.scale-(r[2]-r[0]))<=.5f,"one horizontal transform");
                     check(Math.abs(g.logicalHeight*g.scale-(r[3]-r[1]))<=.5f,"one vertical transform");
-                    MiStepLayout old=MiStepLayout.of(w,h,false,density);
+                    WorkspaceLayout old=WorkspaceLayout.of(w,h,false,density);
                     check(old.cellCount==3 && !old.tabletLandscape,"legacy caller unchanged");
                     check(l.mainScale<old.mainScale && l.mainOffsetY>old.mainOffsetY,
                             "toolbar height is included in the tablet task layout");
@@ -58,19 +58,19 @@ public final class TabletSixWindowTest {
                     check(l.mainOffsetX==(right?l.sideWidth:0) && l.mainOffsetY==l.mainY,
                             "main surface and input use the same origin");
                 }
-        MiStepLayout pad=MiStepLayout.of(3048,2032,false,2.5f,true);
+        WorkspaceLayout pad=WorkspaceLayout.of(3048,2032,false,2.5f,true);
         check(pad.topStrip==606 && pad.mainWidth==2139 && pad.mainHeight==1426,
                 "Pad toolbar and proportional row determine the remaining main rectangle");
         check(pad.cellBounds(0)[2]==759 && pad.cellBounds(0)[3]-pad.cellBounds(0)[1]==506,
                 "Pad top task fills 759 by 506 instead of 612 by 408");
-        MiStepLayout leftEntry=MiStepLayout.of(3048,2032,true,2.5f,true);
+        WorkspaceLayout leftEntry=WorkspaceLayout.of(3048,2032,true,2.5f,true);
         check(java.util.Arrays.equals(leftEntry.mainBounds(),new int[]{909,606,3048,2032})
                 && java.util.Arrays.equals(leftEntry.interactiveBounds(),new int[]{0,606,904,2032}),
                 "left corner opens the portrait task at left and real main at right");
         for(int i=0;i<4;i++)check(java.util.Arrays.equals(pad.cellBounds(i),leftEntry.cellBounds(i)),
                 "entry edge leaves the four top cells in place");
-        check(!MiStepLayout.of(1200,2608,false,2.75f,true).tabletLandscape,"portrait keeps legacy layout");
-        check(!MiStepLayout.of(4000,1200,false,2,true).tabletLandscape,"ultrawide outside supported geometry");
+        check(!WorkspaceLayout.of(1200,2608,false,2.75f,true).tabletLandscape,"portrait keeps legacy layout");
+        check(!WorkspaceLayout.of(4000,1200,false,2,true).tabletLandscape,"ultrawide outside supported geometry");
         System.out.println("TabletSixWindow: "+checks+" checks passed");
     }
 }

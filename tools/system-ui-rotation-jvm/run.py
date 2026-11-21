@@ -5,13 +5,13 @@ from pathlib import Path
 import ast, subprocess, sys
 ROOT=Path(__file__).resolve().parents[2]
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/tests/system-ui-rotation-jvm'
-JDK=Path(os.environ["MISTEP_JAVA_BIN"])
+JDK=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 tree=ast.parse((ROOT/'tools/live-swap-jvm/run.py').read_text(encoding='utf-8-sig'))
 files=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='FILES' for t in n.targets))
 fake=OUT/'de/robv/android/xposed/XposedHelpers.java';fake.parent.mkdir(parents=True,exist_ok=True)
 fake.write_text(files['de/robv/android/xposed/XposedHelpers.java'],encoding='utf8')
-test=OUT/'com/jiusis/mistep/SystemUiRotationRegression.java';test.parent.mkdir(parents=True,exist_ok=True)
-test.write_text(r'''package com.jiusis.mistep;
+test=OUT/'io/github/zerohomers0/onesteplite/SystemUiRotationRegression.java';test.parent.mkdir(parents=True,exist_ok=True)
+test.write_text(r'''package io.github.zerohomers0.onesteplite;
 public class SystemUiRotationRegression {
  static int checks;static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
  static class State {
@@ -52,7 +52,7 @@ public class SystemUiRotationRegression {
  static Window window(Display d,int type,String pkg,String title){return new Window(new Node(d,new Node(d,null)),type,pkg,title);}
  public static void main(String[]args){
   Display d=new Display();Node main=new Node(d,new Node(d,null));main.mFixedRotationTransformState=new State();
-  MiStepSystemUiRotation owner=new MiStepSystemUiRotation();Window status=window(d,2012,"keyboard.vendor","InputMethodDialog");
+  SystemUiRotation owner=new SystemUiRotation();Window status=window(d,2012,"keyboard.vendor","InputMethodDialog");
   owner.update(status,d,main,s->{});check(status.mToken.applies==1,"main system bar did not receive rotated configuration");
   check(status.mToken.mFixedRotationTransformState!=main.mFixedRotationTransformState,"system bar shares app finish lifecycle");
   check(status.mToken.leashes==0,"legacy native token rotation received a second translation leash");
@@ -86,33 +86,33 @@ public class SystemUiRotationRegression {
     window(d,2020,"com.android.systemui","VolumeDialog"),
     window(d,2024,"com.android.systemui","NavigationBarPanel"),
     window(d,2040,"foreign","NotificationShade"),
-    window(d,2038,"com.android.systemui","MiStepHost"),
+    window(d,2038,"com.android.systemui","WorkspaceHost"),
     window(d,2036,"com.android.systemui","Screenshot"),
-    window(d,2017,"com.android.systemui","MiStepQuickAppPicker")};
+    window(d,2017,"com.android.systemui","OneStepLiteQuickAppPicker")};
   for(int j=0;j<nativePanels.length;j++){Window panel=nativePanels[j];owner.update(panel,d,main,s->{});
     check(panel.mToken.applies==(j<8?1:0),"main native panel whitelist: "+panel.mAttrs.title);}
   main.home=true;owner.update(ime,d,main,s->{});main.home=false;owner.clear(s->{});
   for(int j=0;j<nativePanels.length;j++)check(nativePanels[j].mToken.finishes==(j<8?1:0),"native panel owned cleanup: "+nativePanels[j].mAttrs.title);
   Window privacy=window(d,2017,"com.android.systemui","FlaresView");Object spec=new Object(),tx=new Object();
-  check(MiStepSystemUiRotation.magnifyPrivacy(privacy,d,spec,tx),"late permission window did not acquire native magnification");
+  check(SystemUiRotation.magnifyPrivacy(privacy,d,spec,tx),"late permission window did not acquire native magnification");
   check(privacy.mToken.mLastMagnificationSpec==spec,"native input/exit magnification metadata was not recorded");
   privacy.mToken.parent.mLastMagnificationSpec=spec;int zooms=privacy.mToken.zooms;
-  check(!MiStepSystemUiRotation.magnifyPrivacy(privacy,d,spec,tx)&&privacy.mToken.zooms==zooms,"permission window was magnified twice");
+  check(!SystemUiRotation.magnifyPrivacy(privacy,d,spec,tx)&&privacy.mToken.zooms==zooms,"permission window was magnified twice");
   privacy.mToken.parent.mLastMagnificationSpec=null;
   com.android.server.wm.DisplayArea.Tokens area=new com.android.server.wm.DisplayArea.Tokens(d);privacy.mToken.parent=area;
-  check(MiStepSystemUiRotation.magnifyPrivacy(privacy,d,spec,tx)&&area.zooms==1,"magnification was placed inside the rotation leash");
-  check(!MiStepSystemUiRotation.magnifyPrivacy(other,d,spec,tx),"foreign overlay admitted as permission UI");
-  check(!MiStepSystemUiRotation.magnifyPrivacy(privacy,new Display(),spec,tx),"wrong display zoom admitted");
-  check(!MiStepSystemUiRotation.magnifyPrivacy(privacy,d,null,tx),"inactive zoom admitted");
-  check(!MiStepSystemUiRotation.privacyWindow(2017,"foreign","FlaresView"),"title spoof admitted");
-  check(!MiStepSystemUiRotation.privacyWindow(2038,"com.android.systemui","FlaresView"),"wrong type admitted");
+  check(SystemUiRotation.magnifyPrivacy(privacy,d,spec,tx)&&area.zooms==1,"magnification was placed inside the rotation leash");
+  check(!SystemUiRotation.magnifyPrivacy(other,d,spec,tx),"foreign overlay admitted as permission UI");
+  check(!SystemUiRotation.magnifyPrivacy(privacy,new Display(),spec,tx),"wrong display zoom admitted");
+  check(!SystemUiRotation.magnifyPrivacy(privacy,d,null,tx),"inactive zoom admitted");
+  check(!SystemUiRotation.privacyWindow(2017,"foreign","FlaresView"),"title spoof admitted");
+  check(!SystemUiRotation.privacyWindow(2038,"com.android.systemui","FlaresView"),"wrong type admitted");
 
-  MiStepSystemUiRotation phoneImeOwner=new MiStepSystemUiRotation();
+  SystemUiRotation phoneImeOwner=new SystemUiRotation();
   Node appToken=new Node(d,new Node(d,null));appToken.mFixedRotationTransformState=new State(1);
   Window appWindow=new Window(appToken,1,"app","editor");appWindow.mActivityRecord=appToken;
   appToken.task=appWindow.task;appWindow.task.mode=1;d.target=appWindow;d.mFocusedApp=appToken;
   Window phoneIme=window(d,2011,"keyboard.vendor","InputMethod");d.mCurrentFocus=phoneIme;
-  check(MiStepImePolicy.isTopAppFocused(appWindow.task,d),"main fake focus/task identity invalid");
+  check(ImePolicy.isTopAppFocused(appWindow.task,d),"main fake focus/task identity invalid");
   java.util.function.Predicate<Object> exactActivity=value->value==appToken;
   java.util.function.Predicate<Object> exactTop=value->false;
   check(phoneImeOwner.updatePhoneIme(phoneIme,d,exactActivity,exactTop,s->{})==appToken,
@@ -175,10 +175,10 @@ public class SystemUiRotationRegression {
  }
 }''',encoding='utf8')
 area=OUT/'com/android/server/wm/DisplayArea.java';area.parent.mkdir(parents=True,exist_ok=True)
-area.write_text('''package com.android.server.wm;public class DisplayArea {public static class Tokens extends com.jiusis.mistep.SystemUiRotationRegression.Node {public Tokens(Object display){super(display,null);}}}''',encoding='utf8')
-source=package_dir(ROOT)/'MiStepSystemUiRotation.java'
+area.write_text('''package com.android.server.wm;public class DisplayArea {public static class Tokens extends io.github.zerohomers0.onesteplite.SystemUiRotationRegression.Node {public Tokens(Object display){super(display,null);}}}''',encoding='utf8')
+source=package_dir(ROOT)/'SystemUiRotation.java'
 rect=ROOT/'tools/test-stubs/android/graphics/Rect.java'
 extra=[package_dir(ROOT)/f"{n}.java" for n in
-       ["ZoomChannelState","ZoomCommand","ZoomAnimCommand","MiStepPackages"]]
-subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(rect),str(test),str(area),str(source),str(package_dir(ROOT)/'MiStepImePolicy.java'),str(package_dir(ROOT)/'MiStepSideRoleChange.java'),*map(str,extra)],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.SystemUiRotationRegression'],check=True)
+       ["ZoomChannelState","ZoomCommand","ZoomAnimCommand","Packages"]]
+subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(rect),str(test),str(area),str(source),str(package_dir(ROOT)/'ImePolicy.java'),str(package_dir(ROOT)/'SideRoleChange.java'),*map(str,extra)],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'io.github.zerohomers0.onesteplite.SystemUiRotationRegression'],check=True)

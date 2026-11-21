@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 /** Offline regression for the animated zoom command; no Android runtime required. */
 public final class ZoomAnimCommandTest {

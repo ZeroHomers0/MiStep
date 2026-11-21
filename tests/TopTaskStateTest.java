@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class TopTaskStateTest {
     static int checks;
@@ -51,7 +51,7 @@ public final class TopTaskStateTest {
         TopTaskGeometry resized=new TopTaskGeometry(1080,2460,541,122,2.75f);
         ok(resized.bottom==541 && Math.abs(resized.logicalHeight*resized.scale-541)<.5f);
         for (int[] display:new int[][]{{1080,2340},{1440,3200},{720,1600}}) {
-            MiStepLayout layout=MiStepLayout.of(display[0],display[1]);
+            WorkspaceLayout layout=WorkspaceLayout.of(display[0],display[1]);
             TopTaskGeometry geometry=new TopTaskGeometry(display[0],display[1],layout.topStrip,30,2f);
             ok(geometry.right==display[0] && geometry.bottom==layout.topStrip && layout.fillsScreen());
             // A retained 48dp control and a newly inflated 48dp control use the same

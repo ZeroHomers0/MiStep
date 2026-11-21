@@ -4,7 +4,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 from pathlib import Path
 import subprocess
 root=Path(__file__).resolve().parents[2]
-source=(package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+source=(package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out=root/'build/tests/standalone';out.mkdir(parents=True,exist_ok=True)
 def method(signature):
  start=source.index(signature);brace=source.index('{',start);depth=1;end=brace+1
@@ -15,7 +15,7 @@ def method(signature):
  return source[start:end]
 methods='\n'.join(method(s) for s in ['    private void returnUnboundOwnedCandidates(', '    private void returnUnboundOwnedCandidate('])
 body=r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class OwnedRecoveryRegression {
  static int checks;static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
@@ -77,6 +77,6 @@ public class OwnedRecoveryRegression {
 f=out/'OwnedRecoveryRegression.java';f.write_text(body,encoding='utf8')
 sparse=out/'android/util/SparseArray.java';sparse.parent.mkdir(parents=True,exist_ok=True)
 sparse.write_text('package android.util; public class SparseArray<T>{java.util.Map<Integer,T>m=new java.util.HashMap<>();public T get(int i){return m.get(i);}public void put(int i,T v){m.put(i,v);}}',encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(sparse),str(f)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.OwnedRecoveryRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.OwnedRecoveryRegression'],check=True)

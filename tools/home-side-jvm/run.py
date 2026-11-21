@@ -14,10 +14,10 @@ def method(text,signature):
   elif text[end]=='}':depth-=1
   end+=1
  return text[start:end]
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 methods='\n'.join(method(host,s) for s in ['    private boolean ordinaryRoot(', '    private boolean isSideToken(', '    private LiveTask findMainTask(', '    private boolean isHomeRoot(', '    private boolean mayWriteSideSurface('])
 body=r"""
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class HomeAndSideSurfaceRegression {
  static final int SLOT_TOP=4;boolean topFace;Roll topRoll;
@@ -86,6 +86,6 @@ public class HomeAndSideSurfaceRegression {
 }
 """.replace('__METHODS__',methods)
 file=out/'HomeAndSideSurfaceRegression.java';file.write_text(body,encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskUserPolicy.java'),str(src/'MiStepPackages.java'),str(file)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.HomeAndSideSurfaceRegression'],check=True)
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskUserPolicy.java'),str(src/'Packages.java'),str(file)],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.HomeAndSideSurfaceRegression'],check=True)

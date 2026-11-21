@@ -17,9 +17,9 @@ files={
 'android/view/InputDevice.java':'package android.view;public class InputDevice {public static final int SOURCE_KEYBOARD=257;}',
 'android/view/KeyEvent.java':'''package android.view;public class KeyEvent {public static final int ACTION_DOWN=0,ACTION_UP=1,KEYCODE_BACK=4,FLAG_FROM_SYSTEM=8,FLAG_VIRTUAL_HARD_KEY=64;public int action,code,display=-1;public KeyEvent(long a,long b,int c,int d,int e,int f,int g,int h,int i,int j){action=c;code=d;}public void setDisplayId(int d){display=d;}}''',
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;public class XposedHelpers {public static Object getObjectField(Object o,String n){try{return o.getClass().getField(n).get(o);}catch(Exception e){throw new RuntimeException(e);}}public static int getIntField(Object o,String n){return (Integer)getObjectField(o,n);}public static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new RuntimeException(e);}}}''',
-'com/jiusis/mistep/MiStepImePolicy.java':'''package com.jiusis.mistep;import java.util.function.Predicate;class MiStepImePolicy {static boolean isFocusedTopWindow(Object w,Object d,Predicate<Object>lease){return w!=null&&((BackRegression.Window)w).focused&&lease.test(((BackRegression.Window)w).task);}}''',
-'com/jiusis/mistep/MiStepDesktopLaunchBridge.java':'''package com.jiusis.mistep;class MiStepDesktopLaunchBridge {static boolean ownsTopTask(Object task){return ((BackRegression.Task)task).leased;}}''',
-'com/jiusis/mistep/BackRegression.java':'''package com.jiusis.mistep;import android.os.*;import android.content.*;import android.view.*;import java.util.*;
+'io/github/zerohomers0/onesteplite/ImePolicy.java':'''package io.github.zerohomers0.onesteplite;import java.util.function.Predicate;class ImePolicy {static boolean isFocusedTopWindow(Object w,Object d,Predicate<Object>lease){return w!=null&&((BackRegression.Window)w).focused&&lease.test(((BackRegression.Window)w).task);}}''',
+'io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java':'''package io.github.zerohomers0.onesteplite;class DesktopLaunchBridge {static boolean ownsTopTask(Object task){return ((BackRegression.Task)task).leased;}}''',
+'io/github/zerohomers0/onesteplite/BackRegression.java':'''package io.github.zerohomers0.onesteplite;import android.os.*;import android.content.*;import android.view.*;import java.util.*;
 public class BackRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  public static class Token {IBinder binder=new IBinder(){};public IBinder asBinder(){return binder;}}
@@ -31,7 +31,7 @@ public class BackRegression {
  public static void main(String[]args){
   for(int gate=0;gate<8;gate++) {
    SystemClock.now=1000;var d=new Display();var c=new Context();var input=new Input();c.input=input;
-   MiStepTopBack.request(c,d.mCurrentFocus.task.info.token);check(c.sent!=null&&"android".equals(c.sent.pkg),"request is scoped to system receiver");
+   TopBack.request(c,d.mCurrentFocus.task.info.token);check(c.sent!=null&&"android".equals(c.sent.pkg),"request is scoped to system receiver");
    if(gate==1)SystemClock.now=1600;
    if(gate==2)d.mCurrentFocus.task.info.token=new Token();
    if(gate==3)d.mCurrentFocus.focused=false;
@@ -39,7 +39,7 @@ public class BackRegression {
    if(gate==5)d.mCurrentFocus.mOwnerUid=-1;
    if(gate==6)d.mCurrentFocus=null;
    if(gate==7)c.sent.putExtra("at",1100L);
-   Runnable dispatch=MiStepTopBack.prepare(c,d,c.sent);
+   Runnable dispatch=TopBack.prepare(c,d,c.sent);
    if(gate!=0){check(dispatch==null,"stale/token/focus/lease/uid/null/future refused "+gate);continue;}
    check(input.events.isEmpty(),"no input injection while preparing under WM lock");dispatch.run();
    check(input.events.size()==2&&input.uid==10290,"Back targets only exact owner UID");
@@ -48,8 +48,8 @@ public class BackRegression {
   }
    for(int failure=0;failure<2;failure++){
     SystemClock.now=1000;var d=new Display();var c=new Context();var input=new Input();c.input=input;
-    input.accept=false;input.failDown=failure==1;MiStepTopBack.request(c,d.mCurrentFocus.task.info.token);
-    Runnable dispatch=MiStepTopBack.prepare(c,d,c.sent);
+    input.accept=false;input.failDown=failure==1;TopBack.request(c,d.mCurrentFocus.task.info.token);
+    Runnable dispatch=TopBack.prepare(c,d,c.sent);
     boolean threw=false;try{dispatch.run();}catch(RuntimeException expected){threw=true;}
     check(threw==(failure==1),"native exception remains visible");
     check(input.events.size()==2&&input.events.get(1).action==1&&input.uid==10290,"rejected native down still releases exact target");
@@ -61,8 +61,8 @@ public class BackRegression {
 paths=[]
 for n,t in files.items():
  p=out/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(t,encoding='utf-8');paths.append(str(p))
-paths.append(str(package_dir(root)/'MiStepTopBack.java'))
-paths.append(str(package_dir(root)/'MiStepActions.java'))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(package_dir(root)/'TopBack.java'))
+paths.append(str(package_dir(root)/'Actions.java'))
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.BackRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.BackRegression'],check=True)

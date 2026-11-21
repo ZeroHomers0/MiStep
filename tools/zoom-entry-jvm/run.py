@@ -15,7 +15,7 @@ pos = source.index('{', native)+1; depth = 1
 while depth:
     depth += (source[pos]=='{')-(source[pos]=='}'); pos += 1
 actual = source[start:pos]
-body = r'''package com.jiusis.mistep;
+body = r'''package io.github.zerohomers0.onesteplite;
 public class ZoomEntryRegression {
  static boolean sZoomed,sFullscreenRotationActive,sZoomFrameApply;static int sNativeLandscapeState;static long topWorkspaceGeneration;static float sZoomScale=1,sZoomOffsetX,sZoomOffset;
  static ZoomTarget sZoomTarget;static Object sDisplayContent;static ZoomCommit sLiveZoomCommit;static int callbacks,nativeSuspensions,refreshes;static boolean failRotation;
@@ -27,8 +27,8 @@ public class ZoomEntryRegression {
  static class Display {Spec mMagnificationSpec;boolean fail;public void applyMagnificationSpec(Spec s){if(fail)throw new IllegalStateException("apply failed");mMagnificationSpec=s;}public Object getPendingTransaction(){return new Object();}public Rect getBounds(){return new Rect();}public int getRotation(){return 0;}public Object getWindowingLayer(){return null;}}
  static class Zoom {boolean sameTuple(float a,float b,float c){return true;}}
  static class ZoomCommit {long transactionId;float actualScale,actualX,actualY;boolean applied;Zoom zoom=new Zoom();void finish(boolean success,String reason){}}
- static class MiStepWallpaperScale {static void refresh(Object dc){refreshes++;}}
- static class MiStepRecentsInput {static void geometryChanged(Object tx,float s,float y,float x){}}
+ static class WallpaperScale {static void refresh(Object dc){refreshes++;}}
+ static class RecentsInput {static void geometryChanged(Object tx,float s,float y,float x){}}
  static class NativeRawInputBridge {static void update(float s,float y,float x,int w,int h,int r){}}
  static class XposedHelpers {
   static Class<?> findClass(String n,ClassLoader cl){return Spec.class;}
@@ -42,17 +42,17 @@ public class ZoomEntryRegression {
  void placeHostBelowNativeFreeforms(Object d,Object tx){}void restoreExitedMagnificationLocked(ZoomTarget t){}void applyGestureSurfacesLocked(ZoomTarget t,float s,float y,float x){}void log(String s){}
  ACTUAL
  static Object sWmsContext=new Object();
- static class MiStepEntryGuard {static boolean unlocked=true;static boolean canOpen(Object c){return unlocked;}}
+ static class EntryGuard {static boolean unlocked=true;static boolean canOpen(Object c){return unlocked;}}
  static class Retained {int holds;void holdOpeningMainForLock(Object dc){holds++;}}
  static Retained sRetainedWindow=new Retained();
- static MiStepKeyguardZoom sKeyguardZoom=new MiStepKeyguardZoom();
+ static KeyguardZoom sKeyguardZoom=new KeyguardZoom();
  static int checks;static void check(boolean x,String why){checks++;if(!x)throw new AssertionError(why);}
- static ZoomTarget reset(){MiStepEntryGuard.unlocked=true;sRetainedWindow=new Retained();sKeyguardZoom=new MiStepKeyguardZoom();Looper.current=Looper.MAIN;sZoomed=false;sFullscreenRotationActive=false;sNativeLandscapeState=0;topWorkspaceGeneration=0;sZoomScale=1;sZoomOffsetX=sZoomOffset=0;callbacks=nativeSuspensions=refreshes=0;failRotation=false;sZoomTarget=new ZoomTarget();sDisplayContent=sZoomTarget.display;return sZoomTarget;}
+ static ZoomTarget reset(){EntryGuard.unlocked=true;sRetainedWindow=new Retained();sKeyguardZoom=new KeyguardZoom();Looper.current=Looper.MAIN;sZoomed=false;sFullscreenRotationActive=false;sNativeLandscapeState=0;topWorkspaceGeneration=0;sZoomScale=1;sZoomOffsetX=sZoomOffset=0;callbacks=nativeSuspensions=refreshes=0;failRotation=false;sZoomTarget=new ZoomTarget();sDisplayContent=sZoomTarget.display;return sZoomTarget;}
  static void apply(ZoomTarget t,float s)throws Throwable{synchronized(t.globalLock){new ZoomEntryRegression().applyDisplayZoomLocked(t,s,s==1?0:622,0,null);}}
  public static void main(String[] args)throws Throwable{
   var t=reset();apply(t,.747f);check(callbacks==1&&nativeSuspensions==0,"entry orientation callback sees incoming workspace instead of native fullscreen");check(sZoomed&&sFullscreenRotationActive&&topWorkspaceGeneration==1,"entry published once");check(t.display.mMagnificationSpec.scale==.747f&&sZoomScale==.747f,"applied state retained");
   apply(t,.747f);check(topWorkspaceGeneration==1&&nativeSuspensions==0,"animation frame keeps same workspace generation");apply(t,1);check(!sZoomed&&!sFullscreenRotationActive&&sZoomScale==1&&refreshes==2,"exit restores normal display state");
-  t=reset();apply(t,.747f);MiStepEntryGuard.unlocked=false;apply(t,1);
+  t=reset();apply(t,.747f);EntryGuard.unlocked=false;apply(t,1);
   check(sRetainedWindow.holds==1&&!sZoomed,"screen-off reset before keyguard hook hides main before restoring fullscreen geometry");
   t=reset();apply(t,.747f);apply(t,1);check(sRetainedWindow.holds==0,"ordinary unlocked exit never hides main");
   t=reset();t.display.fail=true;try{apply(t,.747f);throw new AssertionError("failure swallowed");}catch(RuntimeException expected){}check(!sZoomed&&!sFullscreenRotationActive&&sNativeLandscapeState==0&&sZoomScale==1,"failed magnification rolls back publication and rotation");
@@ -77,13 +77,13 @@ public class ZoomEntryRegression {
  }
 }'''.replace('ACTUAL', actual)
 target=out/'ZoomEntryRegression.java';target.write_text(body,encoding='utf8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 tree=ast.parse((root/'tools/keyguard-zoom-jvm/run.py').read_text(encoding='utf-8-sig'))
 fixtures=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='files' for t in n.targets))
 extra=[]
 for name,code in fixtures.items():
  if not name.startswith('de/'):continue
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(code,encoding='utf-8');extra.append(str(p))
-extra.append(str(src/'MiStepKeyguardZoom.java'))
+extra.append(str(src/'KeyguardZoom.java'))
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(target),str(src/'NativeLandscapePolicy.java'),*extra],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.ZoomEntryRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.ZoomEntryRegression'],check=True)

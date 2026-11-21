@@ -6,12 +6,12 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/native-landscape-jvm'
-JDK = Path(os.environ["MISTEP_JAVA_BIN"])
+JDK = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 OUT.mkdir(parents=True, exist_ok=True)
-test = OUT / "com/jiusis/mistep/NativeLandscapeRegression.java"
+test = OUT / "io/github/zerohomers0/onesteplite/NativeLandscapeRegression.java"
 test.parent.mkdir(parents=True, exist_ok=True)
 test.write_text(
-    r'''package com.jiusis.mistep;
+    r'''package io.github.zerohomers0.onesteplite;
 public class NativeLandscapeRegression {
  static int checks;
  static void check(boolean value, String why) {
@@ -65,7 +65,7 @@ public class NativeLandscapeRegression {
    check(!NativeLandscapePolicy.suppressesLocalRotation(fullscreen, false, true),
        "Home inherited a landscape app transform");
    check(!NativeLandscapePolicy.shouldUseNativeFullscreen(true, false, false),
-       "active Mi Step workspace exited for a main-area landscape app");
+       "active OneStepLite workspace exited for a main-area landscape app");
    check(NativeLandscapePolicy.shouldUseNativeFullscreen(false, false, false),
        "inactive workspace did not use native fullscreen");
    check(!NativeLandscapePolicy.shouldUseNativeFullscreen(false, true, false),
@@ -111,7 +111,7 @@ subprocess.run(
         str(JDK / "java.exe"),
         "-cp",
         str(OUT),
-        "com.jiusis.mistep.NativeLandscapeRegression",
+        "io.github.zerohomers0.onesteplite.NativeLandscapeRegression",
     ],
     check=True,
 )

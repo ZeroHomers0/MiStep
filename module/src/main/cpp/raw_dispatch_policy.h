@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace mistep {
+namespace onesteplite {
 
 // Layout verified against the gated 17PM and xaga libui/inputflinger binaries.
 struct Transform {
@@ -138,4 +138,4 @@ inline int publish(Publish original, void* dispatcher, void* connection, void* e
     return original(dispatcher, connection, entry);
 }
 
-}  // namespace mistep
+}  // namespace onesteplite

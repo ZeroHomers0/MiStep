@@ -6,7 +6,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1])
 OUT.mkdir(parents=True, exist_ok=True)
-JDK = Path(os.environ['MISTEP_JAVA_BIN'])
+JDK = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 phone = ROOT/'tools/phone-rotation-jvm/run.py'
 ns = {'__file__': str(phone), '__name__': 'fixture'}
 exec(compile(phone.read_text(encoding='utf-8').split('sources=' + '[]')[0], str(phone), 'exec'), ns)
@@ -45,8 +45,8 @@ for name in ['SurfaceControl.java', 'SurfaceAnimator.java', 'WindowManagerServic
     package=re.search(r'package ([\w.]+);',text).group(1)
     ANIMATION_FILES[package.replace('.', '/')+'/'+name]=text
 FILES.update(ANIMATION_FILES)
-FILES.pop('com/jiusis/mistep/PhoneRotationTest.java',None)
-FILES['com/jiusis/mistep/RotationAnimationTest.java']=(Path(__file__).resolve().parent/'RotationAnimationTest.java').read_text(encoding='utf-8')
+FILES.pop('io/github/zerohomers0/onesteplite/PhoneRotationTest.java',None)
+FILES['io/github/zerohomers0/onesteplite/RotationAnimationTest.java']=(Path(__file__).resolve().parent/'RotationAnimationTest.java').read_text(encoding='utf-8')
 
 sources=[]
 for name, text in FILES.items():
@@ -54,9 +54,9 @@ for name, text in FILES.items():
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text, encoding='utf-8')
     sources.append(str(p))
-sources.append(str(package_dir(ROOT)/'MiStepRotationAnimation.java'))
-cp = os.pathsep.join([str(OUT), os.environ['MISTEP_CLASSES'], os.environ['MISTEP_ANDROID_JAR'],
+sources.append(str(package_dir(ROOT)/'RotationAnimation.java'))
+cp = os.pathsep.join([str(OUT), os.environ['ONESTEPLITE_CLASSES'], os.environ['ONESTEPLITE_ANDROID_JAR'],
                       str(ROOT/'libs/xposed-api-82.jar')])
 subprocess.run([str(JDK/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', cp,
                 '-d', str(OUT), *sources], check=True)
-subprocess.run([str(JDK/'java.exe'), '-cp', cp, 'com.jiusis.mistep.RotationAnimationTest'], check=True)
+subprocess.run([str(JDK/'java.exe'), '-cp', cp, 'io.github.zerohomers0.onesteplite.RotationAnimationTest'], check=True)

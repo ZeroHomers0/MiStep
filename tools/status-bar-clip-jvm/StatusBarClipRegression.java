@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import android.graphics.Rect;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public final class StatusBarClipRegression {
                 Object display=new Object(); Window w=new Window(display);
                 int width=rotation==0?1200:2608, height=rotation==0?2608:1200;
                 w.mToken.bounds=new Rect(0,0,width,height);
-                MiStepStatusBarClip owner=new MiStepStatusBarClip();
+                StatusBarClip owner=new StatusBarClip();
                 owner.update(w,display,logs::add);
                 Rect clip=w.mToken.surface.crop;
                 check(clip!=null,"production update did not submit a token crop");
@@ -84,7 +84,7 @@ public final class StatusBarClipRegression {
             }
     }
     static void lifecycle() {
-        Object d=new Object(); MiStepStatusBarClip owner=new MiStepStatusBarClip(); Window w=new Window(d);
+        Object d=new Object(); StatusBarClip owner=new StatusBarClip(); Window w=new Window(d);
         owner.update(w,d,logs::add); owner.update(w,d,logs::add);
         check(w.mToken.pending.writes==1,"unchanged traversal wrote crop every frame");
         w.mToken.bounds=new Rect(37,19,2645,1219); owner.update(w,d,logs::add);
@@ -107,7 +107,7 @@ public final class StatusBarClipRegression {
         check(w.mToken.pending.writes==writes,"cleanup wrote a destroyed surface");
     }
     static void scopeAndFailures() {
-        Object d=new Object(); MiStepStatusBarClip owner=new MiStepStatusBarClip();
+        Object d=new Object(); StatusBarClip owner=new StatusBarClip();
         for (int type : new int[]{1,2011,2012,2019,2038,2040}) {
             Window w=new Window(d); w.mAttrs.type=type; owner.update(w,d,logs::add);
             check(w.mToken.pending.writes==0,"non-status window changed: "+type);

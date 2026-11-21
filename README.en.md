@@ -1,10 +1,10 @@
 <p align="center"><a href="README.md">简体中文</a> · <strong>English</strong></p>
 
 <p align="center">
-  <img src="docs/assets/mistep-banner.png" width="100%" alt="Mi Step: foreground multitasking for HyperOS 4">
+  <img src="docs/assets/onesteplite-banner.png" width="100%" alt="OneStepLite: foreground multitasking for HyperOS 4">
 </p>
 
-<h1 align="center">Mi Step · A step forward for Xiaomi</h1>
+<h1 align="center">OneStepLite · A step forward for Xiaomi</h1>
 
 <p align="center">
   <strong>Built for HyperOS 4</strong><br>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/JIUSIS/MiStep/releases/tag/v1.0.4"><strong>Download 1.0.4</strong></a> ·
+  <a href="https://github.com/JIUSIS/OneStepLite/releases/tag/v1.0.4"><strong>Download 1.0.4</strong></a> ·
   <a href="#features">Features</a> ·
   <a href="#installation-and-first-steps">Installation</a> ·
   <a href="#a-note-from-a-wish-making-engineer">Why I made it</a>
@@ -32,7 +32,7 @@ Most hands-on testing for 1.0.4 used a HyperOS 2 / Android 15 phone; that detail
 
 Keep notes beside your research. Reply to a message while watching a video. Move between several apps while working on the same thing. I wanted a workspace where I could see these tasks and switch between them easily.
 
-**Mi Step takes inspiration from Smartisan's One Step and brings that approach to foreground multitasking on Xiaomi HyperOS 4.** Your current desktop or app stays in the main window, with three side window slots alongside it. The clock, the title bar and the frequent app rail sit above. Tap the task you want to use to bring it into the main window.
+**OneStepLite takes inspiration from Smartisan's One Step and brings that approach to foreground multitasking on Xiaomi HyperOS 4.** Your current desktop or app stays in the main window, with three side window slots alongside it. The clock, the title bar and the frequent app rail sit above. Tap the task you want to use to bring it into the main window.
 
 <p align="center">
   <img src="docs/assets/workspace-layout.en.svg" width="900" alt="Layout diagram: a clock, the One Step title bar and a frequent app rail above one main window and three side windows. Tap an empty slot to collect the current app, tap a side window to swap, or swipe it outward to return it to the background.">
@@ -126,28 +126,28 @@ When a landscape fullscreen video starts, you can choose how the workspace makes
 | --- | --- |
 | Play on top | Supported players can show the video at the top while the main and side windows keep working; unsupported players stay in the main window |
 | Play inside the main window (default) | The video plays landscape inside the main window while the side windows keep working |
-| Leave Mi Step and play fullscreen | Leave Mi Step and use the app's own fullscreen video interface |
+| Leave OneStepLite and play fullscreen | Leave OneStepLite and use the app's own fullscreen video interface |
 
 Video docking **only takes over a floating video window the player already provides; it never resizes or moves the app task itself**. A change applies from the next landscape fullscreen video.
 
 ### 08 · The settings page: appearance, windows and actions, video, lock screen
 
-Open it from **System settings → Mi Step**, listed under "My device". There is no launcher icon. The page uses a consistent HyperOS 4 style and follows the system light or dark theme.
+Open it from **System settings → OneStepLite**, listed under "My device". There is no launcher icon. The page uses a consistent HyperOS 4 style and follows the system light or dark theme.
 
 | Group | Settings |
 | --- | --- |
 | Appearance | Show lunar date |
 | Windows and actions | Entry gesture, main and side swap behaviour, scroll side windows, hide side windows from recent apps |
 | Video | Landscape video position |
-| Lock screen | Restore Mi Step after unlocking |
+| Lock screen | Restore OneStepLite after unlocking |
 
 - **Scroll side windows**: drag the side column vertically to reach more side windows.
-- **Hide side windows from recent apps**: applies only while Mi Step is open and never closes the app.
-- **Restore Mi Step after unlocking**: when on, unlocking restores the previous window layout; when off, unlocking returns to the normal fullscreen interface.
+- **Hide side windows from recent apps**: applies only while OneStepLite is open and never closes the app.
+- **Restore OneStepLite after unlocking**: when on, unlocking restores the previous window layout; when off, unlocking returns to the normal fullscreen interface.
 
 Choices are stored on the device and survive leaving the workspace or a reboot.
 
-### 09 · Left or right layouts and landscape inside Mi Step
+### 09 · Left or right layouts and landscape inside OneStepLite
 
 Swipe **right from the upper left corner** for side windows on the left, or **left from the upper right corner** for side windows on the right. You can also switch sides from the title bar at any time.
 
@@ -160,7 +160,7 @@ There are two entry gestures, chosen under **Entry gesture** in the settings pag
 
 In immersive fullscreen, first reveal the native status bar without expanding notifications or quick settings, then start a new corner gesture. Entry remains blocked while the status bar is hidden. This rule also applies in landscape.
 
-When an app enters landscape inside the main window, Mi Step coordinates its orientation, touch mapping, task swaps and floating keyboard position. This means **an app in landscape inside the Mi Step workspace**; app policies, keyboards and ROM versions can still differ.
+When an app enters landscape inside the main window, OneStepLite coordinates its orientation, touch mapping, task swaps and floating keyboard position. This means **an app in landscape inside the OneStepLite workspace**; app policies, keyboards and ROM versions can still differ.
 
 ## Installation and first steps
 
@@ -177,10 +177,10 @@ Different ROMs on the same model may expose different interfaces. These targets 
 
 ### Enable the module
 
-The permanent package name is **`com.jiusis.mistep`**. Future versions will keep it. If you installed an earlier package name, exit the workspace and disable the old module in LSPosed first. Install this package, enable the new module, select its scope again, then reboot normally. You can uninstall the old module after confirming the new one works. A changed package name cannot overwrite the old installation; do not enable both modules together.
+The permanent package name is **`io.github.zerohomers0.onesteplite`**. Future versions will keep it. If you installed an earlier package name, exit the workspace and disable the old module in LSPosed first. Install this package, enable the new module, select its scope again, then reboot normally. You can uninstall the old module after confirming the new one works. A changed package name cannot overwrite the old installation; do not enable both modules together.
 
-1. Download `MiStep-1.0.4.apk` from the [1.0.4 release](https://github.com/JIUSIS/MiStep/releases/tag/v1.0.4). Check it against `SHA256SUMS.txt` on that page.
-2. Install it, enable **Mi Step** in LSPosed and select the recommended scope below.
+1. Download `OneStepLite-1.0.4.apk` from the [1.0.4 release](https://github.com/JIUSIS/OneStepLite/releases/tag/v1.0.4). Check it against `SHA256SUMS.txt` on that page.
+2. Install it, enable **OneStepLite** in LSPosed and select the recommended scope below.
 3. **Reboot normally** so the system processes load the module.
 4. With the phone in portrait, use the upper corner swipe gesture. Open an app in the main window, then tap an empty side slot's ＋ to collect it.
 
@@ -188,7 +188,7 @@ The permanent package name is **`com.jiusis.mistep`**. Future versions will keep
 | --- | --- | --- |
 | System framework | `android` | System tasks, main window scaling and input |
 | System UI | `com.android.systemui` | Workspace, title bar and native controls |
-| Settings | `com.android.settings` | Native homepage entry for Mi Step settings only |
+| Settings | `com.android.settings` | Native homepage entry for OneStepLite settings only |
 
 Optionally select `com.xiaomi.type` to prevent the Xiaomi keyboard from automatically switching to floating mode in landscape. This remaining keyboard policy is independent of ordinary app layout and input. Settings is used only for the module entry; media players need no app scope. Previously saved LSPosed selections are not automatically cleared. See the [scope and system adaptation notes](docs/作用域与系统适配.md) (Chinese).
 
@@ -201,18 +201,18 @@ Open a browser in the main window and tap ＋ to collect it. Open your notes and
 ## A note from a wish-making engineer
 
 <p align="center">
-  <img src="docs/assets/mistep-emblem.png" width="150" alt="Mi Step green metallic footprint emblem">
+  <img src="docs/assets/onesteplite-emblem.png" width="150" alt="OneStepLite green metallic footprint emblem">
 </p>
 
-The reason I started Mi Step is simple: Xiaomi's floating windows never felt quite right to me, and I kept thinking about Smartisan's original One Step 3.0.
+The reason I started OneStepLite is simple: Xiaomi's floating windows never felt quite right to me, and I kept thinking about Smartisan's original One Step 3.0.
 
 My background is in arts, sports and humanities. Before AI, writing code felt far out of reach. When I tried DS and MiMo in May, I realized AI could give me abilities and a kind of efficiency I had never had before. Later, with GPT as my teacher, I learned faster. I kept talking with it, learning and gradually putting my ideas into clearer words.
 
 I still cannot write code fluently. But I have been learning to work like a product assistant: describe what I need, arrange tasks, watch the results and explain what is wrong. Somewhere along the way, I ended up making three or four little “toys.”
 
-I only really decided to make Mi Step after trying the community projects **OneStep4** and **Van Step**. Thank you to their creators for sharing their work. Trying them also helped me understand what I wanted: the ease of using Smartisan's original One Step 3.0 as I remembered it.
+I only really decided to make OneStepLite after trying the community projects **OneStep4** and **Van Step**. Thank you to their creators for sharing their work. Trying them also helped me understand what I wanted: the ease of using Smartisan's original One Step 3.0 as I remembered it.
 
-So I tried programming through natural language to make a version closer to my own ideas. To my surprise, it worked, and the first version felt worth continuing. I named it **Mi Step**. The name might sound like Xiaomi's step counter, but I meant it as “a step forward for Xiaomi,” following the idea behind One Step.
+So I tried programming through natural language to make a version closer to my own ideas. To my surprise, it worked, and the first version felt worth continuing. I named it **OneStepLite**. The name might sound like Xiaomi's step counter, but I meant it as “a step forward for Xiaomi,” following the idea behind One Step.
 
 As this “wish-making engineer,” I believe sharing knowledge helps ideas meet. Sharing what we have made, the mistakes we have made and what we have learned seems better than everyone taking the same wrong turns alone.
 
@@ -220,13 +220,13 @@ I also hope we can bring back some of the straightforward, friendly exchange I r
 
 ## Inspiration and thanks
 
-| Project | Connection to Mi Step |
+| Project | Connection to OneStepLite |
 | --- | --- |
 | [SmartisanTech / android](https://github.com/SmartisanTech/android) | Smartisan's official source entry; One Step's interaction model inspired this project |
 | [SangLuoCN / OneStep4](https://github.com/SangLuoCN/OneStep4) | A community project I tried that encouraged me to make my own |
 | [Van Step](https://github.com/Xposed-Modules-Repo/com.hyper.sidebar) | A community project I tried that encouraged me to make my own |
 
-Mi Step is a personal project, not an official Xiaomi, Smartisan or community project release. These acknowledgments recognize the experience and inspiration; they do not imply participation in development, endorsement or compatibility guarantees.
+OneStepLite is a personal project, not an official Xiaomi, Smartisan or community project release. These acknowledgments recognize the experience and inspiration; they do not imply participation in development, endorsement or compatibility guarantees.
 
 ## Documentation, feedback and source
 
@@ -241,7 +241,7 @@ Mi Step is a personal project, not an official Xiaomi, Smartisan or community pr
 | Noncommercial use and modified releases | [License guide](docs/许可说明.md) · [Full license](LICENSE) |
 | Reporting issues and contributing | [Contributing](CONTRIBUTING.md) |
 
-When reporting an issue, include the device, ROM version, Mi Step version, app or keyboard and exact steps. For landscape issues, distinguish landscape inside Mi Step from rotating the whole phone. Screenshots or recordings help; hide chats, account details and other personal information before sharing them.
+When reporting an issue, include the device, ROM version, OneStepLite version, app or keyboard and exact steps. For landscape issues, distinguish landscape inside OneStepLite from rotating the whole phone. Screenshots or recordings help; hide chats, account details and other personal information before sharing them.
 
 <details>
 <summary><strong>For anyone who wants to explore the source</strong></summary>
@@ -250,7 +250,7 @@ Workspace and system adaptation code lives in `module/src/main/java/`, grouped b
 
 The release includes an APK, product source ZIP, build information and SHA-256 checksums. The repository excludes signing keys, account credentials, device logs, personal screenshots or recordings, and vendor ROMs. The brand images were provided specifically for the project introduction.
 
-I want to keep sharing what I learn, and I do not want someone to put a new shell around everyone's work and sell it. Mi Step's original content uses the [Mi Step Noncommercial Share-Alike Source License 1.0](LICENSE): noncommercial use, study, modification and free sharing are allowed. Distributed derivatives must include the complete corresponding source, retain attribution and use the same license.
+I want to keep sharing what I learn, and I do not want someone to put a new shell around everyone's work and sell it. OneStepLite's original content uses the [OneStepLite Noncommercial Share-Alike Source License 1.0](LICENSE): noncommercial use, study, modification and free sharing are allowed. Distributed derivatives must include the complete corresponding source, retain attribution and use the same license.
 
 </details>
 
@@ -266,10 +266,10 @@ I want to keep sharing what I learn, and I do not want someone to put a new shel
 | Charge for downloads, paid features or subscriptions; monetize ads or paid bundles | Prohibited |
 | Distribute a modified version without its source | Prohibited |
 
-This is **source-available software** under a custom license, `LicenseRef-MiStep-NC-SA-1.0`. Because it restricts commercial use, it is **not an OSI-approved open source license** and is not GPL-3.0. GPL-3.0 permits commercial use and paid distribution. The full conditions are in [LICENSE](LICENSE); **the Chinese license text controls**, and this English README is a reading aid, not a separate license grant.
+This is **source-available software** under a custom license, `LicenseRef-OneStepLite-NC-SA-1.0`. Because it restricts commercial use, it is **not an OSI-approved open source license** and is not GPL-3.0. GPL-3.0 permits commercial use and paid distribution. The full conditions are in [LICENSE](LICENSE); **the Chinese license text controls**, and this English README is a reading aid, not a separate license grant.
 
 The license also covers the original portions of the official 1.0.0 artifacts. Third-party components retain their own licenses. Source disclosure does not include signing keys, credentials or personal device material.
 
 ---
 
-<p align="center"><strong>Mi Step · A step forward for Xiaomi</strong><br><sub>Put an idea into words, make it something you can use, then take the next step together.</sub></p>
+<p align="center"><strong>OneStepLite · A step forward for Xiaomi</strong><br><sub>Put an idea into words, make it something you can use, then take the next step together.</sub></p>

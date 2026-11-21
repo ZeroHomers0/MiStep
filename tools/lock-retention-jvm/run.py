@@ -7,7 +7,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 root = Path(__file__).resolve().parents[2]
 src=package_dir(root,sys.argv[2] if len(sys.argv)>2 else None)
-source = (src / 'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (src / 'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 
@@ -42,9 +42,9 @@ files = {
         public FileOutputStream startWrite()throws IOException{return new FileOutputStream(f);}
         public void finishWrite(FileOutputStream s)throws IOException{s.close();}
         public void failWrite(FileOutputStream s){} }''',
-    'com/jiusis/mistep/MiStepHost.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/WorkspaceHost.java': r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;
-public class MiStepHost {
+public class WorkspaceHost {
  static int checks;
  static void check(boolean ok,String m){checks++;if(!ok)throw new AssertionError(m);}
  static class View {static final int VISIBLE=0,GONE=8;int layouts;void requestLayout(){layouts++;}
@@ -61,39 +61,39 @@ public class MiStepHost {
   Object getLooper(){return Looper.MAIN;}
   void postDelayed(Runnable r,long delay){tasks.add(r);}void drain(){while(!tasks.isEmpty())tasks.remove(0).run();}}
  static class Looper {static final Object MAIN=new Object();static Object current=MAIN;static Object myLooper(){return current;}}
- static class MiStepEntryGuard {static boolean unlocked=true;static boolean canOpen(Context c){return unlocked;}}
- static class MiStepUnlockHandoff {boolean active(){return true;}void cancel(){}}
- MiStepUnlockHandoff unlockHandoff;
- static class MiStepRetainedWindow {static boolean accepted;static void request(Context c,Queue q,Object token,long generation,float s,float x,float y,java.util.function.Consumer<Boolean> ready){ready.accept(accepted);}}
+ static class EntryGuard {static boolean unlocked=true;static boolean canOpen(Context c){return unlocked;}}
+ static class UnlockHandoff {boolean active(){return true;}void cancel(){}}
+ UnlockHandoff unlockHandoff;
+ static class RetainedWindow {static boolean accepted;static void request(Context c,Queue q,Object token,long generation,float s,float x,float y,java.util.function.Consumer<Boolean> ready){ready.accept(accepted);}}
  boolean retainedWindowPrepared,retainedGeometryConfirmed;long retainedWindowGeneration;
- static boolean autoCommit=true;static MiStepHost waitingGeometry;int handoffs;
- static boolean handoffNativeUnlock(Runnable ready){MiStepHost h=sInstance;h.handoffs++;waitingGeometry=h;if(autoCommit){if(!h.workspaceOptions.keepOnLock){h.retainedForLock=false;h.suspendSession("unlock-exit");}else{h.retainedGeometryConfirmed=true;h.leaveKeyguardPrivacy();}ready.run();}return true;}
- static class MiStepLayout {float mainScale=.75f,mainOffsetX,mainOffsetY=620;}
- MiStepLayout layout=new MiStepLayout();
- static class MiStepClipboard {static MiStepClipboard get(Context c){return new MiStepClipboard();}void close(){}}
- static class MiStepSwapTrace {void close(){}}
+ static boolean autoCommit=true;static WorkspaceHost waitingGeometry;int handoffs;
+ static boolean handoffNativeUnlock(Runnable ready){WorkspaceHost h=sInstance;h.handoffs++;waitingGeometry=h;if(autoCommit){if(!h.workspaceOptions.keepOnLock){h.retainedForLock=false;h.suspendSession("unlock-exit");}else{h.retainedGeometryConfirmed=true;h.leaveKeyguardPrivacy();}ready.run();}return true;}
+ static class WorkspaceLayout {float mainScale=.75f,mainOffsetX,mainOffsetY=620;}
+ WorkspaceLayout layout=new WorkspaceLayout();
+ static class Clipboard {static Clipboard get(Context c){return new Clipboard();}void close(){}}
+ static class SwapTrace {void close(){}}
  static class NativeLandscapePolicy {static boolean shouldRestoreFromHome(boolean a,boolean b,String c){return false;}}
  static class SystemClock {static long uptimeMillis(){return 100;}}
- static class MiStepNativeRecents {static boolean show(){return false;}}
+ static class NativeRecents {static boolean show(){return false;}}
  static class DeviceProfile {static boolean isTablet(Context c){return false;}}
  static class StatusBar {void restore(){}}
  static class Slot {int taskId;Object token=new Object(),controller=new Object();boolean occupied=true,parked,promoting;}
  static class LiveTask {LiveTask(Slot s){}}
  static final int ACTIVE=0,SUSPENDING=1,SUSPENDED=2,RESUMING=3,SLOT_COUNT=6;
- static MiStepHost sInstance;
+ static WorkspaceHost sInstance;
  Queue main=new Queue();View root=new View(),topBar=new View();
  WindowManager wm=new WindowManager();WindowManager.LayoutParams lp=new WindowManager.LayoutParams();
  WorkspaceOptions workspaceOptions=WorkspaceOptions.DEFAULT;Context ctx;
- Slot[]slots=new Slot[SLOT_COUNT];StatusBar statusBar=new StatusBar();MiStepSwapTrace swapTrace;
+ Slot[]slots=new Slot[SLOT_COUNT];StatusBar statusBar=new StatusBar();SwapTrace swapTrace;
  boolean lockExitPending;boolean screenOn=true,keyguardLocked,retainedForLock,keyguardWindowHidden,keyguardWindowNotTouchable,retainedOnExit;
  boolean restoredSurfaces,traceNextSwap,workspaceEntering,zoomed=true,suspendRequested,landscapeSuspended,mirror=true;
  float keyguardWindowAlpha,workspaceAlpha=1f;int keyguardResumeIndex=-1,scene=ACTIVE,suspends,entries,repairs,reasserts,adoptions,zooms;
  long sceneEpoch=7,workspaceGeneration,zoomAnimUntil;String lastCommand;Runnable entryReady;
- final MiStepNavigationPolicy.EmptyMainGesture emptyMainGesture=new MiStepNavigationPolicy.EmptyMainGesture();
+ final NavigationPolicy.EmptyMainGesture emptyMainGesture=new NavigationPolicy.EmptyMainGesture();
  boolean emptyMainHomeFocused(){return false;} // Native Home focus has its separate production-method suite.
  android.animation.ValueAnimator workspaceAnimator;
- MiStepHost(java.io.File f){ctx=new Context(f);for(int i=0;i<SLOT_COUNT;i++){slots[i]=new Slot();slots[i].taskId=200+i;}sInstance=this;}
-  void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane; static void log(String s){}String describeTasks(){return "same live tasks";}
+ WorkspaceHost(java.io.File f){ctx=new Context(f);for(int i=0;i<SLOT_COUNT;i++){slots[i]=new Slot();slots[i].taskId=200+i;}sInstance=this;}
+  void cancelMainSideSwitch(){}void refreshVideoPane(){}static class VideoPane {void releaseForPrivacy(){}}VideoPane videoPane; static void log(String s){}String describeTasks(){return "same live tasks";}
  void closeSwapPreview(){}void closeCellMovePreview(){}void publishDesktopSideTasks(){}void hideIme(){}
  void suspendSession(String reason){suspends++;scene=SUSPENDED;}
  void resumeSession(){}void updateTopBarState(){}void reapplyScale(Slot s){repairs++;}
@@ -112,14 +112,14 @@ public class MiStepHost {
  void reassertSideTaskViews(String reason){reasserts++;}
  void adoptExisting(Slot slot,LiveTask saved,Runnable ready,java.util.function.Consumer<String> failed){adoptions++;slot.parked=false;ready.run();}
  __METHODS__
- static MiStepHost fresh(java.io.File f){MiStepEntryGuard.unlocked=true;return new MiStepHost(f);}
- static void off(MiStepHost h){onScreenState(false);h.main.drain();}
+ static WorkspaceHost fresh(java.io.File f){EntryGuard.unlocked=true;return new WorkspaceHost(f);}
+ static void off(WorkspaceHost h){onScreenState(false);h.main.drain();}
  public static void main(String[]args)throws Exception{
   java.io.File f=new java.io.File(args[0]);
-  MiStepHost h=fresh(f);off(h);
+  WorkspaceHost h=fresh(f);off(h);
   check(h.suspends==0&&h.retainedForLock&&h.keyguardWindowHidden,"exit-on-lock also suspends attached tasks instead of returning them during screen-off");
-  MiStepEntryGuard.unlocked=false;onUserPresent();h.main.drain();check(h.suspends==0,"exit choice waits for actual authentication");
-  MiStepEntryGuard.unlocked=true;onUserPresent();h.main.drain();check(h.suspends==1&&!h.retainedForLock&&h.entries==0,"exit choice closes on authenticated wake without reopening workspace");
+  EntryGuard.unlocked=false;onUserPresent();h.main.drain();check(h.suspends==0,"exit choice waits for actual authentication");
+  EntryGuard.unlocked=true;onUserPresent();h.main.drain();check(h.suspends==1&&!h.retainedForLock&&h.entries==0,"exit choice closes on authenticated wake without reopening workspace");
   h=fresh(f);h.scene=SUSPENDED;h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);
   check(!h.retainedForLock&&h.entries==0,"locking an exited workspace does not create a session");
   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);
@@ -137,9 +137,9 @@ public class MiStepHost {
   check("1 0 0".equals(h.lastCommand),"late zoom write cannot magnify lockscreen");
   onSystemNavigation("homekey");h.main.drain();check(h.suspends==0,"lockscreen navigation cannot discard retained tasks");
   onLandscapeMode(true);h.main.drain();check(h.suspends==0,"late native landscape event cannot discard retained tasks");
-  MiStepEntryGuard.unlocked=false;onScreenState(true);h.main.drain();onUserPresent();h.main.drain();
+  EntryGuard.unlocked=false;onScreenState(true);h.main.drain();onUserPresent();h.main.drain();
   check(h.retainedForLock&&h.entries==0&&h.lp.alpha==0,"screen-on and premature user-present keep native locked screen");
-  MiStepEntryGuard.unlocked=true;onUserPresent();h.main.drain();
+  EntryGuard.unlocked=true;onUserPresent();h.main.drain();
   check(!h.retainedForLock&&!h.keyguardLocked&&!h.keyguardWindowHidden,"actual unlock releases lock gate");
   check(h.lp.alpha==.8f&&h.lp.flags==64,"original window alpha and input flags restored");
   check(h.entries==0&&h.entryReady==null&&h.mirror&&h.slots[5].token==topToken&&h.adoptions==0,"unlock reuses bound tasks without animated entry or readoption");
@@ -166,17 +166,17 @@ public class MiStepHost {
   h.wm.fail=false;onUserPresent();h.main.drain();
   check(!h.retainedForLock&&!h.keyguardLocked&&h.zoomed&&h.entries==0,"later unlock retries steady restoration without animation");
   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);
-  MiStepEntryGuard.unlocked=false;onUserPresent();h.main.drain();
+  EntryGuard.unlocked=false;onUserPresent();h.main.drain();
   check(!h.screenOn&&h.retainedForLock&&h.keyguardLocked&&h.lp.alpha==0&&!h.zoomed,"late user-present cannot reveal a non-interactive or locked screen");
-  MiStepEntryGuard.unlocked=true;onUserPresent();h.main.drain();
+  EntryGuard.unlocked=true;onUserPresent();h.main.drain();
   check(h.screenOn&&!h.retainedForLock&&!h.keyguardLocked&&h.zoomed&&h.reasserts==1,"native unlock restores before delayed screen-on broadcast");
   check(h.entries==0&&h.lp.alpha==.8f&&h.slots[5].taskId==205,"early unlock keeps original task and steady window without animation");
   onScreenState(true);h.main.drain();onUserPresent();h.main.drain();
   check(h.reasserts==1&&h.entries==0,"delayed screen-on and duplicate unlock do not replay restoration");
   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);
-  MiStepEntryGuard.unlocked=false;onNativeWake();
+  EntryGuard.unlocked=false;onNativeWake();
   check(h.retainedForLock&&h.keyguardLocked&&!h.zoomed&&h.lp.alpha==0,"native wake cannot reveal locked display");
-  MiStepEntryGuard.unlocked=true;onNativeWake();
+  EntryGuard.unlocked=true;onNativeWake();
   check(!h.retainedForLock&&h.screenOn&&h.zoomed&&h.main.tasks.isEmpty(),"native main callback restores immediately before first frame");
   onNativeWake();onScreenState(true);h.main.drain();
   check(h.reasserts==1&&h.entries==0,"native wake plus screen broadcast restore once");
@@ -186,13 +186,13 @@ public class MiStepHost {
   Looper.current=Looper.MAIN;h.main.drain();
   check(!h.retainedForLock&&h.reasserts==1,"marshalled callback restores attached task once");
   h=fresh(f);onNativeWake();check(h.reasserts==0&&h.entries==0,"native callbacks cannot open an exited session");
-  h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);MiStepRetainedWindow.accepted=true;MiStepEntryGuard.unlocked=false;off(h);
+  h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);RetainedWindow.accepted=true;EntryGuard.unlocked=false;off(h);
   check(h.retainedWindowPrepared&&h.lp.alpha==0&&h.keyguardWindowHidden,"native retained-window acknowledgement cannot warm the Host at visible compositor alpha");
-  MiStepRetainedWindow.accepted=false;MiStepEntryGuard.unlocked=true;
+  RetainedWindow.accepted=false;EntryGuard.unlocked=true;
   h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);h.retainedForLock=true;h.retainedWindowGeneration=100;h.retainedGeometryConfirmed=false;autoCommit=false;
   onRetainedNativeReady(99);h.main.drain();check(h.handoffs==0,"stale native readiness cannot restore a newer retained lease");
-  MiStepEntryGuard.unlocked=false;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==0,"native readiness cannot bypass physical authentication");
-  MiStepEntryGuard.unlocked=true;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==1&&h.retainedForLock,"native readiness routes through correlated handoff rather than independent zoom");autoCommit=true;
+  EntryGuard.unlocked=false;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==0,"native readiness cannot bypass physical authentication");
+  EntryGuard.unlocked=true;onRetainedNativeReady(100);h.main.drain();check(h.handoffs==1&&h.retainedForLock,"native readiness routes through correlated handoff rather than independent zoom");autoCommit=true;
 
   for(boolean warm:new boolean[]{false,true}){
    h=fresh(f);h.workspaceOptions=WorkspaceOptions.DEFAULT.withKeepOnLock(true);off(h);h.retainedWindowPrepared=warm;autoCommit=false;
@@ -214,9 +214,9 @@ for name, body in files.items():
     path.write_text(body.replace('__METHODS__', methods), encoding='utf-8')
     paths.append(str(path))
 paths.append(str(src / 'WorkspaceOptions.java'))
-paths.append(str(src / 'MiStepNavigationPolicy.java'))
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(src / 'NavigationPolicy.java'))
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17',
                 '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.MiStepHost',
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.WorkspaceHost',
                 str(out)], check=True)

@@ -5,11 +5,11 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 source=package_dir(root)
-for name in ('MiStepTopRoll.java','MiStepTopTaskTransition.java'):
+for name in ('TopRoll.java','TopTaskTransition.java'):
     text=(source/name).read_text(encoding='utf-8-sig')
     for forbidden in ('import android.graphics.Bitmap','drawBitmap(', 'ImageView', 'SwapPreview.capture'):
         assert forbidden not in text, (name,forbidden)
-host=(source/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(source/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 for forbidden in ('SwapPreview.capture(', 'SwapPreview.captureRegion(', 'new SwapPreview(', 'new CellMovePreview('):
     assert forbidden not in host, forbidden
 files={
@@ -35,14 +35,14 @@ public class ValueAnimator extends Animator {
  public void end(){pulse(1);running=false;for(var l:listeners)l.onAnimationEnd(this);}
  public void cancel(){running=false;for(var l:listeners)l.onAnimationEnd(this);}
 }''',
-'com/jiusis/mistep/LiveRollRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/LiveRollRegression.java':'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.animation.ValueAnimator;
 public class LiveRollRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  static boolean near(float a,float b){return Math.abs(a-b)<.001f;}
  public static void main(String[]args){
   List<TopRollMotion.Frame> frames=new ArrayList<>();List<Boolean> settled=new ArrayList<>();
-  MiStepTopRoll roll=new MiStepTopRoll(new android.content.Context(),settled::add,frames::add);
+  TopRoll roll=new TopRoll(new android.content.Context(),settled::add,frames::add);
   roll.reset(false);check(!roll.rolling()&&!roll.showingTask(),"starts on controls");
   roll.beginGesture();roll.moveGesture(-300,10);var f=frames.get(frames.size()-1);
   check(roll.rolling()&&f.taskScale>.5f&&f.frontScale>.5f,"both original faces move during a real drag");
@@ -67,10 +67,10 @@ public class LiveRollRegression {
   System.out.println("Actual live roll clock checks="+checks+" passed; no screenshot animation callsites");
  }
 }'''}
-for name in ('TopRollMotion.java','MiStepTopRoll.java'):
-    files['com/jiusis/mistep/'+name]=(source/name).read_text(encoding='utf-8-sig')
+for name in ('TopRollMotion.java','TopRoll.java'):
+    files['io/github/zerohomers0/onesteplite/'+name]=(source/name).read_text(encoding='utf-8-sig')
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/p) for p in files]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.LiveRollRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.LiveRollRegression'],check=True)

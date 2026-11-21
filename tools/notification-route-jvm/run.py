@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 source=package_dir(root)
-host=(source/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(source/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def method(sig):
     a=host.index(sig);b=host.index('{',a)+1;d=1
     while d:d+=(host[b]=='{')-(host[b]=='}');b+=1
@@ -25,10 +25,10 @@ files={
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;import java.lang.reflect.*;public class XposedHelpers{public static Class<?> findClass(String s,ClassLoader l)throws Exception{return Class.forName(s);}public static Object getObjectField(Object o,String s){try{Field f=o.getClass().getDeclaredField(s);f.setAccessible(true);return f.get(o);}catch(Exception e){throw new RuntimeException(e);}}public static int getIntField(Object o,String s){return(Integer)getObjectField(o,s);}public static Object callMethod(Object o,String s,Object...a){try{for(Method m:o.getClass().getMethods())if(m.getName().equals(s)&&m.getParameterCount()==a.length){m.setAccessible(true);return m.invoke(o,a);}throw new Exception(s);}catch(Exception e){throw new RuntimeException(e);}}}''',
 'com/android/systemui/statusbar/phone/StatusBarNotificationActivityStarter.java':'''package com.android.systemui.statusbar.phone;public class StatusBarNotificationActivityStarter{public int count;public Object[] received;public void startNotificationIntentPublic(android.app.PendingIntent p,android.content.Intent f,Object entry,Object row,boolean a,boolean b,boolean c){count++;received=new Object[]{p,f,entry,row,a,b,c};}}''',
 }
-files['com/jiusis/mistep/MiStepNotificationLaunch.java']=(source/'MiStepNotificationLaunch.java').read_text(encoding='utf-8')
-files['com/jiusis/mistep/MiStepHost.java']='''package com.jiusis.mistep;import android.os.Looper;import de.robv.android.xposed.XposedHelpers;import java.util.*;
-class MiStepHost{
- static MiStepHost sInstance;static final int ACTIVE=1,SLOT_MAIN=0,CELL_SLOT_COUNT=4;int scene=ACTIVE;boolean screenOn=true,keyguardLocked,transferBusy,canStart=true;Promotion promotion;Slot[] slots={new Slot(0),new Slot(1),new Slot(2)};QueueMain main=new QueueMain();
+files['io/github/zerohomers0/onesteplite/NotificationLaunch.java']=(source/'NotificationLaunch.java').read_text(encoding='utf-8')
+files['io/github/zerohomers0/onesteplite/WorkspaceHost.java']='''package io.github.zerohomers0.onesteplite;import android.os.Looper;import de.robv.android.xposed.XposedHelpers;import java.util.*;
+class WorkspaceHost{
+ static WorkspaceHost sInstance;static final int ACTIVE=1,SLOT_MAIN=0,CELL_SLOT_COUNT=4;int scene=ACTIVE;boolean screenOn=true,keyguardLocked,transferBusy,canStart=true;Promotion promotion;Slot[] slots={new Slot(0),new Slot(1),new Slot(2)};QueueMain main=new QueueMain();
  static class QueueMain{ArrayList<Runnable> q=new ArrayList<>();Looper getLooper(){return Looper.MAIN;}void post(Runnable r){q.add(r);}void drain(){for(Runnable r:new ArrayList<>(q))r.run();q.clear();}}
  static class Info{int taskId=42,userId=0;}static class Controller{Info mTaskInfo=new Info();}
  static class Slot{int index,windowMode=6,taskId=42;boolean occupied=true,parked,frozen,carrier;String pkg="settings";Object taskToken=new Object();Controller controller=new Controller();Slot(int i){index=i;if(i!=1)occupied=false;}}
@@ -38,13 +38,13 @@ class MiStepHost{
 '''+method('static boolean promoteForNotification(')+'\n'+method('private void resumeNotificationLaunch(')+'''
  void finish(){resumeNotificationLaunch(promotion);resumeNotificationLaunch(promotion);main.drain();}
 }'''
-files['com/jiusis/mistep/NotificationRouteTest.java']='''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/NotificationRouteTest.java']='''package io.github.zerohomers0.onesteplite;
 import android.app.*;import android.content.*;import android.content.pm.*;import android.os.*;import de.robv.android.xposed.*;import com.android.systemui.statusbar.phone.*;
 public class NotificationRouteTest{
- static int checks;static Context ctx;static MiStepHost h;static StatusBarNotificationActivityStarter starter;static PendingIntent pending;static Intent fill;static Object entry,row;static XC_MethodHook.MethodHookParam args;
+ static int checks;static Context ctx;static WorkspaceHost h;static StatusBarNotificationActivityStarter starter;static PendingIntent pending;static Intent fill;static Object entry,row;static XC_MethodHook.MethodHookParam args;
  static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
- static void reset(){ctx=new Context();h=new MiStepHost();MiStepHost.sInstance=h;Looper.onMain=true;starter=new StatusBarNotificationActivityStarter();pending=new PendingIntent();pending.intent=new Intent();pending.intent.component=new ComponentName("settings");fill=new Intent();fill.extras=new Object();entry=new Object();row=new Object();args=new XC_MethodHook.MethodHookParam();args.thisObject=starter;args.args=new Object[]{pending,fill,entry,row,true,false,true};}
- static void click()throws Throwable{MiStepNotificationLaunch.install(NotificationRouteTest.class.getClassLoader(),()->ctx);XposedBridge.hook.run(args);if(!args.stopped)starter.startNotificationIntentPublic(pending,fill,entry,row,true,false,true);}
+ static void reset(){ctx=new Context();h=new WorkspaceHost();WorkspaceHost.sInstance=h;Looper.onMain=true;starter=new StatusBarNotificationActivityStarter();pending=new PendingIntent();pending.intent=new Intent();pending.intent.component=new ComponentName("settings");fill=new Intent();fill.extras=new Object();entry=new Object();row=new Object();args=new XC_MethodHook.MethodHookParam();args.thisObject=starter;args.args=new Object[]{pending,fill,entry,row,true,false,true};}
+ static void click()throws Throwable{NotificationLaunch.install(NotificationRouteTest.class.getClassLoader(),()->ctx);XposedBridge.hook.run(args);if(!args.stopped)starter.startNotificationIntentPublic(pending,fill,entry,row,true,false,true);}
  public static void main(String[]a)throws Throwable{
   reset();click();check(args.stopped&&starter.count==0&&h.promotion!=null,"defer until same-task native finish");Object originalPending=pending;args.args[0]=new PendingIntent();h.finish();check(starter.count==1,"one dispatch despite repeated finish");check(starter.received[0]==originalPending&&starter.received[1]==fill&&starter.received[2]==entry&&starter.received[3]==row,"original identity and deep-link extras retained");check(starter.received[4].equals(true)&&starter.received[5].equals(false)&&starter.received[6].equals(true),"OEM flags retained");
   reset();h.canStart=false;click();check(!args.stopped&&starter.count==1,"refused preparation preserves native click");
@@ -69,9 +69,9 @@ public class NotificationRouteTest{
 }'''
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-d',str(out),*[str(out/x) for x in files]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.NotificationRouteTest'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.NotificationRouteTest'],check=True)
 restore=method('private void restoreLiveSwapVisual(');fail=method('private void failPromotion(')
 assert restore.index('setLiveSwapInputBlocked(false)')<restore.index('resumeNotificationLaunch(ticket)')
 assert fail.index('requestLiveSwapCancellation')<fail.index('resumeNotificationLaunch(ticket)')

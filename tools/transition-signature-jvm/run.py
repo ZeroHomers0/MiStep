@@ -8,14 +8,14 @@ sources=[]
 def put(name,text):
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');sources.append(str(p))
 for name in ['TransitionMagnificationCompat','TransitionMagnificationReplay']:
-    p=out/f'com/jiusis/mistep/{name}.java';p.parent.mkdir(parents=True,exist_ok=True)
+    p=out/f'io/github/zerohomers0/onesteplite/{name}.java';p.parent.mkdir(parents=True,exist_ok=True)
     shutil.copyfile(package_dir(root)/f'{name}.java',p);sources.append(str(p))
 put('de/robv/android/xposed/XposedHelpers.java','''package de.robv.android.xposed;
 public class XposedHelpers {
  public static Object getObjectField(Object o,String n){try{return o.getClass().getField(n).get(o);}catch(Exception e){throw new IllegalStateException(e);}}
  public static Object callMethod(Object o,String n,Object...a){try{return o.getClass().getMethod(n).invoke(o);}catch(Exception e){throw new IllegalStateException(e);}}
 }''')
-put('com/jiusis/mistep/TransitionSignatureRegression.java','''package com.jiusis.mistep;
+put('io/github/zerohomers0/onesteplite/TransitionSignatureRegression.java','''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class TransitionSignatureRegression {
  static int checks,applied;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
@@ -50,6 +50,6 @@ public class TransitionSignatureRegression {
   System.out.println("actual WM transition signature checks="+checks+" passed");
  }
 }''')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*sources],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TransitionSignatureRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TransitionSignatureRegression'],check=True)

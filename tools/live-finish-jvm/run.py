@@ -10,7 +10,7 @@ root = Path(__file__).resolve().parents[2]
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/live-finish-jvm'
 out.mkdir(parents=True, exist_ok=True)
 src=package_dir(root)
-source = (src / 'MiStepLiveSwap64.java').read_text(encoding='utf8')
+source = (src / 'LiveSwap64.java').read_text(encoding='utf8')
 start = source.index('        @Override public void finish(Object tx, boolean failed)')
 end = source.index('        @Override public Object finishWindowTransaction()', start)
 method = source[start:end].replace('@Override ', '')
@@ -20,7 +20,7 @@ files = next(ast.literal_eval(n.value) for n in fixture.body
 helper = out / 'de/robv/android/xposed/XposedHelpers.java'
 helper.parent.mkdir(parents=True, exist_ok=True)
 helper.write_text(files['de/robv/android/xposed/XposedHelpers.java'], encoding='utf8')
-wrapper = r'''package com.jiusis.mistep;
+wrapper = r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 import de.robv.android.xposed.XposedHelpers;
 public class LiveFinishRegression {
@@ -63,10 +63,10 @@ public class LiveFinishRegression {
   System.out.println("actual Shell finish ordering checks="+checks+" passed");
  }
 }'''.replace('METHOD', method)
-target = out / 'com/jiusis/mistep/LiveFinishRegression.java'
+target = out / 'io/github/zerohomers0/onesteplite/LiveFinishRegression.java'
 target.parent.mkdir(parents=True, exist_ok=True)
 target.write_text(wrapper, encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
                 str(src / 'LiveSwapZoom.java'), str(helper), str(target)], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.LiveFinishRegression'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.LiveFinishRegression'], check=True)

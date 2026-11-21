@@ -7,14 +7,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/live-collect-jvm'
-JDK = Path(os.environ["MISTEP_JAVA_BIN"])
+JDK = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([sys.executable, '-X', 'utf8', str(ROOT / 'tools/live-swap-jvm/run.py'), str(OUT)], check=True)
-source = OUT / 'com/jiusis/mistep/LiveCollectRegression.java'
-source.write_text(r'''package com.jiusis.mistep;
+source = OUT / 'io/github/zerohomers0/onesteplite/LiveCollectRegression.java'
+source.write_text(r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.Rect;
 import java.util.*;
 import com.android.wm.shell.ShellTaskOrganizer.TaskListener;
-import com.jiusis.mistep.LivePairRegression.*;
+import io.github.zerohomers0.onesteplite.LivePairRegression.*;
 public class LiveCollectRegression {
  static int checks;
  public static class Os2Idle {
@@ -24,9 +24,9 @@ public class LiveCollectRegression {
  }
  static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
  static class Case {
-  Fixture f=new Fixture(); Surface parent=new Surface(1); MiStepLiveCollectTask task;
+  Fixture f=new Fixture(); Surface parent=new Surface(1); LiveCollectTask task;
   Case(){this(0);}Case(int user){f.a.userId=user;f.o.mTaskListeners.map.remove(12);f.c.mTaskToken=null;f.c.mTaskInfo=null;f.c.mTaskLeash=null;
-   task=new MiStepLiveCollectTask(f.o,f.views,f.c,11,"A","HOME",user,new Rect(0,0,1200,2608),parent,s->{});}
+   task=new LiveCollectTask(f.o,f.views,f.c,11,"A","HOME",user,new Rect(0,0,1200,2608),parent,s->{});}
   void arm()throws Exception{task.arm(LiveCollectRegression.class.getClassLoader());}
   Surface canonical(){return ((Appeared)f.o.mTasks.get(11)).leash;}
   LiveHomeRegression.Transition transition(){LiveHomeRegression.Transition t=new LiveHomeRegression.Transition();
@@ -80,29 +80,29 @@ public class LiveCollectRegression {
   try{wrong.task.resolve(bad);throw new AssertionError("noncanonical surface admitted");}catch(IllegalStateException expected){checks++;}
   Case dead=new Case();dead.f.c.mTaskNotFound=true;dead.f.o.mTaskListeners.put(99,dead.f.c);
   check(!dead.task.preflight(),"deleted exact registration reproduces rejected reuse");
-  MiStepIdleTaskView.reset(dead.f.c,t->{});
+  IdleTaskView.reset(dead.f.c,t->{});
   check(dead.f.o.mTaskListeners.get(99)==null&&!dead.f.c.mTaskNotFound&&dead.f.c.resets==1,"dead exact owner/notFound not retired together");
   check(dead.task.preflight(),"retired empty controller cannot accept a new live task");
   check(dead.f.o.mTaskListeners.get(-2)==dead.f.o.fullscreen&&dead.f.o.mTasks.get(11)!=null,"original organizer or live main damaged");
-  Case multi=new Case();multi.f.o.mTaskListeners.put(98,multi.f.c);multi.f.o.mTaskListeners.put(99,multi.f.c);MiStepIdleTaskView.reset(multi.f.c,t->{});
+  Case multi=new Case();multi.f.o.mTaskListeners.put(98,multi.f.c);multi.f.o.mTaskListeners.put(99,multi.f.c);IdleTaskView.reset(multi.f.c,t->{});
   check(multi.f.o.mTaskListeners.get(98)==null&&multi.f.o.mTaskListeners.get(99)==null,"multiple dead identities not retired");
   for(int key:new int[]{-6,11}){Case live=new Case();live.f.o.mTaskListeners.put(99,live.f.c);live.f.o.mTaskListeners.put(key,live.f.c);
-   try{MiStepIdleTaskView.reset(live.f.c,t->{});throw new AssertionError("live or global listener retired");}catch(IllegalStateException expected){checks++;}
+   try{IdleTaskView.reset(live.f.c,t->{});throw new AssertionError("live or global listener retired");}catch(IllegalStateException expected){checks++;}
    check(live.f.o.mTaskListeners.get(99)==live.f.c&&live.f.o.mTaskListeners.get(key)==live.f.c&&live.f.c.resets==0,"validation failure partially mutated organizer");}
-  Case busy=new Case();busy.f.c.mPendingInfo=new Object();busy.f.o.mTaskListeners.put(99,busy.f.c);MiStepIdleTaskView.reset(busy.f.c,t->{});
-  check(busy.f.c.resets==0&&busy.f.o.mTaskListeners.get(99)==busy.f.c,"pending TaskView reset");busy.f.c.mPendingInfo=null;busy.f.c.mTaskToken="B";MiStepIdleTaskView.reset(busy.f.c,t->{});
+  Case busy=new Case();busy.f.c.mPendingInfo=new Object();busy.f.o.mTaskListeners.put(99,busy.f.c);IdleTaskView.reset(busy.f.c,t->{});
+  check(busy.f.c.resets==0&&busy.f.o.mTaskListeners.get(99)==busy.f.c,"pending TaskView reset");busy.f.c.mPendingInfo=null;busy.f.c.mTaskToken="B";IdleTaskView.reset(busy.f.c,t->{});
   check(busy.f.c.resets==0,"occupied TaskView reset");
   Case legacy=new Case();Os2Idle os2=new Os2Idle(legacy.f.o);legacy.f.o.mTaskListeners.put(99,os2);
-  os2.mPendingInfo=new Object();MiStepIdleTaskView.reset(os2,t->{});
+  os2.mPendingInfo=new Object();IdleTaskView.reset(os2,t->{});
   check(os2.resets==0&&legacy.f.o.mTaskListeners.get(99)==os2,"OS2 pending controller reset");
-  os2.mPendingInfo=null;os2.mTaskToken="B";MiStepIdleTaskView.reset(os2,t->{});
+  os2.mPendingInfo=null;os2.mTaskToken="B";IdleTaskView.reset(os2,t->{});
   check(os2.resets==0,"OS2 occupied controller reset");os2.mTaskToken=null;
-  MiStepIdleTaskView.reset(os2,t->{});
+  IdleTaskView.reset(os2,t->{});
   check(os2.resets==1&&!os2.mTaskNotFound&&legacy.f.o.mTaskListeners.get(99)==null,"OS2 idle field path did not retire exact dead owner");
   check(legacy.f.o.mTaskListeners.get(-2)==legacy.f.o.fullscreen&&legacy.f.o.mTasks.get(11)!=null,"OS2 reset changed global organizer or main");
   System.out.println("actual live collect ownership checks="+checks+" passed");
  }
 }''', encoding='utf8')
 subprocess.run([str(JDK/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-cp', str(OUT), '-d', str(OUT),
-                str(package_dir(ROOT)/'ShellCompat.java'),str(package_dir(ROOT)/'MiStepLiveCollectTask.java'), str(package_dir(ROOT)/'MiStepIdleTaskView.java'), str(source)], check=True)
-subprocess.run([str(JDK/'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.LiveCollectRegression'], check=True)
+                str(package_dir(ROOT)/'ShellCompat.java'),str(package_dir(ROOT)/'LiveCollectTask.java'), str(package_dir(ROOT)/'IdleTaskView.java'), str(source)], check=True)
+subprocess.run([str(JDK/'java.exe'), '-cp', str(OUT), 'io.github.zerohomers0.onesteplite.LiveCollectRegression'], check=True)

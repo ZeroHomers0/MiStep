@@ -41,7 +41,7 @@ public class SyncTransactionQueue {
  public void queue(Object w){order.add("queue");if(failQueue)throw new IllegalStateException("queue failed");wct=w;}
  public void runInSync(TransactionRunnable c){order.add("runInSync");callback=c;}
 }''',
-    'com/jiusis/mistep/SyncPreparationRegression.java': '''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/SyncPreparationRegression.java': '''package io.github.zerohomers0.onesteplite;
 import android.view.SurfaceControl;import com.android.wm.shell.common.SyncTransactionQueue;
 public class SyncPreparationRegression {
  public static class Controller {public Object mTaskOrganizer;public SyncTransactionQueue mSyncQueue=new SyncTransactionQueue();}
@@ -61,13 +61,13 @@ public class SyncPreparationRegression {
    new ProviderHook.Param(new Object[]{organizer,new Ui(),queue,new Object()},new Object(),false));
  }
  static boolean rejects(Object controller)throws Exception {
-  try{MiStepSyncPreparation.submit(controller,new Object(),new Ui(),()->{},e->{});return false;}
+  try{SyncPreparation.submit(controller,new Object(),new Ui(),()->{},e->{});return false;}
   catch(IllegalStateException|NoSuchFieldError expected){return true;}
  }
  public static void main(String[]args)throws Exception {
   Object organizer=new com.android.wm.shell.ShellTaskOrganizer();SyncTransactionQueue os4Queue=new SyncTransactionQueue();
   capture(organizer,os4Queue);Ui os4Ui=new Ui();int[] os4Ready={0},os4Failed={0};
-  Object os4Wct=new Object();MiStepSyncPreparation.submit(new Os4Controller(organizer),os4Wct,os4Ui,()->os4Ready[0]++,e->os4Failed[0]++);
+  Object os4Wct=new Object();SyncPreparation.submit(new Os4Controller(organizer),os4Wct,os4Ui,()->os4Ready[0]++,e->os4Failed[0]++);
   check(os4Queue.wct==os4Wct,"OS4 controller without mSyncQueue uses the original provider queue");
   check(os4Queue.order.equals(java.util.List.of("queue","runInSync")),"OS4 callback follows the original WCT in the borrowed queue");
   check(os4Ready[0]==0&&os4Failed[0]==0,"OS4 submission is not readiness");
@@ -79,7 +79,7 @@ public class SyncPreparationRegression {
   EqualOrganizer equalA=new EqualOrganizer(),equalB=new EqualOrganizer();capture(equalA,new SyncTransactionQueue());
   check(equalA.equals(equalB)&&rejects(new Os4Controller(equalB)),"organizer identity is required even if equals claims a match");
   check(rejects(new Object())&&rejects(new Os4Controller(null)),"missing organizer capability and null organizer fail closed");
-  check(!MiStepSyncPreparation.bindProvider(new Object(),new SyncTransactionQueue())&&!MiStepSyncPreparation.bindProvider(new com.android.wm.shell.ShellTaskOrganizer(),new Object()),"unrecognized provider argument types are rejected");
+  check(!SyncPreparation.bindProvider(new Object(),new SyncTransactionQueue())&&!SyncPreparation.bindProvider(new com.android.wm.shell.ShellTaskOrganizer(),new Object()),"unrecognized provider argument types are rejected");
   check(rejects(new InvalidController(organizer,null))&&rejects(new InvalidController(organizer,new Object())),"present but unusable controller queue never falls through to a provider queue");
   Object notBound=new com.android.wm.shell.ShellTaskOrganizer();SyncTransactionQueue untouched=new SyncTransactionQueue();
   ProviderHook.capture(Providers.class.getMethod("wrongShape",Object.class,java.util.concurrent.Executor.class,Object.class,Object.class),
@@ -96,10 +96,10 @@ public class SyncPreparationRegression {
    check(rejects(new Os4Controller(busyOrganizer))&&queue.wct==null&&queue.callback==null,"busy OS4 provider queue rejects before submission "+busy);
   }
   Controller preferred=new Controller();preferred.mTaskOrganizer=organizer;Object preferredWct=new Object();
-  MiStepSyncPreparation.submit(preferred,preferredWct,new Ui(),()->{},e->{});
+  SyncPreparation.submit(preferred,preferredWct,new Ui(),()->{},e->{});
   check(preferred.mSyncQueue.wct==preferredWct&&os4Queue.wct==os4Wct,"OS2 controller queue takes priority over a matching provider binding");
   Controller c=new Controller();Ui ui=new Ui();Object wct=new Object();int[] ready={0},failed={0};
-  MiStepSyncPreparation.submit(c,wct,ui,()->ready[0]++,e->failed[0]++);
+  SyncPreparation.submit(c,wct,ui,()->ready[0]++,e->failed[0]++);
   check(c.mSyncQueue.wct==wct,"existing queue receives the original WCT instance");
   check(c.mSyncQueue.order.equals(java.util.List.of("queue","runInSync")),"sync callback is enrolled after its original WCT");
   check(ready[0]==0&&failed[0]==0,"submission is not readiness");
@@ -110,24 +110,24 @@ public class SyncPreparationRegression {
   ui.drain();check(ready[0]==1&&failed[0]==0,"first committed callback enables the transition");
   tx.callback.run();ui.drain();check(ready[0]==1,"duplicate commit cannot start twice");
   c=new Controller();Ui ui2=new Ui();final int[] done={0},errors={0};
-  MiStepSyncPreparation.submit(c,new Object(),ui2,()->done[0]++,e->errors[0]++);
+  SyncPreparation.submit(c,new Object(),ui2,()->done[0]++,e->errors[0]++);
   tx=new SurfaceControl.Transaction();tx.fail=true;c.mSyncQueue.callback.runWithTransaction(tx);ui2.drain();
   check(done[0]==0&&errors[0]==1,"commit-listener failure rejects readiness on UI");
   tx=new SurfaceControl.Transaction();c.mSyncQueue.callback.runWithTransaction(tx);tx.callback.run();ui2.drain();
   check(done[0]==0&&errors[0]==1,"late commit after failure does not enable shrinking");
   c=new Controller();c.mSyncQueue.failQueue=true;boolean rejected=false;
-  try{MiStepSyncPreparation.submit(c,new Object(),ui,()->{},e->{});}catch(RuntimeException expected){rejected=true;}
+  try{SyncPreparation.submit(c,new Object(),ui,()->{},e->{});}catch(RuntimeException expected){rejected=true;}
   check(rejected&&c.mSyncQueue.callback==null,"rejected WCT does not register a fabricated readiness callback");
   for(int busy=0;busy<2;busy++){
    c=new Controller();if(busy==0)c.mSyncQueue.mInFlight=new Object();else c.mSyncQueue.mQueue.add(new Object());
-   rejected=false;try{MiStepSyncPreparation.submit(c,new Object(),ui,()->{},e->{});}catch(IllegalStateException expected){rejected=true;}
+   rejected=false;try{SyncPreparation.submit(c,new Object(),ui,()->{},e->{});}catch(IllegalStateException expected){rejected=true;}
    check(rejected&&c.mSyncQueue.wct==null&&c.mSyncQueue.callback==null,"busy native queue cannot attribute a previous sync to this WCT "+busy);
   }
   System.out.println("Production native background sync checks="+checks+" passed (native draw evidence still required)");
  }
 }''',
 }
-files['com/jiusis/mistep/ProviderHook.java'] = '''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/ProviderHook.java'] = '''package io.github.zerohomers0.onesteplite;
 import java.util.concurrent.Executor;
 class ProviderHook {
  static Executor sShellExecutor;static void log(String message){}
@@ -142,7 +142,7 @@ for name, text in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding='utf-8')
     paths.append(str(path))
-paths.append(str(package_dir(root)/'MiStepSyncPreparation.java'))
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(package_dir(root)/'SyncPreparation.java'))
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.SyncPreparationRegression'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.SyncPreparationRegression'], check=True)

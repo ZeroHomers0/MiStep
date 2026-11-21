@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

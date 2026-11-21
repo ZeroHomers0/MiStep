@@ -8,7 +8,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root = Path(__file__).resolve().parents[2]
 src=package_dir(root,sys.argv[2] if len(sys.argv)>2 else None)
 out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
-source = (src / 'MiStepHost.java').read_text(encoding='utf8')
+source = (src / 'WorkspaceHost.java').read_text(encoding='utf8')
 
 def extract(signature):
     start = source.index(signature); pos = source.index('{', start) + 1; depth = 1
@@ -57,18 +57,18 @@ public class SurfaceControl {
   public void apply(){applies++;pending.forEach(Runnable::run);pending.clear();}public void close(){closes++;}
  }
 }'''
-body = r'''package com.jiusis.mistep;
+body = r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.graphics.Rect;import android.view.SurfaceControl.Leash;import android.view.SurfaceControl.Transaction;
 public class SideParentRegression {
  static final int SLOT_MAIN=0,SLOT_TOP=4,ACTIVE=2,RESUMING=1;int scene=ACTIVE;long sceneEpoch=7;boolean screenOn=true,topFace,keyguardLocked,retainedForLock,keyguardWindowHidden;Object root=new Object();
- static class MiStepLayout {int cellX=813,cellWidth=267,topStrip=622;}
- final MiStepLayout layout=new MiStepLayout();
+ static class WorkspaceLayout {int cellX=813,cellWidth=267,topStrip=622;}
+ final WorkspaceLayout layout=new WorkspaceLayout();
  float workspaceAlpha=1f;final int screenH=2460;float workspaceCornerRadius=80;
  final Rect sideViewportCrop=new Rect();
  Object sideViewport,sideViewportHost,hostSurface=new Leash();
  Object liveHostRootSurface(){return hostSurface;}
  static class Controller {Object mTaskLeash,mSurfaceControl;int task;Object token;}
- static class MiStepLiveSwap64 {
+ static class LiveSwap64 {
   static final Map<Controller,Object> borrowed=new IdentityHashMap<>();
   static boolean isBorrowingPeer(Object controller,int taskId,Object token){
    return controller instanceof Controller c && c.task==taskId && token.equals(borrowed.get(c));
@@ -152,15 +152,15 @@ public class SideParentRegression {
   Slot peer1=h.slots[1],peer2=h.slots[2],ordinary=h.slots[3];
   Leash peerLeash1=(Leash)peer1.controller.mTaskLeash,peerLeash2=(Leash)peer2.controller.mTaskLeash;
   Object animatedParent=new Object();
-  MiStepLiveSwap64.borrowed.put(peer1.controller,peer1.taskToken);
-  MiStepLiveSwap64.borrowed.put(peer2.controller,peer2.taskToken);
+  LiveSwap64.borrowed.put(peer1.controller,peer1.taskToken);
+  LiveSwap64.borrowed.put(peer2.controller,peer2.taskToken);
   start.reparent(peerLeash1,animatedParent);start.setLayer(peerLeash1,102);start.setPosition(peerLeash1,412,622);
   start.reparent(peerLeash2,animatedParent);start.setLayer(peerLeash2,103);start.setPosition(peerLeash2,412,1237);
   h.appendWorkspaceSurfaces(start,h.workspaceFinishes.take(start));start.apply();
   check(peerLeash1.parent==animatedParent&&peerLeash1.layer==102&&peerLeash1.x==412,"first peer keeps its animation parent and screen transform");
   check(peerLeash2.parent==animatedParent&&peerLeash2.layer==103&&peerLeash2.y==1237,"second peer keeps its animation parent and screen transform");
   check(((Leash)ordinary.controller.mTaskLeash).parent==ordinary.controller.mSurfaceControl,"unleased side task keeps regular parent repair");
-  MiStepLiveSwap64.borrowed.clear();
+  LiveSwap64.borrowed.clear();
   h.appendRetainedSurfaces(finish,h.finishTransactions.take(finish));
   h.appendWorkspaceSurfaces(finish,h.workspaceFinishes.take(finish));finish.apply();
   check(peerLeash1.parent==peer1.controller.mSurfaceControl&&peerLeash2.parent==peer2.controller.mSurfaceControl
@@ -219,6 +219,6 @@ public class SideParentRegression {
 (out/'SurfaceControl.java').write_text(stub, encoding='utf8')
 (out/'WindowContainerTransaction.java').write_text(focus_stub, encoding='utf8')
 (out/'SideParentRegression.java').write_text(body, encoding='utf8')
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), str(out/'SurfaceControl.java'), str(out/'WindowContainerTransaction.java'), str(out/'SideParentRegression.java'), str(root/'tools/test-stubs/android/graphics/Rect.java'), str(src/'FinishTransactions.java')], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.SideParentRegression'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.SideParentRegression'], check=True)

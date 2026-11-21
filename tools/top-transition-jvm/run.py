@@ -3,7 +3,7 @@ from pathlib import Path
 import os, subprocess, sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
-src=package_dir(os.environ.get('MISTEP_TRANSITION_SOURCE_ROOT',str(root)))
+src=package_dir(os.environ.get('ONESTEPLITE_TRANSITION_SOURCE_ROOT',str(root)))
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 files={
 'android/content/Context.java':'''package android.content;public class Context {
@@ -84,15 +84,15 @@ public class ValueAnimator extends Animator {
   for(Method m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==args.length)
    try{return m.invoke(o,args);}catch(Throwable ignored){}
   return surface;}}''',
-'com/jiusis/mistep/HostWindowPolicy.java':'''package com.jiusis.mistep;class HostWindowPolicy {static void configure(Object p){}}''',
-'com/jiusis/mistep/HyperOsStyle.java':'''package com.jiusis.mistep;class HyperOsStyle {static int page(Object c){return 0xff101010;}}''',
-'com/jiusis/mistep/SwapPreview.java':'''package com.jiusis.mistep;import android.graphics.*;class SwapPreview {
+'io/github/zerohomers0/onesteplite/HostWindowPolicy.java':'''package io.github.zerohomers0.onesteplite;class HostWindowPolicy {static void configure(Object p){}}''',
+'io/github/zerohomers0/onesteplite/HyperOsStyle.java':'''package io.github.zerohomers0.onesteplite;class HyperOsStyle {static int page(Object c){return 0xff101010;}}''',
+'io/github/zerohomers0/onesteplite/SwapPreview.java':'''package io.github.zerohomers0.onesteplite;import android.graphics.*;class SwapPreview {
  static int captures;static Object exclusion;static boolean fail;
  static Bitmap captureRegion(ClassLoader c,int w,int h,Rect r)throws Throwable{return captureRegion(c,w,h,r,null);}
  static Bitmap captureRegion(ClassLoader c,int w,int h,Rect r,Object exclude)throws Throwable {
   captures++;exclusion=exclude;if(fail)throw new IllegalStateException("secure/unavailable");return new Bitmap();}}
 ''',
-'com/jiusis/mistep/TopTransitionRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/TopTransitionRegression.java':'''package io.github.zerohomers0.onesteplite;
 import android.animation.*;import android.graphics.*;import android.view.*;import android.widget.*;import java.util.concurrent.atomic.AtomicBoolean;
 public class TopTransitionRegression {
  static int checks,handoffs,finishes,restores;static AtomicBoolean valid;static FrameLayout host;static android.content.Context ctx;
@@ -101,9 +101,9 @@ public class TopTransitionRegression {
  static void reset(){ValueAnimator.all.clear();View.frames.clear();View.timers.clear();SwapPreview.fail=false;SwapPreview.captures=0;
   handoffs=finishes=restores=0;Canvas.colorDraws=Canvas.bitmapDraws=0;android.view.SurfaceControl.Transaction.last=null;
   valid=new AtomicBoolean(true);ctx=new android.content.Context();host=new FrameLayout(ctx);}
- static MiStepTopTaskTransition make(Runnable transfer)throws Throwable {
-  return new MiStepTopTaskTransition(host,1080,2460,valid::get,transfer,v->finishes++,s->{});}
- static void handoff(MiStepTopTaskTransition run){run.start();check(ValueAnimator.all.isEmpty(),"no transform before native handoff");
+ static TopTaskTransition make(Runnable transfer)throws Throwable {
+  return new TopTaskTransition(host,1080,2460,valid::get,transfer,v->finishes++,s->{});}
+ static void handoff(TopTaskTransition run){run.start();check(ValueAnimator.all.isEmpty(),"no transform before native handoff");
   ctx.windows.view.draw(new Canvas());View.drain();}
  public static void main(String[]args)throws Throwable {
   reset();var run=make(()->handoffs++);run.start();run.close();ctx.windows.view.draw(new Canvas());View.drain();
@@ -116,7 +116,7 @@ public class TopTransitionRegression {
   check(ctx.windows.removes==1&&finishes==1,"handoff exception frees input overlay");
   reset();run=make(()->handoffs++);run.start();host.attachment.onViewDetachedFromWindow(host);View.drain();
   check(finishes==1&&handoffs==0&&ctx.windows.removes==1,"Host detach retires live bridge");
-  reset();run=new MiStepTopTaskTransition(host,1080,2460,valid::get,
+  reset();run=new TopTaskTransition(host,1080,2460,valid::get,
    ()->handoffs++,v->finishes++,s->{});run.start();ctx.windows.view.draw(new Canvas());View.drain();
   check(handoffs==1&&SwapPreview.captures==0&&Canvas.colorDraws==0&&Canvas.bitmapDraws==0,
    "live center handoff draws neither wallpaper nor a bitmap snapshot");
@@ -133,16 +133,16 @@ public class TopTransitionRegression {
   liveExpand.end();tx=android.view.SurfaceControl.Transaction.last;
   check(tx.sx==1f&&tx.x==0f&&tx.y==0f&&ctx.windows.removes==1&&finishes==1,
    "completed live reveal restores identity transform and removes the touch blocker");
-  reset();run=new MiStepTopTaskTransition(host,1080,2460,valid::get,
+  reset();run=new TopTaskTransition(host,1080,2460,valid::get,
    ()->handoffs++,v->finishes++,s->{});run.start();ctx.windows.view.draw(new Canvas());View.drain();
   run.setLiveSurface(new Object());run.reveal();var cancelExpand=ValueAnimator.all.get(0);cancelExpand.step(.4f);run.close();
   check(android.view.SurfaceControl.Transaction.last.sx==1f&&ctx.windows.removes==1&&finishes==1,
    "cancelled live reveal restores the application surface before retiring the overlay");
-  reset();run=new MiStepTopTaskTransition(host,1080,2460,valid::get,
+  reset();run=new TopTaskTransition(host,1080,2460,valid::get,
    ()->handoffs++,v->finishes++,s->{});run.start();ctx.windows.view.draw(new Canvas());View.drain();run.reveal();
   check(ctx.windows.removes==1&&finishes==1&&ValueAnimator.all.isEmpty(),"missing live surface skips animation and releases the blocker");
   for(int reason=0;reason<4;reason++) {
-   reset();run=new MiStepTopTaskTransition(host,1080,2460,valid::get,
+   reset();run=new TopTaskTransition(host,1080,2460,valid::get,
     ()->handoffs++,v->finishes++,s->{});
    run.setNativeRestore(()->restores++);run.start();ctx.windows.view.draw(new Canvas());View.drain();
    if(reason==0) {run.setLiveSurface(new Object());run.reveal();ValueAnimator.all.get(0).end();}
@@ -209,22 +209,22 @@ public class TopTransitionRegression {
 paths=[]
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
-paths.append(str(src/'MiStepTopTaskTransition.java'))
+paths.append(str(src/'TopTaskTransition.java'))
 paths.append(str(src/'TopTaskReturnPolicy.java'))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopTransitionRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopTransitionRegression'],check=True)
 
-host=Path(os.environ.get('MISTEP_COLLECT_HOST_SOURCE',str(src/'MiStepHost.java'))).read_text(encoding='utf-8-sig')
+host=Path(os.environ.get('ONESTEPLITE_COLLECT_HOST_SOURCE',str(src/'WorkspaceHost.java'))).read_text(encoding='utf-8-sig')
 def member(signature):
     start=host.index(signature)
     end=host.index('{',start)+1;depth=1
     while depth:
         depth+=(host[end]=='{')-(host[end]=='}');end+=1
     return host[start:end]
-host_body='''package com.jiusis.mistep;
+host_body='''package io.github.zerohomers0.onesteplite;
 import android.view.*;import android.widget.*;import android.graphics.Rect;import java.util.function.*;import de.robv.android.xposed.XposedHelpers;
-public class MiStepHost {
+public class WorkspaceHost {
  static final int SLOT_TOP=4,ACTIVE=1;static int checks;int scene=ACTIVE,screenW=1080,screenH=2460;
  boolean screenOn=true,keyguardLocked,suspendRequested,topFace=true;long sceneEpoch=1;int claimed,finished;
  android.content.Context ctx=new android.content.Context();FrameLayout root=new FrameLayout(ctx);
@@ -233,7 +233,7 @@ public class MiStepHost {
  static class Layout {int topStrip=622;boolean tabletLandscape;}
  static class TopRollMotion {static class Frame {float frontScale=0,taskScale=1,frontTop,taskTop;}}
  void updateCellSurfaceVisibility(Slot upper){}void updateTopTaskGeometry(){}
- MiStepTopTaskTransition topTransition;TopTaskState topTaskState=new TopTaskState();int opacityWrites,homeRequests;boolean translucent,failOpacity,failHome;
+ TopTaskTransition topTransition;TopTaskState topTaskState=new TopTaskState();int opacityWrites,homeRequests;boolean translucent,failOpacity,failHome;
  java.util.List<Object> appliedOrder=java.util.List.of();
  static class Main {boolean post(Runnable r){r.run();return true;}}Main main=new Main();
  boolean executeOnShell(Runnable r){r.run();return true;}
@@ -245,7 +245,7 @@ public class MiStepHost {
  public static class Organizer {Object mLock=new Object();android.util.SparseArray<Entry> mTasks=new android.util.SparseArray<>();}
  public static class Controller {Object mTaskOrganizer;}
  Slot[] slots={new Slot(),new Slot(),new Slot(),new Slot(),new Slot()};TopCandidate selected=new TopCandidate();
- MiStepHost(){Controller c=new Controller();Organizer o=new Organizer();o.mTasks.put(42,new Entry());c.mTaskOrganizer=o;
+ WorkspaceHost(){Controller c=new Controller();Organizer o=new Organizer();o.mTasks.put(42,new Entry());c.mTaskOrganizer=o;
   slots[4].controller=c;slots[4].view=new View(ctx);}
  Entry entry(){return ((Organizer)((Controller)slots[4].controller).mTaskOrganizer).mTasks.get(42);}
  Object rootInfo(Task task){return entry().info;}
@@ -253,9 +253,9 @@ public class MiStepHost {
  boolean applyWct(String what,Object wct){opacityWrites++;if(failOpacity)return false;
   appliedOrder=new java.util.ArrayList<>(((android.window.WindowContainerTransaction)wct).order);
   translucent=((android.window.WindowContainerTransaction)wct).translucent;return true;}
- void commitPreparation(){if(MiStepSyncPreparation.wct==null)return;
-  if(applyWct("native-sync",MiStepSyncPreparation.wct))MiStepSyncPreparation.ready.run();
-  else MiStepSyncPreparation.failed.accept(new IllegalStateException("sync failed"));}
+ void commitPreparation(){if(SyncPreparation.wct==null)return;
+  if(applyWct("native-sync",SyncPreparation.wct))SyncPreparation.ready.run();
+  else SyncPreparation.failed.accept(new IllegalStateException("sync failed"));}
  TopCandidate currentTopCandidate(){return selected;}boolean topReady(){return true;}
  boolean ordinaryRoot(Object o,int mode){return o instanceof Info&&((Info)o).mode==mode;}
  boolean mainTaskVisible(Object o){return ((Info)o).visible;}
@@ -275,10 +275,10 @@ signature='    private boolean startTopTaskTransition(boolean intoTop, boolean l
 if signature in host:host_body+=member(signature)
 host_body+=member('    private void renderTopRollFrame(')
 host_body+='''public static void main(String[]args){
- ValueAnimatorReset();MiStepHost h=new MiStepHost();h.captureMainIntoTop();
+ ValueAnimatorReset();WorkspaceHost h=new WorkspaceHost();h.captureMainIntoTop();
  check(h.topTransition!=null&&h.claimed==0,"actual main capture starts the live bridge before claiming");
  check(h.opacityWrites==0,"source does not expose the background before its native sync");
- check(((android.window.WindowContainerTransaction)MiStepSyncPreparation.wct).order.equals(java.util.List.of("home","token"))&&h.homeRequests==1,
+ check(((android.window.WindowContainerTransaction)SyncPreparation.wct).order.equals(java.util.List.of("home","token"))&&h.homeRequests==1,
   "actual Home must be ordered directly behind the retained source in its opacity transaction before shrinking");
  h.ctx.windows.view.draw(new android.graphics.Canvas());View.drain();
  check(android.animation.ValueAnimator.all.isEmpty()&&h.claimed==0,"production entry still waits after overlay draw");
@@ -297,39 +297,39 @@ host_body+='''public static void main(String[]args){
  check(h.topTransition==null&&h.finished==1,"production completion releases its own transition");
  check(h.opacityWrites==1&&h.translucent,"new native TOP ownership keeps its own translucent policy");
  for(int mutation=0;mutation<6;mutation++){
-  ValueAnimatorReset();h=new MiStepHost();
+  ValueAnimatorReset();h=new WorkspaceHost();
   switch(mutation){case 0:h.entry().info.userId=999;break;case 1:h.entry().info.token="other";break;
    case 2:h.entry().info.taskId=43;break;case 3:h.entry().info.mode=6;break;case 4:h.entry().info.visible=false;break;
    case 5:h.slots[4].view=null;break;}
   h.captureMainIntoTop();check(h.topTransition==null&&android.animation.ValueAnimator.all.isEmpty(),"invalid source cannot acquire an animation surface "+mutation);
  }
- ValueAnimatorReset();h=new MiStepHost();h.captureMainIntoTop();h.commitPreparation();h.ctx.windows.view.draw(new android.graphics.Canvas());View.drain();
+ ValueAnimatorReset();h=new WorkspaceHost();h.captureMainIntoTop();h.commitPreparation();h.ctx.windows.view.draw(new android.graphics.Canvas());View.drain();
  android.animation.ValueAnimator.all.get(0).step(.4f);h.entry().leash=new Object();
  var tx=android.view.SurfaceControl.Transaction.last;android.animation.ValueAnimator.all.get(0).step(.6f);
  check(h.claimed==0&&h.topTransition==null&&android.view.SurfaceControl.Transaction.last==tx,
   "canonical replacement interrupts before handoff and never resets the replacement");
  check(!h.translucent&&h.opacityWrites==2,"cancelled fullscreen source regains its native opacity even after canonical replacement");
- ValueAnimatorReset();h=new MiStepHost();h.captureMainIntoTop();h.commitPreparation();h.topTransition.close();
+ ValueAnimatorReset();h=new WorkspaceHost();h.captureMainIntoTop();h.commitPreparation();h.topTransition.close();
  check(!h.translucent&&h.opacityWrites==2,"cancel before first draw restores temporary translucency");
  check(h.appliedOrder.isEmpty()&&h.homeRequests==1,"opacity restoration does not reorder Home or another task");
- ValueAnimatorReset();h=new MiStepHost();h.captureMainIntoTop();h.commitPreparation();View.timers.get(0).run();
+ ValueAnimatorReset();h=new WorkspaceHost();h.captureMainIntoTop();h.commitPreparation();View.timers.get(0).run();
  check(!h.translucent&&h.opacityWrites==2,"watchdog restores temporary source translucency");
- ValueAnimatorReset();h=new MiStepHost();h.failOpacity=true;h.captureMainIntoTop();h.commitPreparation();
+ ValueAnimatorReset();h=new WorkspaceHost();h.failOpacity=true;h.captureMainIntoTop();h.commitPreparation();
  check(h.topTransition==null&&android.animation.ValueAnimator.all.isEmpty(),"failed translucency preparation never starts source shrinking");
- ValueAnimatorReset();h=new MiStepHost();h.failHome=true;h.captureMainIntoTop();
+ ValueAnimatorReset();h=new WorkspaceHost();h.failHome=true;h.captureMainIntoTop();
  check(h.topTransition==null&&!h.translucent&&h.claimed==0&&android.animation.ValueAnimator.all.isEmpty(),
   "missing canonical Home rejects shrinking before exposing a different background app");
- ValueAnimatorReset();h=new MiStepHost();h.captureMainIntoTop();h.topTransition.close();h.commitPreparation();View.drain();
+ ValueAnimatorReset();h=new WorkspaceHost();h.captureMainIntoTop();h.topTransition.close();h.commitPreparation();View.drain();
  check(h.topTransition==null&&!h.translucent&&h.claimed==0&&android.animation.ValueAnimator.all.isEmpty(),
   "late native completion restores opacity after cancellation without reviving the bridge");
  System.out.println("Production Host collection entry checks="+checks+" passed");
  }
- static void ValueAnimatorReset(){android.animation.ValueAnimator.all.clear();View.frames.clear();View.timers.clear();MiStepSyncPreparation.wct=null;}
+ static void ValueAnimatorReset(){android.animation.ValueAnimator.all.clear();View.frames.clear();View.timers.clear();SyncPreparation.wct=null;}
 }'''
 extra={
- 'com/jiusis/mistep/MiStepHost.java':host_body,
- 'com/jiusis/mistep/MiStepSyncPreparation.java':'''package com.jiusis.mistep;
- class MiStepSyncPreparation {static Object wct;static Runnable ready;static java.util.function.Consumer<Throwable> failed;
+ 'io/github/zerohomers0/onesteplite/WorkspaceHost.java':host_body,
+ 'io/github/zerohomers0/onesteplite/SyncPreparation.java':'''package io.github.zerohomers0.onesteplite;
+ class SyncPreparation {static Object wct;static Runnable ready;static java.util.function.Consumer<Throwable> failed;
  static void submit(Object c,Object w,java.util.concurrent.Executor ui,Runnable r,java.util.function.Consumer<Throwable> f){
  wct=w;ready=()->ui.execute(r);failed=e->ui.execute(()->f.accept(e));}}''',
  'android/util/SparseArray.java':'''package android.util;public class SparseArray<T>{
@@ -346,4 +346,4 @@ for name,text in extra.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf8');extra_paths.append(str(p))
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),
                 *extra_paths,str(src/'TopTaskState.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.MiStepHost'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.WorkspaceHost'],check=True)

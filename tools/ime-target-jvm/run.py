@@ -13,10 +13,10 @@ public class XposedHelpers {
  public static Object getObjectField(Object o,String n){try{return o.getClass().getField(n).get(o);}catch(Exception e){throw new RuntimeException(e);}}
  public static Object callMethod(Object o,String n,Object...args){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==args.length)return m.invoke(o,args);throw new NoSuchMethodException(n);}catch(Exception e){throw new RuntimeException(e);}}
 }''',
-'com/jiusis/mistep/MiStepImeViewport.java': '''package com.jiusis.mistep;import java.util.function.Predicate;
-class MiStepImeViewport {static void refreshLayering(Object o,Predicate<Object> p){((ImeTargetRegression.Display)o).steps.add("layering");}}''',
-'com/jiusis/mistep/ShellCompat.java': '''package com.jiusis.mistep;class ShellCompat {static boolean hasMethod(Class<?> c,String n,int count){for(var m:c.getMethods())if(m.getName().equals(n)&&m.getParameterCount()==count)return true;return false;}static Object call(Object o,String n,Object...a){return de.robv.android.xposed.XposedHelpers.callMethod(o,n,a);}}''',
-'com/jiusis/mistep/ImeTargetRegression.java': '''package com.jiusis.mistep;import java.util.*;
+'io/github/zerohomers0/onesteplite/ImeViewport.java': '''package io.github.zerohomers0.onesteplite;import java.util.function.Predicate;
+class ImeViewport {static void refreshLayering(Object o,Predicate<Object> p){((ImeTargetRegression.Display)o).steps.add("layering");}}''',
+'io/github/zerohomers0/onesteplite/ShellCompat.java': '''package io.github.zerohomers0.onesteplite;class ShellCompat {static boolean hasMethod(Class<?> c,String n,int count){for(var m:c.getMethods())if(m.getName().equals(n)&&m.getParameterCount()==count)return true;return false;}static Object call(Object o,String n,Object...a){return de.robv.android.xposed.XposedHelpers.callMethod(o,n,a);}}''',
+'io/github/zerohomers0/onesteplite/ImeTargetRegression.java': '''package io.github.zerohomers0.onesteplite;import java.util.*;
 public class ImeTargetRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  public static class Window {Object display;Window(Object d){display=d;}public Object getDisplayContent(){return display;}}
@@ -28,8 +28,8 @@ public class ImeTargetRegression {
  }
  public static class Modern {public Object ime=new Window(this);public Object getImeWindow(){return ime;}}
  public static void main(String[]a){
-  var modern=new Modern();check(MiStepImeWindow.current(modern)==modern.ime,"getter-only display without old field");modern.ime=null;check(MiStepImeWindow.current(modern)==null,"getter null is valid and does not probe missing legacy field");modern.ime=new Window(new Modern());try{MiStepImeWindow.current(modern);throw new AssertionError("foreign display IME accepted");}catch(IllegalStateException expected){checks++;}
-  var h=new MiStepImeTargetRefresh();var d=new Display();
+  var modern=new Modern();check(ImeWindow.current(modern)==modern.ime,"getter-only display without old field");modern.ime=null;check(ImeWindow.current(modern)==null,"getter null is valid and does not probe missing legacy field");modern.ime=new Window(new Modern());try{ImeWindow.current(modern);throw new AssertionError("foreign display IME accepted");}catch(IllegalStateException expected){checks++;}
+  var h=new ImeTargetRefresh();var d=new Display();
   h.update(d,t->true,w->{check(w==d.mInputMethodWindow,"actual IME window");d.steps.add("viewport/process");});
   check(d.steps.equals(List.of("layering","viewport/process","pending","magnification","parent")),"new viewport precedes matrix and parent in the native transaction");
   d.steps.clear();d.parent=()->h.update(d,t->true,w->{throw new AssertionError("recursive target refresh");});
@@ -47,7 +47,7 @@ public class ImeTargetRegression {
 paths = []
 for name, text in files.items():
     p = out/name; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(text, encoding='utf-8'); paths.append(str(p))
-paths.extend(str(package_dir(root)/n) for n in ['MiStepImeTargetRefresh.java','MiStepImeWindow.java'])
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+paths.extend(str(package_dir(root)/n) for n in ['ImeTargetRefresh.java','ImeWindow.java'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.ImeTargetRegression'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.ImeTargetRegression'], check=True)

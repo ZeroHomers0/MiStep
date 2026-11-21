@@ -4,7 +4,7 @@ import os, subprocess, sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-s=(src/'MiStepHost.java').read_text(encoding='utf-8')
+s=(src/'WorkspaceHost.java').read_text(encoding='utf-8')
 def member(signature):
  start=s.index(signature);end=s.index('{',start)+1;depth=1
  while depth:
@@ -21,13 +21,13 @@ files={
 'android/view/WindowManager.java': 'package android.view;public class WindowManager {public static class LayoutParams {public static final int FLAG_FULLSCREEN=1024;public int flags,systemUiVisibility;}}',
 'android/view/View.java': 'package android.view;public class View {public static final int SYSTEM_UI_FLAG_FULLSCREEN=4;}',
 'android/view/WindowInsets.java': 'package android.view;public class WindowInsets {public static class Type {public static int statusBars(){return 1;}}}',
-'com/jiusis/mistep/WideVideoRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/WideVideoRegression.java':'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import de.robv.android.xposed.XposedHelpers;
 public class WideVideoRegression {
  static final int ACTIVE=1,RESUMING=2,SLOT_TOP=4;static int checks;
  static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
- static class MiStepEntryGuard {static boolean allowed=true;static boolean canOpen(Object c){return allowed;}}
- static class MiStepClipboard {static MiStepClipboard get(Object c){return new MiStepClipboard();}void close(){}}
+ static class EntryGuard {static boolean allowed=true;static boolean canOpen(Object c){return allowed;}}
+ static class Clipboard {static Clipboard get(Object c){return new Clipboard();}void close(){}}
  static class Slot {boolean occupied;Object view=new Object(),controller=new Object();}
  class Roll {boolean moving,task;int resets;boolean rolling(){return moving;}
   void show(boolean t,Runnable r){throw new AssertionError("automatic pin must not roll header");}
@@ -69,8 +69,8 @@ public class WideVideoRegression {
    var h=new WideVideoRegression();h.workspaceOptions=h.workspaceOptions.withLandscapeVideo(0);
    switch(mutation){case 0:h.keyguardLocked=true;break;case 1:h.screenOn=false;break;case 2:h.retainedForLock=true;break;
     case 3:h.root=null;break;case 4:h.suspendRequested=true;break;case 5:h.scene=3;break;case 6:((Info)h.current.task).isFocused=false;break;
-    case 7:h.current=new TopCandidate(new TopTaskState.Key(7,0,"replacement-token"));break;case 8:MiStepEntryGuard.allowed=false;break;}
-   h.signal(true,true,true,1);check(h.topRoll.resets==0&&h.claimed==0&&h.suspended==0,"privacy/ownership rejection "+mutation);MiStepEntryGuard.allowed=true;
+    case 7:h.current=new TopCandidate(new TopTaskState.Key(7,0,"replacement-token"));break;case 8:EntryGuard.allowed=false;break;}
+   h.signal(true,true,true,1);check(h.topRoll.resets==0&&h.claimed==0&&h.suspended==0,"privacy/ownership rejection "+mutation);EntryGuard.allowed=true;
   }
   for(int mutation=0;mutation<4;mutation++){
    var h=new WideVideoRegression();h.workspaceOptions=h.workspaceOptions.withLandscapeVideo(0);
@@ -98,7 +98,7 @@ public class WideVideoRegression {
 }'''}
 saved=s
 s=(src/'HostEntry.java').read_text(encoding='utf-8')
-files['com/jiusis/mistep/FullscreenSceneRegression.java']='''package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/FullscreenSceneRegression.java']='''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.view.WindowManager;import de.robv.android.xposed.XposedHelpers;
 public class FullscreenSceneRegression {
  static int checks;static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
@@ -135,8 +135,8 @@ paths=[]
 for name,body in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8');paths.append(str(p))
 paths += [str(src/n) for n in ['WorkspaceOptions.java','TopTaskState.java','WideVideoPolicy.java']]
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);classes=out/'classes';classes.mkdir(exist_ok=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN']);classes=out/'classes';classes.mkdir(exist_ok=True)
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(classes),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'com.jiusis.mistep.WideVideoRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'io.github.zerohomers0.onesteplite.WideVideoRegression'],check=True)
 
-subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'com.jiusis.mistep.FullscreenSceneRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(classes),'io.github.zerohomers0.onesteplite.FullscreenSceneRegression'],check=True)

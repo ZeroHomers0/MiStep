@@ -32,14 +32,14 @@ public class Region {
  public boolean op(Rect r,Op op){var a=new java.awt.geom.Area(new java.awt.Rectangle(r.left,r.top,r.width(),r.height()));if(op==Op.INTERSECT)area.intersect(a);else area.subtract(a);return !area.isEmpty();}
  public boolean contains(int x,int y){return area.contains(x,y);}
 }'''
-body = r'''package com.jiusis.mistep;
+body = r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.*;
 import java.util.*;
 public class FixedTouchRegression {
  static int checks;
  static boolean legacy;
  static boolean sZoomed=true,sFullscreenRotationActive=true;
- static Object sDisplayContent,sMiStepFixedRotationApp;
+ static Object sDisplayContent,sFixedRotationApp;
  static int sHeldDisplayRotation;
  static final Map<Object,Integer>sTaskRotations=new HashMap<>();
  static ZoomTarget sZoomTarget;
@@ -55,7 +55,7 @@ public class FixedTouchRegression {
  static void log(String s){}
  __METHOD__
  static void check(boolean b,String reason){checks++;if(!b)throw new AssertionError(reason);}
- static Window reset(){sZoomed=true;sFullscreenRotationActive=true;sHeldDisplayRotation=0;var d=new Display();sDisplayContent=d;sZoomTarget=new ZoomTarget(d);var a=new Activity();sMiStepFixedRotationApp=a;sTaskRotations.clear();sTaskRotations.put(a,1);var w=new Window();w.display=d;w.mActivityRecord=a;return w;}
+ static Window reset(){sZoomed=true;sFullscreenRotationActive=true;sHeldDisplayRotation=0;var d=new Display();sDisplayContent=d;sZoomTarget=new ZoomTarget(d);var a=new Activity();sFixedRotationApp=a;sTaskRotations.clear();sTaskRotations.put(a,1);var w=new Window();w.display=d;w.mActivityRecord=a;return w;}
  static Region all(){return new Region(new Rect(-100,-100,2800,1400));}
  static boolean apply(Window w,Region r){synchronized(sZoomTarget.globalLock){if(legacy){r.op(w.task.bounds,Region.Op.INTERSECT);return true;}return cropFixedMainTouchableRegion(w,r);}}
  static void refused(Window w,String reason){Region r=all();check(!apply(w,r),reason);check(r.contains(2600,1100),reason+" unchanged");}
@@ -67,15 +67,15 @@ public class FixedTouchRegression {
   w=reset();r=all();r.op(new Rect(1500,300,1800,700),Region.Op.DIFFERENCE);apply(w,r);
   check(!r.contains(1600,400)&&r.contains(2200,400),"nonrectangular exclusion preserved");
   w=reset();r=new Region(new Rect(200,100,2400,1100));apply(w,r);check(!r.contains(50,500)&&r.contains(2300,1000),"letterbox not expanded");
-  w=reset();sTaskRotations.put(sMiStepFixedRotationApp,3);r=all();check(apply(w,r)&&r.contains(2500,600),"reverse landscape");
+  w=reset();sTaskRotations.put(sFixedRotationApp,3);r=all();check(apply(w,r)&&r.contains(2500,600),"reverse landscape");
   w=reset();sZoomed=false;refused(w,"unzoomed");
   w=reset();sFullscreenRotationActive=false;refused(w,"inactive workspace");
   w=reset();w.display=new Display();refused(w,"other display");
   w=reset();sZoomTarget.display=new Display();refused(w,"stale display target");
   w=reset();w.mActivityRecord=new Activity();refused(w,"unowned token");
   w=reset();sTaskRotations.clear();refused(w,"released token");
-  w=reset();sTaskRotations.put(sMiStepFixedRotationApp,0);refused(w,"portrait token");
-  w=reset();sTaskRotations.put(sMiStepFixedRotationApp,2);refused(w,"half turn unchanged dimensions");
+  w=reset();sTaskRotations.put(sFixedRotationApp,0);refused(w,"portrait token");
+  w=reset();sTaskRotations.put(sFixedRotationApp,2);refused(w,"half turn unchanged dimensions");
   w=reset();w.task.mode=5;refused(w,"native freeform");
   w=reset();w.task.mode=6;refused(w,"side task");
   w=reset();w.task.bounds=new Rect(0,0,600,2608);refused(w,"partial root");
@@ -92,6 +92,6 @@ for name,text in files.items():
     path=out/name
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(text,encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n)for n in files]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.FixedTouchRegression',*sys.argv[2:]],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.FixedTouchRegression',*sys.argv[2:]],check=True)

@@ -33,10 +33,10 @@ files={
 'com/android/internal/view/IDragAndDropPermissions$Stub.java':'package com.android.internal.view;public class IDragAndDropPermissions$Stub extends android.os.Binder {}',
 'com/android/server/wm/DragAndDropPermissionsHandler.java':'''package com.android.server.wm;import android.os.*;import android.content.*;import android.net.Uri;import java.util.*;public class DragAndDropPermissionsHandler extends com.android.internal.view.IDragAndDropPermissions$Stub implements IInterface {public Object mGlobalLock;public int mSourceUid,mMode,mSourceUserId,mTargetUserId;public String mTargetPackage;public List<Uri>mUris=new ArrayList<>();public static int takes,releases;public DragAndDropPermissionsHandler(Object lock,ClipData clip,int uid,String pkg,int mode,int from,int to){mGlobalLock=lock;mSourceUid=uid;mTargetPackage=pkg;mMode=mode;mSourceUserId=from;mTargetUserId=to;for(int i=0;i<clip.getItemCount();i++)if(clip.getItemAt(i).getUri()!=null)mUris.add(clip.getItemAt(i).getUri());}public IBinder asBinder(){return this;}public void takeTransient(){takes++;}public void release(){releases++;}}''',
 'com/android/server/wm/WindowContainer.java':'''package com.android.server.wm;import java.util.*;import android.os.IBinder;public class WindowContainer {public static Map<IBinder,Object>tasks=new HashMap<>();public static Object fromBinder(IBinder b){return tasks.get(b);}}''',
-'com/jiusis/mistep/MiStepPackages.java':'package com.jiusis.mistep;class MiStepPackages {static final String SYSTEM_UI="com.android.systemui";}',
-'com/jiusis/mistep/MiStepEntryGuard.java':'package com.jiusis.mistep;class MiStepEntryGuard {static boolean canOpen(android.content.Context c){return c.interactive;}}',
-'com/jiusis/mistep/MiStepDesktopLaunchBridge.java':'package com.jiusis.mistep;class MiStepDesktopLaunchBridge {static Object recentsLease(Object t){return ((ContentShareRegression.Task)t).owned?t:null;}}',
-'com/jiusis/mistep/ContentShareRegression.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/Packages.java':'package io.github.zerohomers0.onesteplite;class Packages {static final String SYSTEM_UI="com.android.systemui";}',
+'io/github/zerohomers0/onesteplite/EntryGuard.java':'package io.github.zerohomers0.onesteplite;class EntryGuard {static boolean canOpen(android.content.Context c){return c.interactive;}}',
+'io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java':'package io.github.zerohomers0.onesteplite;class DesktopLaunchBridge {static Object recentsLease(Object t){return ((ContentShareRegression.Task)t).owned?t:null;}}',
+'io/github/zerohomers0/onesteplite/ContentShareRegression.java':r'''package io.github.zerohomers0.onesteplite;
 import android.os.*;import android.content.*;import android.net.Uri;import android.view.DragEvent;import com.android.server.wm.*;
 public class ContentShareRegression {
  static int checks;static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
@@ -44,48 +44,48 @@ public class ContentShareRegression {
  public static class Wms {public Context mContext;public Object mGlobalLock=new Object();Wms(Context c){mContext=c;}}
  public static class Display {public Wms mWmService;Display(Context c){mWmService=new Wms(c);}}
  public static class Task {public boolean owned=true;public Info info=new Info(2);public Object display;public Object getTaskInfo(){return info;}public Object getDisplayContent(){return display;}}
- static class Host implements MiStepContentShare.Host {
+ static class Host implements ContentShare.Host {
   Context context=new Context();Display display=new Display(context);Task nativeTask=new Task();
   Binder sourceToken=new Binder(),targetToken=new Binder();
-  MiStepContentShare.Target source=new MiStepContentShare.Target(1,1,0,sourceToken,"source"),target=new MiStepContentShare.Target(1,2,0,targetToken,"receiver"),current=source,side=target,hover;
+  ContentShare.Target source=new ContentShare.Target(1,1,0,sourceToken,"source"),target=new ContentShare.Target(1,2,0,targetToken,"receiver"),current=source,side=target,hover;
   int exchanges;boolean available=true,failExchange,deferExchange;Runnable deferred;
-  Host(){nativeTask.display=display;WindowContainer.tasks.put(targetToken,nativeTask);MiStepDropPermissions.install(getClass().getClassLoader(),()->display);}
-  public boolean available(){return available&&context.interactive;}public MiStepContentShare.Target main(){return current;}public MiStepContentShare.Target at(float x,float y){return side;}public MiStepContentShare.Target slot(int i){return side;}
-  public MiStepContentShare.Target findSide(MiStepContentShare.Target original){return original.same(side)?side:null;}public void highlight(MiStepContentShare.Target t){hover=t;}public void exchange(MiStepContentShare.Target a,MiStepContentShare.Target b,java.util.function.Consumer<Boolean> done){exchanges++;if(deferExchange){deferred=()->{current=b;side=a;done.accept(true);};return;}if(!failExchange){current=b;side=a;}done.accept(!failExchange);}
+  Host(){nativeTask.display=display;WindowContainer.tasks.put(targetToken,nativeTask);DropPermissions.install(getClass().getClassLoader(),()->display);}
+  public boolean available(){return available&&context.interactive;}public ContentShare.Target main(){return current;}public ContentShare.Target at(float x,float y){return side;}public ContentShare.Target slot(int i){return side;}
+  public ContentShare.Target findSide(ContentShare.Target original){return original.same(side)?side:null;}public void highlight(ContentShare.Target t){hover=t;}public void exchange(ContentShare.Target a,ContentShare.Target b,java.util.function.Consumer<Boolean> done){exchanges++;if(deferExchange){deferred=()->{current=b;side=a;done.accept(true);};return;}if(!failExchange){current=b;side=a;}done.accept(!failExchange);}
  }
  static ClipData text(){return new ClipData("text",new String[]{"text/plain"},new ClipData.Item("hello"));}
  static ClipData file(String path){return new ClipData("image",new String[]{"image/png"},new ClipData.Item(Uri.parse("content://photos/"+path)));}
- static DragAndDropPermissionsHandler permission(Host h,ClipData data){return new DragAndDropPermissionsHandler(new Object(),data,10001,MiStepPackages.SYSTEM_UI,1,0,0);}
- static void event(MiStepContentShare controller,int action,ClipData clip,Object permission){controller.onDrag(new DragEvent(action,clip,permission));}
- static void drop(MiStepContentShare controller,ClipData clip,Object permission){event(controller,1,clip,permission);event(controller,5,clip,permission);event(controller,3,clip,permission);event(controller,4,clip,permission);}
+ static DragAndDropPermissionsHandler permission(Host h,ClipData data){return new DragAndDropPermissionsHandler(new Object(),data,10001,Packages.SYSTEM_UI,1,0,0);}
+ static void event(ContentShare controller,int action,ClipData clip,Object permission){controller.onDrag(new DragEvent(action,clip,permission));}
+ static void drop(ContentShare controller,ClipData clip,Object permission){event(controller,1,clip,permission);event(controller,5,clip,permission);event(controller,3,clip,permission);event(controller,4,clip,permission);}
  static void waitFor(java.util.function.BooleanSupplier condition)throws Exception{for(int i=0;i<1000;i++){Handler.drain();if(condition.getAsBoolean())return;Thread.sleep(2);}throw new AssertionError("worker did not complete");}
  public static void main(String[]args)throws Exception {
-  Host h=new Host();MiStepContentShare c=new MiStepContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);
+  Host h=new Host();ContentShare c=new ContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);
   check(h.exchanges==0&&h.context.launches==0&&h.hover==h.target,"hover must never promote or launch");c.cancel();check(h.hover==null&&!c.busy(),"cancel clears hover and input ownership");
   drop(c,text(),null);final Host textHost=h;waitFor(()->textHost.context.launches==1);check(h.exchanges==1&&"hello".equals(h.context.last.extras.get(Intent.EXTRA_TEXT)),"text DROP promotes once then sends text");
   var options=(android.app.ActivityOptions)h.context.options;check(options.task==2&&options.mode==1&&options.display==0,"share stays in the exact promoted task");
-  h=new Host();c=new MiStepContentShare(h.context,h);int takes=DragAndDropPermissionsHandler.takes;drop(c,file("a"),permission(h,file("a")));final Host imageHost=h;waitFor(()->imageHost.context.launches==1);
+  h=new Host();c=new ContentShare(h.context,h);int takes=DragAndDropPermissionsHandler.takes;drop(c,file("a"),permission(h,file("a")));final Host imageHost=h;waitFor(()->imageHost.context.launches==1);
   check(DragAndDropPermissionsHandler.takes==takes+1&&h.exchanges==1,"URI read grant precedes target promotion");check(h.context.last.clip.getItemCount()==1&&h.context.last.component.getPackageName().equals("receiver"),"image targets only the receiver");
   int released=DragAndDropPermissionsHandler.releases;SystemClock.now+=15*60_000L+1;Handler.drain();check(DragAndDropPermissionsHandler.releases>released,"launched read grant has bounded expiry");
-  h=new Host();c=new MiStepContentShare(h.context,h);drop(c,file("forged"),permission(h,file("a")));final MiStepContentShare forged=c;waitFor(()->!forged.busy());check(h.exchanges==0&&h.context.launches==0,"URI outside original capability cannot switch or share");
-  h=new Host();c=new MiStepContentShare(h.context,h);h.nativeTask.owned=false;drop(c,file("a"),permission(h,file("a")));final MiStepContentShare unowned=c;waitFor(()->!unowned.busy());check(h.exchanges==0,"unregistered native task rejects read delegation");
-  h=new Host();c=new MiStepContentShare(h.context,h);Binder.uid=12345;drop(c,file("a"),permission(h,file("a")));final MiStepContentShare foreign=c;waitFor(()->!foreign.busy());check(h.exchanges==0,"foreign caller cannot forward read permission");Binder.uid=1000;
-  h=new Host();c=new MiStepContentShare(h.context,h);h.context.failLaunch=true;drop(c,text(),null);final MiStepContentShare failed=c;waitFor(()->!failed.busy());check(h.exchanges==2&&h.current==h.source,"failed launch rolls back the exact exchange");
-  h=new Host();c=new MiStepContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);event(c,3,text(),null);h.context.interactive=false;c.cancel();Thread.sleep(20);Handler.drain();check(h.exchanges==0&&h.context.launches==0,"screen lock invalidates queued preparation");
-  h=new Host();c=new MiStepContentShare(h.context,h);var app=new ClipData("task",new String[]{"text/plain","application/vnd.android.task"},new ClipData.Item("not content"));check(!c.onDrag(new DragEvent(1,app,null)),"mixed task/text clip stays outside content sharing");
-  try{MiStepContentShare.copy(new ClipData("file",new String[]{"image/png"},new ClipData.Item(Uri.parse("file:///private"))));throw new AssertionError();}catch(IllegalArgumentException expected){checks++;}
-  h=new Host();c=new MiStepContentShare(h.context,h);var noRead=permission(h,file("a"));noRead.mMode=0;drop(c,file("a"),noRead);final MiStepContentShare noReadState=c;waitFor(()->!noReadState.busy());check(h.exchanges==0,"drop without read mode cannot delegate");
-  h=new Host();c=new MiStepContentShare(h.context,h);h.nativeTask.info.taskId=77;drop(c,file("a"),permission(h,file("a")));final MiStepContentShare changedId=c;waitFor(()->!changedId.busy());check(h.exchanges==0,"replaced task id rejects the same binder");
-  h=new Host();c=new MiStepContentShare(h.context,h);h.context.pm.supported=false;drop(c,text(),null);final MiStepContentShare unsupported=c;waitFor(()->!unsupported.busy());check(h.exchanges==0,"unsupported receiver never gets promoted");
-  h=new Host();c=new MiStepContentShare(h.context,h);h.deferExchange=true;drop(c,file("a"),permission(h,file("a")));final Host deferredHost=h;waitFor(()->deferredHost.deferred!=null);released=DragAndDropPermissionsHandler.releases;c.cancel();check(DragAndDropPermissionsHandler.releases==released+1&&!c.busy(),"cancel immediately revokes an unlaunched prepared grant");h.deferred.run();check(h.context.launches==0,"late native exchange callback cannot send after cancellation");
-  h=new Host();c=new MiStepContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);h.current=h.target;event(c,3,text(),null);event(c,4,text(),null);check(h.exchanges==0&&h.context.launches==0&&!c.busy(),"changed source task cancels before preparation");
+  h=new Host();c=new ContentShare(h.context,h);drop(c,file("forged"),permission(h,file("a")));final ContentShare forged=c;waitFor(()->!forged.busy());check(h.exchanges==0&&h.context.launches==0,"URI outside original capability cannot switch or share");
+  h=new Host();c=new ContentShare(h.context,h);h.nativeTask.owned=false;drop(c,file("a"),permission(h,file("a")));final ContentShare unowned=c;waitFor(()->!unowned.busy());check(h.exchanges==0,"unregistered native task rejects read delegation");
+  h=new Host();c=new ContentShare(h.context,h);Binder.uid=12345;drop(c,file("a"),permission(h,file("a")));final ContentShare foreign=c;waitFor(()->!foreign.busy());check(h.exchanges==0,"foreign caller cannot forward read permission");Binder.uid=1000;
+  h=new Host();c=new ContentShare(h.context,h);h.context.failLaunch=true;drop(c,text(),null);final ContentShare failed=c;waitFor(()->!failed.busy());check(h.exchanges==2&&h.current==h.source,"failed launch rolls back the exact exchange");
+  h=new Host();c=new ContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);event(c,3,text(),null);h.context.interactive=false;c.cancel();Thread.sleep(20);Handler.drain();check(h.exchanges==0&&h.context.launches==0,"screen lock invalidates queued preparation");
+  h=new Host();c=new ContentShare(h.context,h);var app=new ClipData("task",new String[]{"text/plain","application/vnd.android.task"},new ClipData.Item("not content"));check(!c.onDrag(new DragEvent(1,app,null)),"mixed task/text clip stays outside content sharing");
+  try{ContentShare.copy(new ClipData("file",new String[]{"image/png"},new ClipData.Item(Uri.parse("file:///private"))));throw new AssertionError();}catch(IllegalArgumentException expected){checks++;}
+  h=new Host();c=new ContentShare(h.context,h);var noRead=permission(h,file("a"));noRead.mMode=0;drop(c,file("a"),noRead);final ContentShare noReadState=c;waitFor(()->!noReadState.busy());check(h.exchanges==0,"drop without read mode cannot delegate");
+  h=new Host();c=new ContentShare(h.context,h);h.nativeTask.info.taskId=77;drop(c,file("a"),permission(h,file("a")));final ContentShare changedId=c;waitFor(()->!changedId.busy());check(h.exchanges==0,"replaced task id rejects the same binder");
+  h=new Host();c=new ContentShare(h.context,h);h.context.pm.supported=false;drop(c,text(),null);final ContentShare unsupported=c;waitFor(()->!unsupported.busy());check(h.exchanges==0,"unsupported receiver never gets promoted");
+  h=new Host();c=new ContentShare(h.context,h);h.deferExchange=true;drop(c,file("a"),permission(h,file("a")));final Host deferredHost=h;waitFor(()->deferredHost.deferred!=null);released=DragAndDropPermissionsHandler.releases;c.cancel();check(DragAndDropPermissionsHandler.releases==released+1&&!c.busy(),"cancel immediately revokes an unlaunched prepared grant");h.deferred.run();check(h.context.launches==0,"late native exchange callback cannot send after cancellation");
+  h=new Host();c=new ContentShare(h.context,h);event(c,1,text(),null);event(c,5,text(),null);h.current=h.target;event(c,3,text(),null);event(c,4,text(),null);check(h.exchanges==0&&h.context.launches==0&&!c.busy(),"changed source task cancels before preparation");
   System.out.println("Production drag and native permission bridge: "+checks+" checks passed");
  }
 }'''
 }
 for name,body in files.items():
     path=out/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_text(body,encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-production=[src/name for name in ['ContentSharePolicy.java','MiStepContentShare.java','MiStepDropPermissions.java']]
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
+production=[src/name for name in ['ContentSharePolicy.java','ContentShare.java','DropPermissions.java']]
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n)for n in files],*map(str,production)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.ContentShareRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.ContentShareRegression'],check=True)

@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 /** Verify that the main pane and the three-cell column exchange sides without gaps. */
 public final class LayoutOrientationTest {
@@ -10,8 +10,8 @@ public final class LayoutOrientationTest {
     }
 
     public static void main(String[] args) {
-        MiStepLayout left = MiStepLayout.of(1080, 2460, false);
-        MiStepLayout right = MiStepLayout.of(1080, 2460, true);
+        WorkspaceLayout left = WorkspaceLayout.of(1080, 2460, false);
+        WorkspaceLayout right = WorkspaceLayout.of(1080, 2460, true);
 
         check(left.mainX == 0 && left.cellX == 813, "left main/cell columns");
         check(right.mainX == 273 && right.cellX == 0, "right main/cell columns");
@@ -20,7 +20,7 @@ public final class LayoutOrientationTest {
         check(left.topStrip == right.topStrip, "top strip is stable");
         check(left.fillsScreen() && right.fillsScreen(), "both orientations fill the screen");
         check(left.mainBounds()[3] == right.mainBounds()[3], "main bottoms align");
-        for (int i = 0; i < MiStepLayout.CELL_COUNT; i++) {
+        for (int i = 0; i < WorkspaceLayout.CELL_COUNT; i++) {
             check(left.cellBounds(i)[1] == right.cellBounds(i)[1], "cell " + i + " top");
             check(left.cellBounds(i)[3] == right.cellBounds(i)[3], "cell " + i + " bottom");
         }

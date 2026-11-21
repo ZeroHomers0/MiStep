@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class InputMagnificationPolicyTest {
     private static int checks;
@@ -67,15 +67,15 @@ public final class InputMagnificationPolicyTest {
         check(!InputMagnificationPolicy.shouldExcludeFromMagnification(2015,
                 "com.android.systemui", "gxzw_anim-copy"), "similar animation title unchanged");
         check(InputMagnificationPolicy.shouldExcludeFromMagnification(2009,
-                "com.android.systemui", "MiStepNativeBiometricPrompt"),
+                "com.android.systemui", "OneStepLiteNativeBiometricPrompt"),
                 "tagged native biometric container stays physical");
         check(!InputMagnificationPolicy.shouldExcludeFromMagnification(2009,
                 "com.android.systemui", "com.android.systemui"),
                 "generic keyguard dialogs are not broadly excluded");
         check(!InputMagnificationPolicy.shouldExcludeFromMagnification(2009,
-                "other.app", "MiStepNativeBiometricPrompt"), "foreign tagged dialog unchanged");
+                "other.app", "OneStepLiteNativeBiometricPrompt"), "foreign tagged dialog unchanged");
         check(!InputMagnificationPolicy.shouldExcludeFromMagnification(2017,
-                "com.android.systemui", "MiStepNativeBiometricPrompt"), "wrong dialog type unchanged");
+                "com.android.systemui", "OneStepLiteNativeBiometricPrompt"), "wrong dialog type unchanged");
         System.out.println("InputMagnificationPolicy: " + checks + " checks passed");
     }
 

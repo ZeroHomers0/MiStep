@@ -7,8 +7,8 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/side-launch-jvm'
-SOURCE_ROOT = Path(os.environ.get('MISTEP_LAUNCH_SOURCE_ROOT', ROOT))
-text = (package_dir(SOURCE_ROOT)/'MiStepHost.java').read_text(encoding='utf-8')
+SOURCE_ROOT = Path(os.environ.get('ONESTEPLITE_LAUNCH_SOURCE_ROOT', ROOT))
+text = (package_dir(SOURCE_ROOT)/'WorkspaceHost.java').read_text(encoding='utf-8')
 start = text.index('    private void startSlot(final Slot slot, Intent launch, String label)')
 end = text.index('    private static void callHidden(', start)
 method = text[start:end]
@@ -106,6 +106,6 @@ public class SideLaunchReplay {
  }
 }
 ''', encoding='utf-8')
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT), str(source)], check=True)
 subprocess.run([str(jdk / 'java.exe'), '-cp', str(OUT), 'SideLaunchReplay'], check=True)

@@ -13,7 +13,7 @@ def method(t,s):
   elif t[i]=='}':depth-=1
   i+=1
  return t[a:i]
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 parts=['    private void completeHomePromotion(', '    private void clearSlot(', '    private void compactCells()', '    private void compactCellsAfterCollection()', '    private static final class CellMovePlan', '    private void syncSlotWindowState(', '    private void onTaskIdKnown(', '    private void queueSidePromotion(', '    private void retrySidePromotion(', '    private void beginExternalPromotion(', '    private boolean externalPromotionCurrent(', '    private void afterExternalTransitionIdle(']
 methods='\n'.join(method(host,s) for s in parts)+'\n'+method(host,'    private static final class PendingSidePromotion')
 parts=['    private boolean compactScrollingSideRows()', '    private void mapSideSlots(',
@@ -21,7 +21,7 @@ parts=['    private boolean compactScrollingSideRows()', '    private void mapSi
        '    private void commitSideScrollPosition()', '    private boolean nearSideViewport(']
 methods+='\n'+'\n'.join(method(host,s) for s in parts)
 body=r"""
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class HomeCompactRegression {
  static int checks;static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
@@ -35,8 +35,8 @@ public class HomeCompactRegression {
   static Object callMethod(Object o,String name,Object...args){((Idle)o).queue.add((Runnable)args[0]);return null;}
  }
  static class SystemClock{static long uptimeMillis(){return 10000;}}
- static class MiStepClipboard{static MiStepClipboard get(Object c){return new MiStepClipboard();}void close(){}}
- static class MiStepTopNativeCaption{static void refresh(){}} // Separate production caption/queue suite.
+ static class Clipboard{static Clipboard get(Object c){return new Clipboard();}void close(){}}
+ static class TopNativeCaption{static void refresh(){}} // Separate production caption/queue suite.
  static class StatusBar{void hideFor(Promotion p,Runnable r){}}
  static class Idle{List<Runnable>queue=new ArrayList<>();}
  static class WindowState{final int taskId;int slotIndex;boolean active=true;WindowState(int t,int s){taskId=t;slotIndex=s;}void clear(){active=false;slotIndex=-1;}}
@@ -70,7 +70,7 @@ public class HomeCompactRegression {
  boolean lastFullSideLayout;
  static class Options{boolean scrollSideTasks;}
  Options workspaceOptions=new Options();
- static class MiStepLayout{static final int CELL_COUNT=3;}
+ static class WorkspaceLayout{static final int CELL_COUNT=3;}
  static class DeviceProfile{static boolean isTablet(Object unused){return false;}}
  static class android{static class animation{static class ValueAnimator{static boolean areAnimatorsEnabled(){return true;}}}}
  boolean isSideMotionRunning(){return sideScrollAnimator!=null;}
@@ -243,6 +243,6 @@ public class HomeCompactRegression {
 }
 """.replace('__METHODS__',methods)
 f=out/'HomeCompactRegression.java';f.write_text(body,encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'SlotPositions.java'),str(src/'SidePromotionPolicy.java'),str(f)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.HomeCompactRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.HomeCompactRegression'],check=True)

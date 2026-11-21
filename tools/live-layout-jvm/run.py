@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[2]
-source = (package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/standalone'
 out.mkdir(parents=True, exist_ok=True)
 
@@ -24,16 +24,16 @@ def member(signature):
     return source[start:end]
 
 swap = member('    private void startLiveSwap(')
-target_start = swap.index('        final MiStepLayout target = ')
+target_start = swap.index('        final WorkspaceLayout target = ')
 target_declaration = swap[target_start:swap.index(';', target_start) + 1]
 
 body = r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 public class LiveLayoutRegression {
  static int checks;
  static void check(boolean value,String reason){checks++;if(!value)throw new AssertionError(reason);}
  static final int SLOT_COUNT=4,CELL_SLOT_COUNT=4,ACTIVE=1,RESUMING=2,SUSPENDED=4;
- static class MiStepStatusBarSampling{static int refreshes;static void geometryChanged(){refreshes++;}}
+ static class StatusBarSampling{static int refreshes;static void geometryChanged(){refreshes++;}}
  static class View {
   Object params=new FrameLayout.LayoutParams();int layouts,invalidates;
   Object getLayoutParams(){return params;}void setLayoutParams(Object value){params=value;}
@@ -46,14 +46,14 @@ public class LiveLayoutRegression {
  static class Slot {int index;int[] rect;Object token=new Object(),controller=new Object();int applied,touch;}
  final Slot[] slots=new Slot[SLOT_COUNT];final View[] sideBackingViews=new View[SLOT_COUNT];
  int screenW=1200,screenH=2608,wallpapers,zoomWrites,topGeometryChanges,scene=ACTIVE;boolean mainOnRight,workspaceEntering;
- MiStepLayout layout=MiStepLayout.of(screenW,screenH,false,2.75f);FrameLayout root=new FrameLayout();Bar topBar=new Bar();
+ WorkspaceLayout layout=WorkspaceLayout.of(screenW,screenH,false,2.75f);FrameLayout root=new FrameLayout();Bar topBar=new Bar();
  LiveLayoutRegression(){for(int i=1;i<SLOT_COUNT;i++){slots[i]=new Slot();slots[i].index=i;sideBackingViews[i]=new View();slots[i].rect=layout.cellBounds(i-1);}}
  void log(String value){}void applyWallpaperBackdrops(){wallpapers++;}
  void writeZoom(boolean on){check(on,"side change requests workspace zoom only");zoomWrites++;}
  void updateTopTaskGeometry(){topGeometryChanges++;}
- MiStepLayout makeAdaptiveLayout(boolean right){return MiStepLayout.of(screenW,screenH,right,2.5f,layout.tabletLandscape);}
- MiStepLayout swapTarget(WorkspaceOptions options){
-  MiStepLayout geometry=layout;
+ WorkspaceLayout makeAdaptiveLayout(boolean right){return WorkspaceLayout.of(screenW,screenH,right,2.5f,layout.tabletLandscape);}
+ WorkspaceLayout swapTarget(WorkspaceOptions options){
+  WorkspaceLayout geometry=layout;
   __SWAP_TARGET__
   return target;
  }
@@ -69,7 +69,7 @@ public class LiveLayoutRegression {
  __LIVE_RECTS__
  static void tabletSurfaceRects(){
   for(boolean right:new boolean[]{false,true}){
-  MiStepLayout l=MiStepLayout.of(3048,2032,right,2.5f,true);
+  WorkspaceLayout l=WorkspaceLayout.of(3048,2032,right,2.5f,true);
   LiveSwapGeometry.Rect main=liveMainRect(l);
   check(main.left==(right?909:0) && main.top==606 && main.width==2139 && main.height==1426,
     "actual main transition rectangle matches the new workspace/input origin");
@@ -86,9 +86,9 @@ public class LiveLayoutRegression {
  void oneDirection(boolean right){
   Object[] tokens=new Object[SLOT_COUNT],controllers=new Object[SLOT_COUNT];
   for(int i=1;i<SLOT_COUNT;i++){tokens[i]=slots[i].token;controllers[i]=slots[i].controller;}
-  int samples=MiStepStatusBarSampling.refreshes;
-  MiStepLayout target=MiStepLayout.of(screenW,screenH,right,2.75f);applyMainLayout(target);
-  check(MiStepStatusBarSampling.refreshes==samples+1,"layout commit retargets native sampling even when logical View bounds stay identical");
+  int samples=StatusBarSampling.refreshes;
+  WorkspaceLayout target=WorkspaceLayout.of(screenW,screenH,right,2.75f);applyMainLayout(target);
+  check(StatusBarSampling.refreshes==samples+1,"layout commit retargets native sampling even when logical View bounds stay identical");
   check(layout==target&&mainOnRight==right&&topBar.right==right,"exact target layout/orientation retained");
   check(zoomWrites==0&&root.layouts==1&&root.invalidates==1,"host commit draws once without uncorrelated zoom");
   for(int i=1;i<SLOT_COUNT;i++){
@@ -102,7 +102,7 @@ public class LiveLayoutRegression {
  }
  void tabletDirection(boolean right){
   screenW=3048;screenH=2032;
-  MiStepLayout target=MiStepLayout.of(screenW,screenH,right,2.5f,true);
+  WorkspaceLayout target=WorkspaceLayout.of(screenW,screenH,right,2.5f,true);
   applyMainLayout(target);
   check(mainOnRight==right&&topBar.right==right,"tablet Host commit preserves the gesture side");
   check(topGeometryChanges==1,"reopening from the opposite corner also repositions the interactive task");
@@ -116,16 +116,16 @@ public class LiveLayoutRegression {
   new LiveLayoutRegression().tabletDirection(true);new LiveLayoutRegression().tabletDirection(false);
   for(boolean right:new boolean[]{false,true})for(int mode:new int[]{0,1}){
    LiveLayoutRegression phone=new LiveLayoutRegression();
-   phone.layout=MiStepLayout.of(phone.screenW,phone.screenH,right,2.5f);
+   phone.layout=WorkspaceLayout.of(phone.screenW,phone.screenH,right,2.5f);
    check(phone.swapTarget(WorkspaceOptions.DEFAULT.withSwapMode(mode)).mainOnRight
      ==(mode==WorkspaceOptions.FIXED_MAIN?right:!right),"phone swap option behavior remains unchanged");
   }
-  LiveLayoutRegression h=new LiveLayoutRegression();MiStepLayout old=h.layout;
-  try{h.applyMainLayout(MiStepLayout.of(1080,2340,true,2.75f));throw new AssertionError("stale dimensions accepted");}
+  LiveLayoutRegression h=new LiveLayoutRegression();WorkspaceLayout old=h.layout;
+  try{h.applyMainLayout(WorkspaceLayout.of(1080,2340,true,2.75f));throw new AssertionError("stale dimensions accepted");}
   catch(IllegalArgumentException expected){check(h.layout==old&&!h.mainOnRight&&h.root.layouts==0,"stale geometry rejected before mutation");}
   try{h.applyMainLayout(null);throw new AssertionError("null target accepted");}
   catch(IllegalArgumentException expected){check(h.layout==old,"null target rejected before mutation");}
-  h.root=null;MiStepLayout target=MiStepLayout.of(h.screenW,h.screenH,true,2.75f);h.applyMainLayout(target);
+  h.root=null;WorkspaceLayout target=WorkspaceLayout.of(h.screenW,h.screenH,true,2.75f);h.applyMainLayout(target);
   check(h.layout==target&&h.mainOnRight&&h.zoomWrites==0,"unattached layout preparation has no zoom side effect");
   for(int scene:new int[]{RESUMING,SUSPENDED}){
    h=new LiveLayoutRegression();h.scene=scene;h.setMainSide(true);
@@ -148,9 +148,9 @@ public class LiveLayoutRegression {
 
 java = out / 'LiveLayoutRegression.java'
 java.write_text(body, encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-               str(package_dir(root)/'MiStepLayout.java'),
+               str(package_dir(root)/'WorkspaceLayout.java'),
                str(package_dir(root)/'WorkspaceOptions.java'),
                str(package_dir(root)/'LiveSwapGeometry.java'), str(java)], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.LiveLayoutRegression'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.LiveLayoutRegression'], check=True)

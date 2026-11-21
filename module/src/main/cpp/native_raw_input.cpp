@@ -17,38 +17,38 @@ struct NativeAPIEntries {
 };
 
 Hook hook_function;
-mistep::Publish original_publish;
+onesteplite::Publish original_publish;
 std::atomic<bool> installed{false};
 std::atomic<int> diagnostic_count{0};
 std::atomic<int> rotation_diagnostic_count{0};
 std::atomic<bool> top_uid_layout{false};
 std::atomic<int> top_diagnostic_count{0};
 pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
-mistep::Zoom active_zoom;
-mistep::TopInput active_top;
+onesteplite::Zoom active_zoom;
+onesteplite::TopInput active_top;
 
 int replacement_publish(void* dispatcher, void* connection, void* entry) {
     pthread_mutex_lock(&config_lock);
-    const mistep::Zoom zoom = active_zoom;
-    const mistep::TopInput top = active_top;
+    const onesteplite::Zoom zoom = active_zoom;
+    const onesteplite::TopInput top = active_top;
     pthread_mutex_unlock(&config_lock);
     bool remapped = false;
     bool top_remapped = false;
-    const auto local = entry == nullptr ? mistep::Transform{} : mistep::read<mistep::Transform>(entry, 0x1c);
-    const int result = mistep::publish(original_publish, dispatcher, connection, entry,
+    const auto local = entry == nullptr ? onesteplite::Transform{} : onesteplite::read<onesteplite::Transform>(entry, 0x1c);
+    const int result = onesteplite::publish(original_publish, dispatcher, connection, entry,
             zoom, &remapped, top, top_uid_layout.load(std::memory_order_acquire), &top_remapped);
     if (top_remapped && top_diagnostic_count.fetch_add(1, std::memory_order_relaxed) < 6) {
-        __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+        __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
                 "signed top raw inverse uid=%d scale=%f result=%d", top.uid, top.scale, result);
     }
     if (remapped && !top_remapped && diagnostic_count.fetch_add(1, std::memory_order_relaxed) < 6) {
-        __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+        __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
                 "signed raw inverse display=0 scale=%f y=%f x=%f result=%d",
                 zoom.scale, zoom.offset_y, zoom.offset_x, result);
     }
     if (remapped && !top_remapped && std::fabs(local.m[0]) < .01f
             && rotation_diagnostic_count.fetch_add(1, std::memory_order_relaxed) < 8) {
-        __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+        __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
                 "fixed raw axes basis=%f,%f,%f,%f display=%d bounds=%dx%d",
                 local.m[0],local.m[1],local.m[3],local.m[4],
                 zoom.display_rotation,zoom.width,zoom.height);
@@ -99,12 +99,12 @@ int find_and_hook(dl_phdr_info* info, size_t, void*) {
     top_uid_layout.store(installed.load() && (rva == 0x153e30 || rva == 0x431a70
                     || rva == 0x420434 || rva == 0x21fc00),
             std::memory_order_release);
-    __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+    __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
             "publish hook installed=%d result=%d profile=%s",
             installed.load(), result, profile.name);
     return 1;
     }
-    __android_log_print(ANDROID_LOG_ERROR,"MiStepRawInput","publish profile mismatch; skipped");
+    __android_log_print(ANDROID_LOG_ERROR,"OneStepLiteRawInput","publish profile mismatch; skipped");
     return 1;
 }
 
@@ -119,21 +119,21 @@ extern "C" __attribute__((visibility("default"), used))
 OnLoaded native_init(const NativeAPIEntries* api) {
     const uid_t uid = getuid();
     if (api == nullptr) {
-        __android_log_print(ANDROID_LOG_ERROR, "MiStepRawInput", "native_init api=null uid=%d", uid);
+        __android_log_print(ANDROID_LOG_ERROR, "OneStepLiteRawInput", "native_init api=null uid=%d", uid);
         return nullptr;
     }
-    __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+    __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
             "native_init entered uid=%d api_version=%u hook=%d", uid, api->version,
             api->hook_func != nullptr);
     if (uid != 1000 || api->hook_func == nullptr) {
-        __android_log_print(ANDROID_LOG_ERROR, "MiStepRawInput",
+        __android_log_print(ANDROID_LOG_ERROR, "OneStepLiteRawInput",
                 "native_init rejected uid=%d hook=%d", uid, api->hook_func != nullptr);
         return nullptr;
     }
     hook_function = api->hook_func;
     const int found = dl_iterate_phdr(find_and_hook, nullptr);
     if (!installed.load(std::memory_order_acquire) && found == 0) {
-        __android_log_print(ANDROID_LOG_INFO, "MiStepRawInput",
+        __android_log_print(ANDROID_LOG_INFO, "OneStepLiteRawInput",
                 "native_init waiting for libinputflinger load");
     }
     return on_loaded;
@@ -144,7 +144,7 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*, void*) {
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_jiusis_mistep_NativeRawInputBridge_updateNative(JNIEnv*, jclass,
+Java_io_github_zerohomers0_onesteplite_NativeRawInputBridge_updateNative(JNIEnv*, jclass,
         jfloat scale, jfloat offset_y, jfloat offset_x, jint width, jint height, jint rotation) {
     pthread_mutex_lock(&config_lock);
     active_zoom = {scale, offset_y, offset_x, width, height, rotation};
@@ -154,14 +154,14 @@ Java_com_jiusis_mistep_NativeRawInputBridge_updateNative(JNIEnv*, jclass,
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_jiusis_mistep_NativeRawInputBridge_updateTopNative(JNIEnv*, jclass,
+Java_io_github_zerohomers0_onesteplite_NativeRawInputBridge_updateTopNative(JNIEnv*, jclass,
         jint uid, jfloat scale, jfloat left, jfloat top) {
     pthread_mutex_lock(&config_lock);
     active_top = top_uid_layout.load(std::memory_order_acquire)
             && active_zoom.scale > 0 && active_zoom.scale < 1
             && uid >= 10000 && std::isfinite(scale) && scale > 0 && scale < 1
             && std::isfinite(left) && std::isfinite(top) && left>=0 && top>=0
-            ? mistep::TopInput{uid, scale, left, top} : mistep::TopInput{};
+            ? onesteplite::TopInput{uid, scale, left, top} : onesteplite::TopInput{};
     pthread_mutex_unlock(&config_lock);
     return installed.load(std::memory_order_acquire)
             && top_uid_layout.load(std::memory_order_acquire) ? JNI_TRUE : JNI_FALSE;

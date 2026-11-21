@@ -4,13 +4,13 @@ import os, subprocess, sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];src=package_dir(root);out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-s=(src/'MiStepHost.java').read_text('utf-8');a=s.index('    private void loadWallpaperBackdrop()');b=s.index('{',a)+1;depth=1
+s=(src/'WorkspaceHost.java').read_text('utf-8');a=s.index('    private void loadWallpaperBackdrop()');b=s.index('{',a)+1;depth=1
 while depth:depth+=(s[b]=='{')-(s[b]=='}');b+=1
 method=s[a:b]
 a=s.index('    private void finishWallpaperLoad(');b=s.index('{',a)+1;depth=1
 while depth:depth+=(s[b]=='{')-(s[b]=='}');b+=1
 method+='\n'+s[a:b]
-java=r'''package com.jiusis.mistep;
+java=r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class WallpaperRefreshRegression {
  static int checks;static void check(boolean b,String s){checks++;if(!b)throw new AssertionError(s);}
@@ -19,9 +19,9 @@ public class WallpaperRefreshRegression {
  static class Handler {List<Runnable>queue=Collections.synchronizedList(new ArrayList<>());int retries;Runnable delayed;void post(Runnable r){queue.add(r);}void removeCallbacks(Runnable r){}void postDelayed(Runnable r,long d){retries++;delayed=r;}void drain(){while(!queue.isEmpty())queue.remove(0).run();}}
  static class HyperOsStyle {static boolean fail;static List<Bitmap>produced=Collections.synchronizedList(new ArrayList<>());static Bitmap blurredWallpaper(Context c,int w,int h){if(fail)return null;Bitmap b=new Bitmap();produced.add(b);return b;}static Bitmap blurredBitmap(Bitmap b,int w,int h){Bitmap next=new Bitmap();produced.add(next);return next;}}
  static class WorkspaceFrost {static Bitmap finish(Bitmap b){return b;}}
- static class MiStepWarmup {static Bitmap wallpaper(Context c,int w,int h){return HyperOsStyle.blurredWallpaper(c,w,h);}}
- static class MiStepWallpaperSnapshot {static boolean canCapture(Context c){return c.interactive;}}
- static class MiStepClipboard {static MiStepClipboard get(Context c){return new MiStepClipboard();}void close(){}}
+ static class Warmup {static Bitmap wallpaper(Context c,int w,int h){return HyperOsStyle.blurredWallpaper(c,w,h);}}
+ static class WallpaperSnapshot {static boolean canCapture(Context c){return c.interactive;}}
+ static class Clipboard {static Clipboard get(Context c){return new Clipboard();}void close(){}}
  Bitmap wallpaperBackdrop=new Bitmap(),wellWallpaperBackdrop=new Bitmap();boolean wallpaperBackdropDirty=true,wallpaperBackdropRequested;long wallpaperLoadGeneration;Object mainSideAnimator,workspaceAnimator,promotion,cellMotion;int screenW=1080,screenH=2400,applies;Object root=new Object();Context ctx=new Context();Handler main=new Handler();Runnable wallpaperRetry=()->{};
  void applyWallpaperBackdrops(){applies++;check(!wallpaperBackdrop.isRecycled(),"published wallpaper was recycled");}void log(String s){}
  METHOD
@@ -41,6 +41,6 @@ public class WallpaperRefreshRegression {
   System.out.println("Production async wallpaper refresh: "+checks+" checks passed");
  }
 }'''.replace('METHOD',method)
-path=out/'WallpaperRefreshRegression.java';path.write_text(java,'utf-8');jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+path=out/'WallpaperRefreshRegression.java';path.write_text(java,'utf-8');jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(path)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WallpaperRefreshRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.WallpaperRefreshRegression'],check=True)

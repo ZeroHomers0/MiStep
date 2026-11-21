@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[2]
-source = (package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'build/tests/standalone'
 out.mkdir(parents=True, exist_ok=True)
 start = source.index('    private void refreshDisplayGeometry() {')
@@ -105,6 +105,6 @@ public class DisplayRefreshRegression {
 '''.replace('__METHOD__', source[start:end])
 java = out / 'DisplayRefreshRegression.java'
 java.write_text(body, encoding='utf8')
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), str(java)], check=True)
 subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'DisplayRefreshRegression'], check=True)

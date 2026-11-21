@@ -6,11 +6,11 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 
 root = Path(__file__).resolve().parents[2]
-src = package_dir(root)/"MiStepHost.java"
+src = package_dir(root)/"WorkspaceHost.java"
 source = src.read_text(encoding="utf-8-sig")
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 
 
 def method(signature):
@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public final class WorkspaceRetentionTest {
- void cancelMainSideSwitch(){}void refreshVideoPane(){}static class MiStepVideoPane {void releaseForPrivacy(){}}MiStepVideoPane videoPane;boolean lockExitPending;
+ void cancelMainSideSwitch(){}void refreshVideoPane(){}static class VideoPane {void releaseForPrivacy(){}}VideoPane videoPane;boolean lockExitPending;
     static int checks;
     static void check(boolean value, String message) {
         checks++;

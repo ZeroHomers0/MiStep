@@ -25,7 +25,7 @@ public class XposedHelpers {
   throw new IllegalArgumentException(name);
  }
 }""",
-'com/jiusis/mistep/PassBlurCoordinatesRegression.java':r"""package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/PassBlurCoordinatesRegression.java':r"""package io.github.zerohomers0.onesteplite;
 import android.view.SurfaceControl;
 public class PassBlurCoordinatesRegression {
  static int checks;static void ok(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
@@ -37,7 +37,7 @@ public class PassBlurCoordinatesRegression {
   // No apply/close/reparent/show methods: production must borrow this transaction.
  }
  public static void main(String[]args){
-  var lease=new MiStepPassBlurCoordinates();var d=new Display(0);var tx=new Tx();
+  var lease=new PassBlurCoordinates();var d=new Display(0);var tx=new Tx();
   ok(!lease.stage(d,tx,1,0,0)&&SurfaceControl.built==0,"inactive does not allocate");
   ok(!lease.stage(new Display(2),tx,.747f,0,622),"other displays excluded");
   ok(!lease.stage(null,tx,.747f,0,622),"missing owner");
@@ -46,7 +46,7 @@ public class PassBlurCoordinatesRegression {
   ok(!lease.stage(d,tx,.747f,Float.NaN,622),"invalid x rejected");
   ok(!lease.stage(d,tx,.747f,0,Float.NaN),"invalid y rejected");
   ok(lease.stage(d,tx,.747f,0,622),"workspace coordinates staged");
-  var first=tx.surface;ok(first.hidden&&first.container&&first.name.equals("MiStep/FullscreenMagnification:0/AppZoomOut:0"),"native recognition on hidden empty owner");
+  var first=tx.surface;ok(first.hidden&&first.container&&first.name.equals("OneStepLite/FullscreenMagnification:0/AppZoomOut:0"),"native recognition on hidden empty owner");
   ok(tx.scale==.747f&&tx.x==0&&tx.y==622,"actual tuple");
   var next=new Tx();ok(lease.stage(d,next,.7f,273,606),"updated side and geometry");
   ok(next.surface==first&&SurfaceControl.built==1&&next.x==273,"one owned layer reused");
@@ -60,7 +60,7 @@ public class PassBlurCoordinatesRegression {
 }"""}
 for n,text in files.items():
  p=out/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
-production=package_dir(root)/'MiStepPassBlurCoordinates.java'
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);java=[str(out/n) for n in files]+[str(production)]
+production=package_dir(root)/'PassBlurCoordinates.java'
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN']);java=[str(out/n) for n in files]+[str(production)]
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*java],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.PassBlurCoordinatesRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.PassBlurCoordinatesRegression'],check=True)

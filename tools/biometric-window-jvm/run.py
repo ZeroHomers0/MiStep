@@ -38,7 +38,7 @@ public class XposedHelpers {
  public static Object getObjectField(Object o,String n)throws Exception{return o.getClass().getField(n).get(o);}
  public static Object callMethod(Object o,String n,Object...args)throws Exception{return o.getClass().getMethod(n).invoke(o);}
 }''',
-"com/jiusis/mistep/BiometricWindowRegression.java":r'''package com.jiusis.mistep;
+"io/github/zerohomers0/onesteplite/BiometricWindowRegression.java":r'''package io.github.zerohomers0.onesteplite;
 import android.view.*;import de.robv.android.xposed.*;
 public class BiometricWindowRegression {
  static int checks;static void check(boolean v,String m){checks++;if(!v)throw new AssertionError(m);}
@@ -48,8 +48,8 @@ public class BiometricWindowRegression {
  static void unchanged(WindowManager.LayoutParams a){check(a.x==0&&a.y==0&&a.width==-1&&a.height==-1,"OEM geometry changed");
  check(a.flags==17309698&&a.privateFlags==16&&a.dimAmount==.4f,"OEM auth/security flags changed");}
  public static void main(String[]args)throws Throwable{
-  XposedHelpers.target=null;MiStepBiometricWindow.install(null);check(XposedBridge.hooks.isEmpty(),"missing native class changed");
-  XposedHelpers.target=NativeContainer.class;MiStepBiometricWindow.install(null);
+  XposedHelpers.target=null;BiometricWindow.install(null);check(XposedBridge.hooks.isEmpty(),"missing native class changed");
+  XposedHelpers.target=NativeContainer.class;BiometricWindow.install(null);
   check(XposedBridge.hooks.size()==2,"native factory and OEM first-show hook missing");
   for(String pkg:new String[]{null,"com.android.systemui"}){
    XC_MethodHook.MethodHookParam p=new XC_MethodHook.MethodHookParam();WindowManager.LayoutParams a=attrs(2009,pkg);p.result=a;
@@ -64,9 +64,9 @@ public class BiometricWindowRegression {
    unchanged(d.window.attrs);
   }
   for(WindowManager.LayoutParams a:new WindowManager.LayoutParams[]{attrs(2017,"com.android.systemui"),attrs(2009,"other.app")}){
-   check(!MiStepBiometricWindow.identify(a),"unrelated native params admitted");check(a.getTitle().equals("com.android.systemui"),"foreign title changed");unchanged(a);
+   check(!BiometricWindow.identify(a),"unrelated native params admitted");check(a.getTitle().equals("com.android.systemui"),"foreign title changed");unchanged(a);
   }
-  check(!MiStepBiometricWindow.identify(null),"null params admitted");
+  check(!BiometricWindow.identify(null),"null params admitted");
   XC_MethodHook.MethodHookParam p=new XC_MethodHook.MethodHookParam();p.failed=true;p.result=attrs(2009,null);
   XposedBridge.hooks.get("getLayoutParams").after(p);
   check(((WindowManager.LayoutParams)p.result).getTitle().equals("com.android.systemui"),"failed native factory changed");
@@ -75,7 +75,7 @@ public class BiometricWindowRegression {
   p.result=null;XposedBridge.hooks.get("getLayoutParams").after(p);
   check(!InputMagnificationPolicy.shouldExcludeFromMagnification(2009,"com.android.systemui","com.android.systemui"),"all keyguard dialogs excluded");
   XposedBridge.hooks.clear();XposedBridge.failRegistration=true;
-  MiStepBiometricWindow.install(null);
+  BiometricWindow.install(null);
   check(XposedBridge.failures==1,"registration failure fixture did not execute");
   check(XposedBridge.hooks.isEmpty(),"failed registration fabricated a working hook");
   System.out.println("Native biometric window: "+checks+" checks passed");
@@ -85,8 +85,8 @@ public class BiometricWindowRegression {
 files=[]
 for rel,text in sources.items():
  p=out/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding="utf-8");files.append(str(p))
-j=Path(os.environ["MISTEP_JAVA_BIN"])
+j=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 production=package_dir(root)
 subprocess.run([str(j/"javac.exe"),"-encoding","UTF-8","-d",str(out),*files,
- str(production/"MiStepBiometricWindow.java"),str(production/"InputMagnificationPolicy.java"),str(production/"MiStepPackages.java")],check=True)
-subprocess.run([str(j/"java.exe"),"-cp",str(out),"com.jiusis.mistep.BiometricWindowRegression"],check=True)
+ str(production/"BiometricWindow.java"),str(production/"InputMagnificationPolicy.java"),str(production/"Packages.java")],check=True)
+subprocess.run([str(j/"java.exe"),"-cp",str(out),"io.github.zerohomers0.onesteplite.BiometricWindowRegression"],check=True)

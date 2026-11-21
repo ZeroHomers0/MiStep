@@ -1,12 +1,12 @@
 """Resolve production sources that live in functional sub-directories of one package.
 
-Every file under ``module/src/main/java/com/jiusis/mistep`` still declares
-``package com.jiusis.mistep;``; only its directory changed.  Tools keep writing
-``src/'MiStepHost.java'`` and get the real path back.
+Every file under ``module/src/main/java/io/github/zerohomers0/onesteplite`` still declares
+``package io.github.zerohomers0.onesteplite;``; only its directory changed.  Tools keep writing
+``src/'WorkspaceHost.java'`` and get the real path back.
 """
 from pathlib import Path
 
-PACKAGE = 'module/src/main/java/com/jiusis/mistep'
+PACKAGE = 'module/src/main/java/io/github/zerohomers0/onesteplite'
 
 
 class SourceRoot:

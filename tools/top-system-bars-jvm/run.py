@@ -4,7 +4,7 @@ from pathlib import Path
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 ROOT=Path(__file__).resolve().parents[2]
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/tests/top-system-bars-jvm'
-JDK=Path(os.environ['MISTEP_JAVA_BIN'])
+JDK=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 tree=ast.parse((ROOT/'tools/live-swap-jvm/run.py').read_text(encoding='utf-8-sig'))
 shared=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='FILES' for t in n.targets))
 FILES={
@@ -15,7 +15,7 @@ FILES={
  public boolean post(Runnable r){if(!accept)return false;queue.add(r);return true;}
  public void runAll(){while(!queue.isEmpty())queue.remove().run();}
 }''',
-'com/jiusis/mistep/TopBarsRegression.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/TopBarsRegression.java':r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.os.*;
 public class TopBarsRegression {
  static int checks;static void check(boolean v,String why){checks++;if(!v)throw new AssertionError(why);}
@@ -30,7 +30,7 @@ public class TopBarsRegression {
   int getBarState(){return state;}boolean isTaskBarReady(){return ready;}boolean isInSplitScreen(){return split;}
   void updateStatusBarAnotherApp(){if(fail)throw new IllegalStateException("native failure");calls++;}}
  static class Case {Object lock=new Object();Display d=new Display();Task t=new Task();Window w=new Window(t);Native n=new Native();
-  MiStepTopSystemBars h=new MiStepTopSystemBars();boolean active=true;List<String> logs=new ArrayList<>();
+  TopSystemBars h=new TopSystemBars();boolean active=true;List<String> logs=new ArrayList<>();
   Case(){SystemClock.now=1000;t.display=d;n.mDisplayContent=d;n.mCurrentTopTask=t;d.mCurrentFocus=d.mFocusedApp=w;}
   void remember(){synchronized(lock){h.remember(w,d);}}
   void returned(){t.mode=1;t.translucent=false;}
@@ -39,8 +39,8 @@ public class TopBarsRegression {
   void run(){n.mHandler.runAll();}
  }
  public static void main(String[] args){
-  check(MiStepTopSystemBars.supported(Native.class),"OS3/OS4 task-owner replay capability lost");
-  check(!MiStepTopSystemBars.supported(Os2Native.class),"OS2 transition-only controller admitted to task-owner replay");
+  check(TopSystemBars.supported(Native.class),"OS3/OS4 task-owner replay capability lost");
+  check(!TopSystemBars.supported(Os2Native.class),"OS2 transition-only controller admitted to task-owner replay");
   Case ok=new Case();ok.remember();ok.returned();ok.changed();ok.changed();
   check(ok.n.mHandler.queue.size()==1,"duplicate return queued twice");check(ok.n.calls==0,"native API called on WMS caller thread");
   ok.run();check(ok.n.calls==1&&ok.logs.size()==1,"native return not reconciled");ok.changed();ok.focused();ok.run();check(ok.n.calls==1,"completed visit restored twice");
@@ -82,7 +82,7 @@ public class TopBarsRegression {
 sources=[]
 for name,body in FILES.items():
  p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf8');sources.append(str(p))
-for name in ['MiStepTopSystemBars','MiStepSideRoleChange']:
+for name in ['TopSystemBars','SideRoleChange']:
  sources.append(str(package_dir(ROOT)/f'{name}.java'))
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),*sources],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.TopBarsRegression'],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'io.github.zerohomers0.onesteplite.TopBarsRegression'],check=True)

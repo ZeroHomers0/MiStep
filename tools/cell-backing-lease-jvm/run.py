@@ -21,7 +21,7 @@ from pathlib import Path
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 root = Path(__file__).resolve().parents[2]
-text = (package_dir(root)/'MiStepHost.java').read_text(encoding='utf-8-sig')
+text = (package_dir(root)/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 checks = 0
 
 

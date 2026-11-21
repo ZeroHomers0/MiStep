@@ -5,13 +5,13 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root=Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def member(signature):
     start=host.index(signature);end=host.index('{',start)+1;depth=1
     while depth:
         depth+=(host[end]=='{')-(host[end]=='}');end+=1
-    return host[start:end].replace('MiStepHost','TopDismissRegression')
-body=r'''package com.jiusis.mistep;
+    return host[start:end].replace('WorkspaceHost','TopDismissRegression')
+body=r'''package io.github.zerohomers0.onesteplite;
 import java.util.function.*;
 public class TopDismissRegression {
  static final int ACTIVE=1,SLOT_TOP=4;static TopDismissRegression sInstance;
@@ -28,10 +28,10 @@ public class TopDismissRegression {
  static class Slot {int[] rect={2144,606,3048,2032};int taskId=42;long taskEpoch=2;boolean occupied=true,parked,frozen,promoting,launching,closing;
   Object taskToken=new Object();View view=new View();}
  static class HyperOsStyle {static float dp(Object c,float v){return v*2.75f;}}
- static class MiStepClipboard {static MiStepClipboard get(Object c){return new MiStepClipboard();}void close(){}}
- static class MiStepSideDismiss {
+ static class Clipboard {static Clipboard get(Object c){return new Clipboard();}void close(){}}
+ static class SideDismiss {
   final BooleanSupplier current;final Consumer<Boolean> complete;float distance,dx;boolean tracking=true,closed;
-  MiStepSideDismiss(View r,View v,float d,BooleanSupplier c,Consumer<Boolean> done,Consumer<String> log){distance=d;current=c;complete=done;}
+  SideDismiss(View r,View v,float d,BooleanSupplier c,Consumer<Boolean> done,Consumer<String> log){distance=d;current=c;complete=done;}
   boolean isTracking(){return tracking;}void follow(float d){dx=d;if(!current.getAsBoolean())settle(false);}
   void settle(boolean commit){if(!tracking)return;tracking=false;complete.accept(commit&&current.getAsBoolean());}
   void close(){closed=true;}
@@ -43,7 +43,7 @@ public class TopDismissRegression {
  Object ctx=new Object(),promotion,cellMotion,topTransition,topOriginalSlot=new Object();
  View root=new View();Layout layout=new Layout();Roll topRoll=new Roll();
  Slot[] slots={new Slot(),new Slot(),new Slot(),new Slot(),new Slot()};
- MiStepSideDismiss sideDismiss;Slot sideDismissSlot;TopTaskState topTaskState=new TopTaskState();
+ SideDismiss sideDismiss;Slot sideDismissSlot;TopTaskState topTaskState=new TopTaskState();
  Runnable success;Consumer<String> failure;
  TopCandidate tabletCoveredMain;TopTaskState.Key tabletReturnedTop;
  TopCandidate covered;TopCandidate currentTopCandidate(){return covered;}
@@ -152,9 +152,9 @@ methods='\n'.join(member(sig) for sig in ('    private boolean topReady(', '    
  '    private static int topDismissWidth(', '    static boolean topDismissDirectionAllowed(',
  '    static Object topDismissToken(', '    static boolean beginTopDismiss(', '    static void moveTopDismiss(', '    static void endTopDismiss(',
  '    private void restoreTabletCoveredMain('))
-p=out/'com/jiusis/mistep/TopDismissRegression.java';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body.replace('__METHODS__',methods),encoding='utf8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+p=out/'io/github/zerohomers0/onesteplite/TopDismissRegression.java';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body.replace('__METHODS__',methods),encoding='utf8')
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 wct=out/'android/window/WindowContainerTransaction.java';wct.parent.mkdir(parents=True,exist_ok=True)
 wct.write_text('package android.window; public class WindowContainerTransaction {public Object token;public boolean front;}',encoding='utf8')
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(p),str(wct),str(src/'TopTaskState.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopDismissRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopDismissRegression'],check=True)

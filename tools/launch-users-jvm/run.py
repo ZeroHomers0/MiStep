@@ -4,7 +4,7 @@ import os, subprocess, sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2];src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def member(sig):
     a=host.index(sig);b=host.index('{',a)+1;d=1
     while d:d+=(host[b]=='{')-(host[b]=='}');b+=1
@@ -18,7 +18,7 @@ files={
 'android/provider/Settings.java':'package android.provider;public class Settings {public static final String ACTION_SETTINGS="settings";}',
 'android/widget/Toast.java':'package android.widget;public class Toast {public static final int LENGTH_SHORT=0;public static Toast makeText(Object c,String s,int d){return new Toast();}public void show(){}}',
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;public class XposedHelpers {public static Object getObjectField(Object o,String n){try{var f=o.getClass().getDeclaredField(n);f.setAccessible(true);return f.get(o);}catch(Exception e){throw new RuntimeException(e);}}public static int getIntField(Object o,String n){return (Integer)getObjectField(o,n);}}''',
-'com/jiusis/mistep/LaunchUsersRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/LaunchUsersRegression.java':'''package io.github.zerohomers0.onesteplite;
 import android.content.*;import de.robv.android.xposed.XposedHelpers;
 public class LaunchUsersRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
@@ -74,6 +74,6 @@ public class LaunchUsersRegression {
 paths=[]
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths,str(src/'DesktopIconLaunchPolicy.java'),str(src/'TaskLaunchIdentity.java'),str(src/'TaskUserPolicy.java'),str(src/'MiStepPackages.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.LaunchUsersRegression'],check=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths,str(src/'DesktopIconLaunchPolicy.java'),str(src/'TaskLaunchIdentity.java'),str(src/'TaskUserPolicy.java'),str(src/'Packages.java')],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.LaunchUsersRegression'],check=True)

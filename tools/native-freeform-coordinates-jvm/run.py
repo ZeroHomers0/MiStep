@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess, tempfile
 
 root = Path(__file__).resolve().parents[2]
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 sources = {
 'android/view/MotionEvent.java': '''package android.view;
 public class MotionEvent {
@@ -42,7 +42,7 @@ public class XposedHelpers {
  public static void findAndHookMethod(Class<?> c,String n,Object... a){XposedBridge.hooks.put(n,(XC_MethodHook)a[a.length-1]);}
  public static Object callMethod(Object o,String n){try{return o.getClass().getMethod(n).invoke(o);}catch(Exception e){throw new RuntimeException(e);}}
 }''',
-'com/jiusis/mistep/NativeFreeformCoordinatesTest.java': '''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/NativeFreeformCoordinatesTest.java': '''package io.github.zerohomers0.onesteplite;
 import android.view.MotionEvent;
 import de.robv.android.xposed.*;
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
@@ -75,7 +75,7 @@ public class NativeFreeformCoordinatesTest {
  }
 }'''
 }
-with tempfile.TemporaryDirectory(prefix='mistep-native-coordinates-') as folder:
+with tempfile.TemporaryDirectory(prefix='onesteplite-native-coordinates-') as folder:
     work = Path(folder)
     files = []
     for name, content in sources.items():
@@ -84,8 +84,8 @@ with tempfile.TemporaryDirectory(prefix='mistep-native-coordinates-') as folder:
         file.write_text(content, encoding='utf-8')
         files.append(str(file))
     files += [str(package_dir(root) / (name + '.java'))
-              for name in ('NativeFreeformPolicy', 'NativeFreeformCoordinates', 'MiStepPackages')]
+              for name in ('NativeFreeformPolicy', 'NativeFreeformCoordinates', 'Packages')]
     files.append(str(root / 'tests/NativeFreeformPolicyTest.java'))
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(work), *files], check=True)
     for name in ('NativeFreeformPolicyTest', 'NativeFreeformCoordinatesTest'):
-        subprocess.run([str(jdk / 'java.exe'), '-cp', str(work), 'com.jiusis.mistep.' + name], check=True)
+        subprocess.run([str(jdk / 'java.exe'), '-cp', str(work), 'io.github.zerohomers0.onesteplite.' + name], check=True)

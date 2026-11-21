@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import java.lang.reflect.*;
 import java.util.Map;
@@ -141,7 +141,7 @@ public class TaskRotationLifecycleTest {
         catch (NoSuchMethodException oldImplementation) { return false; }
     }
     static Object apply(Display display, Activity app) throws Exception {
-        return call("applyMiStepFixedRotationLocked", new Class[]{Object.class, Object.class, String.class},
+        return call("applyFixedRotationLocked", new Class[]{Object.class, Object.class, String.class},
                 display, app, "lifecycle-regression");
     }
     static Object call(String name, Class<?>[] types, Object... args) throws Exception {

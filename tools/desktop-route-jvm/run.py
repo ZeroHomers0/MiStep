@@ -7,7 +7,7 @@ root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
 files = {
-'com/jiusis/mistep/MiStepTopPointerFocus.java':'package com.jiusis.mistep;import android.os.Bundle;class MiStepTopPointerFocus {static boolean contains(Bundle b,float x,float y){return false;}}',
+'io/github/zerohomers0/onesteplite/TopPointerFocus.java':'package io.github.zerohomers0.onesteplite;import android.os.Bundle;class TopPointerFocus {static boolean contains(Bundle b,float x,float y){return false;}}',
 'android/graphics/Rect.java': 'package android.graphics;\n\n/** JVM-only geometry fake. Never packaged into the application. */\npublic class Rect {\n    public int left, top, right, bottom;\n    public Rect(int left, int top, int right, int bottom) {\n        this.left=left; this.top=top; this.right=right; this.bottom=bottom;\n    }\n    public int width() { return right-left; }\n    public int height() { return bottom-top; }\n    public boolean isEmpty() { return left>=right || top>=bottom; }\n    @Override public boolean equals(Object other) {\n        if (!(other instanceof Rect)) return false;\n        Rect rect=(Rect)other;\n        return left==rect.left && top==rect.top && right==rect.right && bottom==rect.bottom;\n    }\n    @Override public int hashCode() { return java.util.Objects.hash(left,top,right,bottom); }\n}\n',
 'android/Manifest.java': 'package android; public class Manifest {public static class permission {public static final String WRITE_SECURE_SETTINGS="secure";}}',
 'android/os/IBinder.java': 'package android.os; public interface IBinder {boolean isBinderAlive();void linkToDeath(DeathRecipient r,int f);boolean unlinkToDeath(DeathRecipient r,int f);interface DeathRecipient {void binderDied();}}',
@@ -42,7 +42,7 @@ files = {
  static Object call(Class<?>c,Object o,String n,Object[]a){try{for(var m:c.getDeclaredMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length){m.setAccessible(true);return m.invoke(o,a);}throw new NoSuchMethodException(n);}catch(Exception e){throw new IllegalStateException(e);}}}
 ''',
 'com/android/server/wm/WindowContainer.java': 'package com.android.server.wm;import android.os.*;import java.util.*;public class WindowContainer {public static Map<IBinder,Object>tasks=new HashMap<>();public static Object fromBinder(IBinder b){return tasks.get(b);}}',
-'com/jiusis/mistep/DesktopRouteRegression.java': '''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/DesktopRouteRegression.java': '''package io.github.zerohomers0.onesteplite;
 import android.os.*;import android.content.*;import com.android.server.wm.WindowContainer;import java.util.*;
 public class DesktopRouteRegression {
  static int checks;static void check(boolean v,String m){checks++;if(!v)throw new AssertionError(m);}
@@ -55,9 +55,9 @@ public class DesktopRouteRegression {
  Intent entry=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setComponent(new ComponentName("com.android.settings","Settings"));
  DesktopRouteRegression(){SystemClock.now+=1000;WindowContainer.tasks.clear();WindowContainer.tasks.put(task.info.token.binder,task);row.putBinder("task",task.info.token.binder);row.putInt("taskId",7);row.putInt("userId",0);row.putInt("displayId",0);row.putString("package","com.android.settings");row.putLong("scene",3);row.putLong("binding",8);register(new ArrayList<>(List.of(row)));}
  void register(ArrayList<Bundle>rows){register(rows,null,false);}
- void register(ArrayList<Bundle>rows,Bundle top,boolean retained){Bundle state=new Bundle();state.putBinder("owner",owner);state.putLong("sequence",sequence++);state.putBundle("topLaunch",top);state.putBoolean("retained",retained);state.putParcelableArrayList("rows",rows);state.putParcelableArrayList("recents",new ArrayList<>(List.of(row)));MiStepDesktopLaunchBridge.update(new Intent("update").putExtra("state",state));}
- boolean recent(int id){return MiStepDesktopLaunchBridge.beforeRecents(ctx,atms,new Object[]{id,null});}
- boolean route(){return MiStepDesktopLaunchBridge.before(ctx,atms,new Object[]{"com.miui.home",entry});}
+ void register(ArrayList<Bundle>rows,Bundle top,boolean retained){Bundle state=new Bundle();state.putBinder("owner",owner);state.putLong("sequence",sequence++);state.putBundle("topLaunch",top);state.putBoolean("retained",retained);state.putParcelableArrayList("rows",rows);state.putParcelableArrayList("recents",new ArrayList<>(List.of(row)));DesktopLaunchBridge.update(new Intent("update").putExtra("state",state));}
+ boolean recent(int id){return DesktopLaunchBridge.beforeRecents(ctx,atms,new Object[]{id,null});}
+ boolean route(){return DesktopLaunchBridge.before(ctx,atms,new Object[]{"com.miui.home",entry});}
  public static void main(String[]args){
   var h=new DesktopRouteRegression();check(h.route()&&h.ctx.sent.size()==1,"confirmed mode6 task routes once through Host");Bundle b=h.ctx.sent.get(0).getBundleExtra("binding");check(b.getBoolean("hostRoute",false)&&b.getBinder("task")==h.task.info.token.binder&&b.getLong("deadline",0)==SystemClock.now+1500,"exact binding and bounded handoff deadline");check(h.task.mode==6,"bridge never restores fullscreen or mutates the native task");check(h.route()&&h.ctx.sent.size()==1,"duplicate click cannot leak a competing native launch");
   h=new DesktopRouteRegression();h.ctx.pm.packages=new String[]{"other"};check(!h.route()&&h.ctx.sent.isEmpty(),"unrelated caller untouched");
@@ -106,10 +106,10 @@ public class DesktopRouteRegression {
   h=new DesktopRouteRegression();h.ctx.fail=true;check(!h.recent(7),"failed Recents handoff stays native");h.ctx.fail=false;check(h.recent(7)&&h.ctx.sent.size()==1,"retry after enqueue failure really dispatches");
   h=new DesktopRouteRegression();h.task.info.userId=999;h.row.putInt("userId",999);h.register(new ArrayList<>(List.of(h.row)));
   check(!h.route(),"owner icon cannot route a clone side task");
-  check(MiStepDesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},999),"explicit clone launcher user routes its own task");
+  check(DesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},999),"explicit clone launcher user routes its own task");
   check(h.ctx.sent.get(0).getBundleExtra("binding").getInt("userId")==999,"clone handoff retains user");
-  h=new DesktopRouteRegression();check(!MiStepDesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},999),"clone icon cannot route owner task");
-  check(!MiStepDesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},-1),"unknown launch user stays native");
+  h=new DesktopRouteRegression();check(!DesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},999),"clone icon cannot route owner task");
+  check(!DesktopLaunchBridge.before(h.ctx,h.atms,new Object[]{"com.miui.home",h.entry},-1),"unknown launch user stays native");
   h=new DesktopRouteRegression();h.task.info.baseActivity=new ComponentName("com.android.settings","MiniProgram");
   check(!h.route()&&h.ctx.sent.isEmpty(),"same-package independent task cannot capture the application launcher");
   check(h.recent(7)&&h.ctx.sent.size()==1,"explicit Recents task selection retains the independent task identity");
@@ -134,10 +134,10 @@ public class DesktopRouteRegression {
 '''
 }
 files['android/os/Bundle.java']=files['android/os/Bundle.java'].replace('Map<String,Object>m=', 'public Bundle getBundle(String k){return (Bundle)m.get(k);}public void putBundle(String k,Bundle b){m.put(k,b);}public float getFloat(String k,float d){return m.containsKey(k)?(Float)m.get(k):d;} Map<String,Object>m=')
-files['com/jiusis/mistep/NativeRawInputBridge.java']='package com.jiusis.mistep;class NativeRawInputBridge {static void updateTop(int uid,float scale){}static void updateTop(int uid,float scale,float left,float top){}}'
-files['com/jiusis/mistep/MiStepTopRawInput.java']='package com.jiusis.mistep;import android.os.Bundle;class MiStepTopRawInput {static int uid(Bundle b,ClassLoader l){return -1;}}'
+files['io/github/zerohomers0/onesteplite/NativeRawInputBridge.java']='package io.github.zerohomers0.onesteplite;class NativeRawInputBridge {static void updateTop(int uid,float scale){}static void updateTop(int uid,float scale,float left,float top){}}'
+files['io/github/zerohomers0/onesteplite/TopRawInput.java']='package io.github.zerohomers0.onesteplite;import android.os.Bundle;class TopRawInput {static int uid(Bundle b,ClassLoader l){return -1;}}'
 for name, text in files.items():
     path=out/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text,encoding='utf8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/n) for n in ['MiStepDesktopLaunchBridge.java','DesktopIconLaunchPolicy.java','MiStepSideRoleChange.java','TaskLaunchIdentity.java','MiStepActions.java','MiStepPackages.java']],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.DesktopRouteRegression'],check=True)
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/n) for n in ['DesktopLaunchBridge.java','DesktopIconLaunchPolicy.java','SideRoleChange.java','TaskLaunchIdentity.java','Actions.java','Packages.java']],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.DesktopRouteRegression'],check=True)

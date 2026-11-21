@@ -9,8 +9,8 @@ namespace {
 int checks;
 int publish_result;
 int original_calls;
-mistep::Transform expected_raw;
-mistep::Transform expected_local;
+onesteplite::Transform expected_raw;
+onesteplite::Transform expected_local;
 
 void check(bool success, const char* name) {
     if (!success) {
@@ -20,7 +20,7 @@ void check(bool success, const char* name) {
     ++checks;
 }
 
-mistep::Transform identity() {
+onesteplite::Transform identity() {
     return {{1, 0, 0, 0, 1, 0, 0, 0, 1}, 0};
 }
 
@@ -32,8 +32,8 @@ int original(void* dispatcher, void* connection, void* entry) {
     ++original_calls;
     check(dispatcher == reinterpret_cast<void*>(0x1234), "dispatcher preserved");
     check(connection == reinterpret_cast<void*>(0x5678), "connection preserved");
-    const auto local = mistep::read<mistep::Transform>(entry, 0x1c);
-    const auto raw = mistep::read<mistep::Transform>(entry, 0x44);
+    const auto local = onesteplite::read<onesteplite::Transform>(entry, 0x1c);
+    const auto raw = onesteplite::read<onesteplite::Transform>(entry, 0x44);
     check(std::memcmp(&local, &expected_local, sizeof(local)) == 0,
             "local matrix byte-identical during original publish");
     check(std::memcmp(&raw, &expected_raw, sizeof(raw)) == 0,
@@ -41,20 +41,20 @@ int original(void* dispatcher, void* connection, void* entry) {
     return publish_result;
 }
 
-void run(const mistep::Zoom& zoom, uint8_t* entry, bool remap,
-        const mistep::TopInput& top = {}, bool profile = false) {
+void run(const onesteplite::Zoom& zoom, uint8_t* entry, bool remap,
+        const onesteplite::TopInput& top = {}, bool profile = false) {
     uint8_t before[160];
     std::memcpy(before, entry, sizeof(before));
-    expected_local = mistep::read<mistep::Transform>(entry, 0x1c);
-    expected_raw = mistep::read<mistep::Transform>(entry, 0x44);
-    bool upper = profile && top.uid >= 10000 && mistep::read<int32_t>(entry,0x84)==top.uid
-            && mistep::uniform_basis(expected_local,1/top.scale);
-    const mistep::Zoom selected = upper ? mistep::Zoom{top.scale,top.offset_y,top.offset_x} : zoom;
-    if (remap) check(mistep::corrected_raw(selected, expected_local, expected_raw, expected_raw),
+    expected_local = onesteplite::read<onesteplite::Transform>(entry, 0x1c);
+    expected_raw = onesteplite::read<onesteplite::Transform>(entry, 0x44);
+    bool upper = profile && top.uid >= 10000 && onesteplite::read<int32_t>(entry,0x84)==top.uid
+            && onesteplite::uniform_basis(expected_local,1/top.scale);
+    const onesteplite::Zoom selected = upper ? onesteplite::Zoom{top.scale,top.offset_y,top.offset_x} : zoom;
+    if (remap) check(onesteplite::corrected_raw(selected, expected_local, expected_raw, expected_raw),
             "expected inverse available");
     const int before_calls = original_calls;
     bool observed = !remap;
-    const int result = mistep::publish(original, reinterpret_cast<void*>(0x1234),
+    const int result = onesteplite::publish(original, reinterpret_cast<void*>(0x1234),
             reinterpret_cast<void*>(0x5678), entry, zoom, &observed, top, profile);
     check(observed == remap, "remap decision matches actual geometry");
     check(result == publish_result, "original return value preserved");
@@ -72,7 +72,7 @@ int main() {
     write<int32_t>(event, 0x3c, 0);
     write<const void*>(entry, 0x8, event);
     write<float>(entry, 0x6c, 1);
-    const mistep::Zoom zoom{0.74654907f, 661, 0};
+    const onesteplite::Zoom zoom{0.74654907f, 661, 0};
     auto local = identity();
     local.m[0] = local.m[4] = 1 / zoom.scale;
     local.m[6] = -140;  // A popup has its own local origin; raw must not inherit it.
@@ -85,9 +85,9 @@ int main() {
         run(zoom, entry, true);
     }
     for (float x_offset : {0.f, 304.f}) {
-        const mistep::Zoom state{zoom.scale, zoom.offset_y, x_offset};
-        mistep::Transform mapped;
-        check(mistep::corrected_raw(state, local, raw, mapped), "main raw inverse exists");
+        const onesteplite::Zoom state{zoom.scale, zoom.offset_y, x_offset};
+        onesteplite::Transform mapped;
+        check(onesteplite::corrected_raw(state, local, raw, mapped), "main raw inverse exists");
         for (float y : {0.f, 100.f, 400.f, 1250.f, 2200.f, 2608.f}) {
             const float px = 600 * state.scale + state.offset_x;
             const float py = y * state.scale + state.offset_y;
@@ -122,8 +122,8 @@ int main() {
     write<float>(entry, 0x6c, .8f);
     run(zoom, entry, false);
     write<float>(entry, 0x6c, 1);
-    mistep::Transform corrected;
-    check(mistep::corrected_raw(zoom, local, raw, corrected), "first inverse available");
+    onesteplite::Transform corrected;
+    check(onesteplite::corrected_raw(zoom, local, raw, corrected), "first inverse available");
     write(entry, 0x44, corrected);
     run(zoom, entry, false);
     write(entry, 0x44, raw);
@@ -132,7 +132,7 @@ int main() {
     rotated.m[1] = 1;
     rotated.m[3] = -1;
     rotated.m[6] = 2608;
-    check(mistep::corrected_raw(zoom, local, rotated, corrected), "display rotation composes");
+    check(onesteplite::corrected_raw(zoom, local, rotated, corrected), "display rotation composes");
     check(std::fabs(corrected.m[3] * 100 + corrected.m[6] - 2508 / zoom.scale) < .002f,
             "raw display transform is applied before inverse zoom");
 
@@ -140,21 +140,21 @@ int main() {
     // origins never enter raw; raw directions and distances follow local axes.
     for (int rotation : {0,1,2,3}) for(float ox : {0.f,273.f})
     for(float origin : {-1900.f,0.f,1400.f}) {
-        const mistep::Zoom state{.7471545f,622.f,ox,1080,2460,0};
+        const onesteplite::Zoom state{.7471545f,622.f,ox,1080,2460,0};
         auto window=identity(); const float k=1.f/state.scale;
         if(rotation==0){ window.m[0]=k;window.m[4]=k; }
         if(rotation==1){ window.m[0]=0;window.m[1]=-k;window.m[3]=k;window.m[4]=0; }
         if(rotation==2){ window.m[0]=-k;window.m[4]=-k; }
         if(rotation==3){ window.m[0]=0;window.m[1]=k;window.m[3]=-k;window.m[4]=0; }
         window.m[6]=origin;window.m[7]=-origin;
-        mistep::Transform mapped;
-        check(mistep::corrected_raw(state,window,raw,mapped),"fixed rotation raw composed");
+        onesteplite::Transform mapped;
+        check(onesteplite::corrected_raw(state,window,raw,mapped),"fixed rotation raw composed");
         auto aliased_raw=raw;
-        check(mistep::corrected_raw(state,window,aliased_raw,aliased_raw)
+        check(onesteplite::corrected_raw(state,window,aliased_raw,aliased_raw)
                 && std::memcmp(&aliased_raw,&mapped,sizeof(mapped))==0,
                 "aliased raw input preserves fixed rotation");
         auto aliased_local=window;
-        check(mistep::corrected_raw(state,aliased_local,raw,aliased_local)
+        check(onesteplite::corrected_raw(state,aliased_local,raw,aliased_local)
                 && std::memcmp(&aliased_local,&mapped,sizeof(mapped))==0,
                 "aliased local input preserves fixed rotation");
         for(float x : {20.f,500.f,1060.f}) for(float y : {50.f,1300.f,2400.f}) {
@@ -168,10 +168,10 @@ int main() {
         for(int result : {0,-11,-32}){publish_result=result;run(state,entry,true);}
     }
     auto mirror=local;mirror.m[0]=-mirror.m[0];
-    check(!mistep::corrected_raw({zoom.scale,622,0,1080,2460,0},mirror,raw,corrected),"mirrored unsupported input skipped");
+    check(!onesteplite::corrected_raw({zoom.scale,622,0,1080,2460,0},mirror,raw,corrected),"mirrored unsupported input skipped");
 
     // TOP dialogs use logical pixels for local gestures and raw distances alike.
-    const mistep::TopInput top{10321,.364424f};
+    const onesteplite::TopInput top{10321,.364424f};
     auto upper=identity();upper.m[0]=upper.m[4]=1/top.scale;
     upper.m[6]=-321;upper.m[7]=-567; // Comment/dialog local origin is not raw origin.
     write(entry,0x1c,upper);write(entry,0x44,raw);write<int32_t>(entry,0x84,top.uid);
@@ -182,22 +182,22 @@ int main() {
     write<uint32_t>(entry,0x18,8);run(zoom,entry,false,top,true);
     write<uint32_t>(entry,0x18,0);write<int32_t>(event,0x3c,1);run(zoom,entry,false,top,true);
     write<int32_t>(event,0x3c,0);write(entry,0x1c,local);run(zoom,entry,true,top,true);
-    mistep::Transform upper_raw;
-    check(mistep::corrected_raw({top.scale,0,0},upper,raw,upper_raw),"TOP raw inverse exists");
+    onesteplite::Transform upper_raw;
+    check(onesteplite::corrected_raw({top.scale,0,0},upper,raw,upper_raw),"TOP raw inverse exists");
     for(float distance : {1.f,30.f,100.f,300.f}) {
-        check(mistep::close(upper_raw.m[4]*distance,upper.m[4]*distance),
+        check(onesteplite::close(upper_raw.m[4]*distance,upper.m[4]*distance),
                 "comment drag raw and local distances agree at every tested distance");
     }
     check(upper_raw.m[6]==0&&upper_raw.m[7]==0,"comment local origin never shifts absolute raw");
     write(entry,0x1c,upper);write(entry,0x44,upper_raw);run(zoom,entry,false,top,true);
     write(entry,0x44,raw);write(entry,0x1c,raw);run(zoom,entry,false,top,true);
 
-    const mistep::TopInput right{10321,.605f,2291,508};
+    const onesteplite::TopInput right{10321,.605f,2291,508};
     auto right_local=identity();right_local.m[0]=right_local.m[4]=1/right.scale;
     right_local.m[6]=-91;right_local.m[7]=-77;
     write(entry,0x1c,right_local);write(entry,0x44,raw);write<int32_t>(entry,0x84,right.uid);
     run(zoom,entry,true,right,true);
-    check(mistep::corrected_raw({right.scale,right.offset_y,right.offset_x},right_local,raw,upper_raw),"right viewport inverse exists");
+    check(onesteplite::corrected_raw({right.scale,right.offset_y,right.offset_x},right_local,raw,upper_raw),"right viewport inverse exists");
     check(std::fabs(upper_raw.m[0]*2333+upper_raw.m[6]-42/right.scale)<.001f,"right raw X subtracts physical origin");
     check(std::fabs(upper_raw.m[4]*550+upper_raw.m[7]-42/right.scale)<.001f,"right raw Y subtracts physical origin");
     write(entry,0x1c,local);run(zoom,entry,true,right,true); // Same UID main keeps its distinct native matrix.

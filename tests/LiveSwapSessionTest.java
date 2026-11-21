@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,8 +17,8 @@ public final class LiveSwapSessionTest {
         Runnable commit;
         void committed() { if (commit != null) { Runnable ready = commit; commit = null; ready.run(); } }
     }
-    private static final class Backend implements MiStepLiveSwapSession.Backend {
-        MiStepLiveSwapSession.Handler handler;
+    private static final class Backend implements LiveSwapSession.Backend {
+        LiveSwapSession.Handler handler;
         Consumer<Double> frame;
         Runnable end;
         int starts, cancels, aborts;
@@ -26,7 +26,7 @@ public final class LiveSwapSessionTest {
         Consumer<Boolean> awaited;
         final List<Tx> owned = new ArrayList<>();
         @Override public void assertShellThread() {}
-        @Override public Object startTransition(Object wct, MiStepLiveSwapSession.Handler handler) {
+        @Override public Object startTransition(Object wct, LiveSwapSession.Handler handler) {
             starts++; this.handler = handler; return "ours";
         }
         @Override public Object newTransaction() { Tx tx = new Tx(); owned.add(tx); return tx; }
@@ -48,12 +48,12 @@ public final class LiveSwapSessionTest {
         }
         @Override public boolean canAbortWaiting(Object token) { return !noPendingAbort; }
         @Override public void abortWaiting(Object token) { aborts++; handler.consumed(token, true, null); }
-        @Override public MiStepLiveSwapSession.Animation animate(long duration, Consumer<Double> frame, Runnable end) {
+        @Override public LiveSwapSession.Animation animate(long duration, Consumer<Double> frame, Runnable end) {
             this.frame = frame; this.end = end;
             return () -> { cancels++; end.run(); };
         }
     }
-    private static final class Scene implements MiStepLiveSwapSession.Scene {
+    private static final class Scene implements LiveSwapSession.Scene {
         boolean allowed = true, ready = true, failPrepare, failResolve;
         Throwable finalError;
         int prepares, finishes, consumes, completions, waitingCancels;
@@ -61,14 +61,14 @@ public final class LiveSwapSessionTest {
         SwapSessionState finalState;
         final Object a = new Object(), b = new Object(), parent = new Object();
         @Override public boolean mayStart() { return allowed; }
-        @Override public MiStepLiveSwapSession.Ready resolve(Object info) {
+        @Override public LiveSwapSession.Ready resolve(Object info) {
             if (failResolve) throw new IllegalStateException("exact Home transition mismatch");
             if (!ready) return null;
-            return new MiStepLiveSwapSession.Ready(a, b, parent, 4, 5,
+            return new LiveSwapSession.Ready(a, b, parent, 4, 5,
                     LiveSwapGeometry.Affine.identity(), LiveSwapGeometry.Affine.identity(),
                     LiveSwapGeometry.Affine.identity());
         }
-        @Override public void prepare(Object start, Object finish, MiStepLiveSwapSession.Ready ready) {
+        @Override public void prepare(Object start, Object finish, LiveSwapSession.Ready ready) {
             prepares++;
             if (failPrepare) throw new IllegalStateException("claim A failed after B retirement");
             ((Tx) start).ownership++;
@@ -95,11 +95,11 @@ public final class LiveSwapSessionTest {
         final Tx start = new Tx(), finish = new Tx();
         int callbacks;
         boolean holdFinishCommit;
-        final MiStepLiveSwapSession session;
+        final LiveSwapSession session;
         Fixture() {
             LiveSwapGeometry.Rect main = new LiveSwapGeometry.Rect(304, 661, 896, 1999);
             LiveSwapGeometry.Rect side = new LiveSwapGeometry.Rect(0, 240, 297, 663);
-            session = new MiStepLiveSwapSession(backend, scene,
+            session = new LiveSwapSession(backend, scene,
                     new LiveSwapGeometry.Task(11820, "A", 1200, 2676, main, side),
                     new LiveSwapGeometry.Task(11815, "B", 1200, 2676, side, main), 300);
         }

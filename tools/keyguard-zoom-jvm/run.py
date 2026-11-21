@@ -11,11 +11,11 @@ public void before(Object...args)throws Throwable{var p=new MethodHookParam();p.
 'de/robv/android/xposed/XposedBridge.java':'''package de.robv.android.xposed;public class XposedBridge {public static java.util.Map<String,XC_MethodHook> hooks=new java.util.HashMap<>();public static java.util.Set<XC_MethodHook.Unhook> hookAllMethods(Class<?> c,String n,XC_MethodHook h){hooks.put(n,h);return java.util.Set.of(new XC_MethodHook.Unhook());}public static int errors;public static void log(String s){errors++;}}''',
 'de/robv/android/xposed/XposedHelpers.java':'''package de.robv.android.xposed;public class XposedHelpers {
 public static Class<?> findClass(String n,ClassLoader l){return Object.class;}public static XC_MethodHook hook;public static Object findAndHookMethod(String name,ClassLoader cl,String method,Object...args){if(!name.equals("com.android.server.wm.KeyguardController")||!method.equals("setKeyguardShown")||args[0]!=int.class||args[1]!=boolean.class||args[2]!=boolean.class)throw new AssertionError("wrong native hook");hook=(XC_MethodHook)args[3];return null;}}''',
-'com/jiusis/mistep/KeyguardZoomRegression.java':'''package com.jiusis.mistep;import de.robv.android.xposed.*;
+'io/github/zerohomers0/onesteplite/KeyguardZoomRegression.java':'''package io.github.zerohomers0.onesteplite;import de.robv.android.xposed.*;
 public class KeyguardZoomRegression {
 static int checks;static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
 public static void main(String[]args)throws Throwable {
-var gate=new MiStepKeyguardZoom();int[] resets={0};boolean[] nativeVisible={false};
+var gate=new KeyguardZoom();int[] resets={0};boolean[] nativeVisible={false};
 gate.install(KeyguardZoomRegression.class.getClassLoader(),()->{check(gate.blocked(),"barrier must precede reset");check(!nativeVisible[0],"reset must precede native visibility");resets[0]++;});
 check(!gate.blocked(),"fresh gate");XposedHelpers.hook.before(4,true,true);check(!gate.blocked()&&resets[0]==0,"secondary display cannot control main geometry");
 XposedHelpers.hook.before(0,true,false);nativeVisible[0]=true;check(gate.blocked()&&resets[0]==1,"native lock entry must synchronously reset");
@@ -41,7 +41,7 @@ System.out.println("Production native keyguard barrier: "+checks+" checks passed
 paths=[]
 for name,body in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8');paths.append(str(p))
-paths.append(str(package_dir(root)/'MiStepKeyguardZoom.java'))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(package_dir(root)/'KeyguardZoom.java'))
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.KeyguardZoomRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.KeyguardZoomRegression'],check=True)

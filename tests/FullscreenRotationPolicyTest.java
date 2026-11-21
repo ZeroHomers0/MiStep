@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 final class FullscreenRotationPolicyTest {
     private static int checks;
@@ -112,12 +112,12 @@ final class FullscreenRotationPolicyTest {
 
         for (int[] size : new int[][]{{1200, 2608}, {1080, 2460}, {1440, 3200}}) {
             for (boolean right : new boolean[]{false, true}) {
-                MiStepLayout portrait = workspace(size[0], size[1], right);
-                MiStepLayout pendingLandscape = workspace(size[1], size[0], right);
+                WorkspaceLayout portrait = workspace(size[0], size[1], right);
+                WorkspaceLayout pendingLandscape = workspace(size[1], size[0], right);
                 check(portrait.describe().equals(pendingLandscape.describe()),
                         "pending physical rotation cannot replace portrait workspace");
                 check(pendingLandscape.fillsScreen(), "four regions still fill portrait workspace");
-                for (int i = 0; i < MiStepLayout.CELL_COUNT; i++) {
+                for (int i = 0; i < WorkspaceLayout.CELL_COUNT; i++) {
                     int[] cell = pendingLandscape.cellBounds(i);
                     check(cell[2] > cell[0] && cell[3] > cell[1], "side slot retained " + i);
                     check(right ? cell[2] <= pendingLandscape.mainX
@@ -139,8 +139,8 @@ final class FullscreenRotationPolicyTest {
                 windowingMode, rememberedRotation);
     }
 
-    private static MiStepLayout workspace(int width, int height, boolean right) {
-        return MiStepLayout.of(FullscreenRotationPolicy.workspaceWidth(width, height),
+    private static WorkspaceLayout workspace(int width, int height, boolean right) {
+        return WorkspaceLayout.of(FullscreenRotationPolicy.workspaceWidth(width, height),
                 FullscreenRotationPolicy.workspaceHeight(width, height), right);
     }
 

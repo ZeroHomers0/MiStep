@@ -46,7 +46,7 @@ public class ValueAnimator extends Animator {
 }''',
     'android/view/animation/PathInterpolator.java': '''package android.view.animation;
 public class PathInterpolator {public PathInterpolator(float a,float b,float c,float d){}}''',
-    'com/jiusis/mistep/ZoomAnimationRegression.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/ZoomAnimationRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import android.animation.*;import android.view.animation.PathInterpolator;import android.os.SystemClock;
 public class ZoomAnimationRegression {
  static class Looper {static Object current=new Object();static Object myLooper(){return current;}}
@@ -90,7 +90,7 @@ for name, content in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding='utf8')
     paths.append(str(path))
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
                 *paths, str(src/'ZoomAnimCommand.java'), str(src/'ZoomCommand.java')], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.ZoomAnimationRegression'], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.ZoomAnimationRegression'], check=True)

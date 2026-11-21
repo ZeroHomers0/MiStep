@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 public final class WorkspaceDisplayPolicyTest {
     private static int checks;
@@ -21,7 +21,7 @@ public final class WorkspaceDisplayPolicyTest {
             check(w==size[0] && h==size[1]);
             check(WorkspaceDisplayPolicy.width(false,w,h)==Math.min(w,h));
             for (boolean right : new boolean[]{false,true}) for (float density : new float[]{1.5f,2f,2.5f,3f}) {
-                MiStepLayout layout=MiStepLayout.of(w,h,right,density);
+                WorkspaceLayout layout=WorkspaceLayout.of(w,h,right,density);
                 check(layout.fillsScreen());
                 TopBarGeometry top=new TopBarGeometry(w,layout.topStrip,0,density,true);
                 check(top.blankTop>=0 && top.blankBottom<=top.headerTop);

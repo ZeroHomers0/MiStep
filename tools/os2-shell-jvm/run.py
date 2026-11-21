@@ -19,11 +19,11 @@ public class XposedHelpers {
  public static void setBooleanField(Object o,String n,boolean v){try{o.getClass().getField(n).setBoolean(o,v);}catch(Exception e){throw new RuntimeException(e);}}
 }''',
     'android/window/WindowContainerTransaction.java': 'package android.window;public class WindowContainerTransaction {}',
-    'android/view/SurfaceControl.java': 'package android.view;public class SurfaceControl {public static class Transaction extends com.jiusis.mistep.Os2ShellRegression.Tx {public void apply(){}public void close(){}}}',
+    'android/view/SurfaceControl.java': 'package android.view;public class SurfaceControl {public static class Transaction extends io.github.zerohomers0.onesteplite.Os2ShellRegression.Tx {public void apply(){}public void close(){}}}',
     'com/android/wm/shell/common/SyncTransactionQueue.java': 'package com.android.wm.shell.common;public class SyncTransactionQueue {}',
     'com/android/wm/shell/ShellTaskOrganizer.java': 'package com.android.wm.shell;public class ShellTaskOrganizer {}',
     'com/android/wm/shell/common/ShellExecutor.java': 'package com.android.wm.shell.common;public interface ShellExecutor extends java.util.concurrent.Executor {}',
-    'com/jiusis/mistep/Os2ShellRegression.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/Os2ShellRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import java.util.concurrent.Executor;import android.content.Context;import android.graphics.Rect;import android.window.WindowContainerTransaction;
 public class Os2ShellRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
@@ -110,6 +110,6 @@ for name, text in files.items():
     path.write_text(text, encoding='utf-8')
     paths.append(str(path))
 paths.append(str(package_dir(root)/'ShellCompat.java'))
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.Os2ShellRegression'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.Os2ShellRegression'], check=True)

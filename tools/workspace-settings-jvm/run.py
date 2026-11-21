@@ -36,7 +36,7 @@ files = {
  public static int hidden;public static boolean fail;public static int getInt(Object r,String name,int fallback){
  if(!"hide_gesture_line".equals(name))throw new AssertionError("wrong key");
  if(fail)throw new IllegalStateException();return hidden;}}}''',
-'com/jiusis/mistep/SettingsRegression.java': '''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/SettingsRegression.java': '''package io.github.zerohomers0.onesteplite;
 import android.content.*;import android.os.*;import android.provider.Settings;
 public class SettingsRegression {
  static int checks;static void check(boolean ok,String message){checks++;if(!ok)throw new AssertionError(message);}
@@ -114,6 +114,6 @@ for name, body in files.items():
 paths += [str(src / name) for name in [
     'WorkspaceOptions.java', 'WorkspaceSettingsStore.java', 'EntryGesturePolicy.java',
     'EntryGestureSettings.java']]
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out), *paths], check=True)
-subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'com.jiusis.mistep.SettingsRegression'], check=True)
+subprocess.run([str(jdk / 'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.SettingsRegression'], check=True)

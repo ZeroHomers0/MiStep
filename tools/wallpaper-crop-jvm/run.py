@@ -11,7 +11,7 @@ out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 files = {
 'android/graphics/Path.java': 'package android.graphics;public class Path {public enum Direction {CW}public void reset(){}public void addCircle(float x,float y,float r,Direction d){}}',
-'com/jiusis/mistep/WorkspaceCellStyle.java': 'package com.jiusis.mistep;class WorkspaceCellStyle {static float wellRadius(int w,int h,float d){return 20*d;}}',
+'io/github/zerohomers0/onesteplite/WorkspaceCellStyle.java': 'package io.github.zerohomers0.onesteplite;class WorkspaceCellStyle {static float wellRadius(int w,int h,float d){return 20*d;}}',
 'android/graphics/Bitmap.java': 'package android.graphics; public class Bitmap { public int getWidth(){return 360;} public int getHeight(){return 782;} public boolean isRecycled(){return false;} }',
 'android/graphics/ColorFilter.java': 'package android.graphics; public class ColorFilter {}',
 'android/graphics/Paint.java': 'package android.graphics; public class Paint {public int color,alpha=255;public Paint(){}public Paint(int f){}public void setColor(int c){color=c;}public void setAlpha(int a){alpha=a;}public void setColorFilter(ColorFilter f){} }',
@@ -19,7 +19,7 @@ files = {
 'android/graphics/RectF.java': 'package android.graphics; public class RectF {public float left,top,right,bottom;public RectF(){}public RectF(Rect r){this(r.left,r.top,r.right,r.bottom);}public RectF(RectF r){this(r.left,r.top,r.right,r.bottom);}public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(RectF r){set(r.left,r.top,r.right,r.bottom);}public void set(Rect r){set(r.left,r.top,r.right,r.bottom);} }',
 'android/graphics/Canvas.java': 'package android.graphics; public class Canvas {public Rect source;public RectF excluded;public int depth,tint,alpha;public int save(){return ++depth;}public void restoreToCount(int v){depth=v-1;}public boolean clipPath(Path p){return true;}public boolean clipOutRect(float a,float b,float c,float d){excluded=new RectF(a,b,c,d);return true;}public void drawBitmap(Bitmap b,Rect r,RectF d,Paint p){source=new Rect(r.left,r.top,r.right,r.bottom);alpha=p.alpha;}public void drawRect(Rect r,Paint p){tint=p.color;} }',
 'android/graphics/drawable/Drawable.java': 'package android.graphics.drawable; import android.graphics.*;public abstract class Drawable {private Rect bounds=new Rect();public int invalidations;public Rect getBounds(){return bounds;}public void setBounds(int a,int b,int c,int d){bounds.set(a,b,c,d);}public void invalidateSelf(){invalidations++;}public abstract void draw(Canvas c);public abstract void setAlpha(int a);public abstract void setColorFilter(ColorFilter f);public abstract int getOpacity(); }',
-'WallpaperCropRegression.java': r'''package com.jiusis.mistep;
+'WallpaperCropRegression.java': r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.*;
 public class WallpaperCropRegression {
  static int checks;static void check(boolean ok,String why){checks++;if(!ok)throw new AssertionError(why);}
@@ -32,7 +32,7 @@ public class WallpaperCropRegression {
  static void equal(Canvas a,Canvas b,String why){check(a.source.left==b.source.left&&a.source.top==b.source.top&&a.source.right==b.source.right&&a.source.bottom==b.source.bottom&&a.tint==b.tint&&a.alpha==b.alpha,why);}
  public static void main(String[]args){
   for(boolean right:new boolean[]{false,true})for(int slot=1;slot<3;slot++)for(int tint:new int[]{0x1fffffff,0x26000000}){
-   var old=MiStepLayout.of(1200,2608,right,2.75f);var next=MiStepLayout.of(1200,2608,!right,2.75f);
+   var old=WorkspaceLayout.of(1200,2608,right,2.75f);var next=WorkspaceLayout.of(1200,2608,!right,2.75f);
    int[] a=old.cellBounds(slot),b=next.cellBounds(slot);Bitmap bitmap=new Bitmap();
    var d=new WallpaperCropDrawable(bitmap,1200,2608,a[0],a[1],tint);d.setBounds(0,0,a[2]-a[0],a[3]-a[1]);
    Canvas before=new Canvas();d.draw(before);
@@ -62,7 +62,7 @@ for name, text in files.items():
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding='utf8')
     paths.append(str(path))
-jdk = Path(os.environ["MISTEP_JAVA_BIN"])
+jdk = Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-                str(src/'WallpaperCropDrawable.java'), str(src/'MiStepLayout.java'), *paths], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.WallpaperCropRegression'], check=True)
+                str(src/'WallpaperCropDrawable.java'), str(src/'WorkspaceLayout.java'), *paths], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.WallpaperCropRegression'], check=True)

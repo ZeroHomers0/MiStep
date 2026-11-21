@@ -5,7 +5,7 @@ from pathlib import Path
 import ast, subprocess, sys
 ROOT=Path(__file__).resolve().parents[2]
 OUT=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/tests/ime-process-configuration-jvm'
-JDK=Path(os.environ["MISTEP_JAVA_BIN"])
+JDK=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
 tree=ast.parse((ROOT/'tools/live-swap-jvm/run.py').read_text(encoding='utf-8-sig'))
 files=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='FILES' for t in n.targets))
 FILES={
@@ -31,7 +31,7 @@ public class WindowProcessController {
  public Parent getParent(){return parent;}
  public void onConfigurationChanged(Configuration c){calls++;Configuration next=(Configuration)XposedBridge.before(this,c);if(fail){fail=false;throw new IllegalStateException("native failure");}actual=new Configuration(next);}
 }''',
-'com/jiusis/mistep/ImeProcessConfigurationTest.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/ImeProcessConfigurationTest.java':r'''package io.github.zerohomers0.onesteplite;
 import android.content.res.Configuration;import com.android.server.wm.WindowProcessController;import java.util.*;
 public class ImeProcessConfigurationTest {
  static int checks;static void check(boolean c,String why){checks++;if(!c)throw new AssertionError(why);}
@@ -43,7 +43,7 @@ public class ImeProcessConfigurationTest {
  static class Wms{Atm mAtmService=new Atm();Root mRoot=new Root();}static class Display{Window getImeWindow(){return mWmService.mRoot.current;}Wms mWmService=new Wms();Window target;Window getImeInputTarget(){return target;}}
  static Configuration cfg(int o,int w,int h,int s){Configuration c=new Configuration();c.orientation=o;c.width=w;c.height=h;c.seq=s;return c;}
  public static void main(String[]args){
-  MiStepImeProcessConfiguration owner=new MiStepImeProcessConfiguration();owner.install(ImeProcessConfigurationTest.class.getClassLoader());
+  ImeProcessConfiguration owner=new ImeProcessConfiguration();owner.install(ImeProcessConfigurationTest.class.getClassLoader());
   Display d=new Display();Object main=new Object();Window w=new Window(d,15359);d.mWmService.mRoot.current=w;d.target=new Window(d,2);d.target.mActivityRecord=main;
   WindowProcessController p=new WindowProcessController(15359),other=new WindowProcessController(1613);p.parent.config=cfg(1,1200,2608,7);p.parent.config.densityDpi=480;other.parent.config=p.parent.config;
   d.mWmService.mAtmService.mProcessMap.values.put(15359,p);d.mWmService.mAtmService.mProcessMap.values.put(1613,other);
@@ -74,6 +74,6 @@ FILES['de/robv/android/xposed/XposedHelpers.java']=helper[:pos]+r'''
 sources=[]
 for name,body in FILES.items():
     p=OUT/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8');sources.append(str(p))
-sources.extend(str(package_dir(ROOT)/name) for name in ['ShellCompat.java','MiStepImeProcessConfiguration.java','MiStepImeWindow.java'])
+sources.extend(str(package_dir(ROOT)/name) for name in ['ShellCompat.java','ImeProcessConfiguration.java','ImeWindow.java'])
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),*sources],check=True)
-subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.ImeProcessConfigurationTest'],check=True)
+subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'io.github.zerohomers0.onesteplite.ImeProcessConfigurationTest'],check=True)

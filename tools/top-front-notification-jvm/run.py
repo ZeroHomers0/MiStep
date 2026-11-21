@@ -6,7 +6,7 @@ root=Path(__file__).resolve().parents[2];src=package_dir(root)
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 tree=ast.parse((root/'tools/desktop-route-jvm/run.py').read_text(encoding='utf-8-sig'))
 files=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='files' for t in n.targets))
-del files['com/jiusis/mistep/DesktopRouteRegression.java']
+del files['io/github/zerohomers0/onesteplite/DesktopRouteRegression.java']
 files['de/robv/android/xposed/XC_MethodHook.java']="""package de.robv.android.xposed;
 public class XC_MethodHook {protected void afterHookedMethod(MethodHookParam p){}public void after(MethodHookParam p){afterHookedMethod(p);}
 public static class MethodHookParam {public Object thisObject;public Object[] args;public boolean failed;public boolean hasThrowable(){return failed;}}}"""
@@ -16,23 +16,23 @@ public class XposedBridge {public static Map<String,XC_MethodHook> hooks=new Has
 files['com/android/server/wm/DisplayContent.java']="""package com.android.server.wm;
 public class DisplayContent {public Object mCurrentFocus,mFocusedApp;public void updateFocusedWindowLocked(){}}"""
 files['com/android/server/wm/TaskChangeNotificationController.java']="""package com.android.server.wm;
-import com.jiusis.mistep.FrontTest;public class TaskChangeNotificationController {
+import io.github.zerohomers0.onesteplite.FrontTest;public class TaskChangeNotificationController {
  public int calls;public Object last;public boolean fail;public Runnable callback;
  public void notifyTaskMovedToFront(Object info){if(fail)throw new IllegalStateException("native failure");calls++;last=info;
  if(callback!=null)callback.run();FrontTest.nativeObserved(this,info);}}"""
 host=(src/'HostEntry.java').read_text(encoding='utf-8-sig')
 a=host.index('    private void installWorkspaceTopFrontNotifications(ClassLoader cl) {')
 b=host.index('\n    private void ',a+10)
-files['com/jiusis/mistep/HostEntry.java']="""package com.jiusis.mistep;import de.robv.android.xposed.*;
+files['io/github/zerohomers0/onesteplite/HostEntry.java']="""package io.github.zerohomers0.onesteplite;import de.robv.android.xposed.*;
 class HostEntry {static boolean sZoomed=true;static Object sDisplayContent;
  static class ZoomTarget {Object display,globalLock=new Object();ZoomTarget(Object d){display=d;}}
- static ZoomTarget sZoomTarget;final MiStepTopFocusNotification topFocusNotification=new MiStepTopFocusNotification();
+ static ZoomTarget sZoomTarget;final TopFocusNotification topFocusNotification=new TopFocusNotification();
  static void log(String s){}static void install(){new HostEntry().installWorkspaceTopFrontNotifications(HostEntry.class.getClassLoader());}
 """+host[a:b]+"\n}"
-files['com/jiusis/mistep/MiStepDesktopLaunchBridge.java']="""package com.jiusis.mistep;
-class MiStepDesktopLaunchBridge {static Object owned;static boolean alive=true;
+files['io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java']="""package io.github.zerohomers0.onesteplite;
+class DesktopLaunchBridge {static Object owned;static boolean alive=true;
 static boolean ownsTopTask(Object t){return t==owned&&alive;}}"""
-files['com/jiusis/mistep/FrontTest.java']=r"""package com.jiusis.mistep;
+files['io/github/zerohomers0/onesteplite/FrontTest.java']=r"""package io.github.zerohomers0.onesteplite;
 import android.os.*;import android.graphics.Rect;import com.android.server.wm.*;import de.robv.android.xposed.*;
 public class FrontTest {
  static int checks;static void check(boolean v,String s){checks++;if(!v)throw new AssertionError(s);}
@@ -48,7 +48,7 @@ public class FrontTest {
  public Task getTask(){return task;}public Object getDisplayContent(){return display;}}
  DisplayContent display=new DisplayContent();Atms atms=new Atms();Task top=new Task(87,6,display,atms),main=new Task(2,1,display,atms),side=new Task(80,6,display,atms);
  FrontTest(){HostEntry.sZoomed=true;HostEntry.sDisplayContent=display;HostEntry.sZoomTarget=new HostEntry.ZoomTarget(display);
- MiStepDesktopLaunchBridge.owned=top;MiStepDesktopLaunchBridge.alive=true;HostEntry.install();}
+ DesktopLaunchBridge.owned=top;DesktopLaunchBridge.alive=true;HostEntry.install();}
  void focus(Task t){display.mCurrentFocus=new Focus(t,display);display.mFocusedApp=new Focus(t,display);}
  boolean update(boolean lock,boolean failed){var p=new XC_MethodHook.MethodHookParam();p.thisObject=display;p.args=new Object[]{0,true,-1};p.failed=failed;int n=atms.controller.calls;
  if(lock)synchronized(HostEntry.sZoomTarget.globalLock){XposedBridge.hooks.get("updateFocusedWindowLocked").after(p);}
@@ -77,7 +77,7 @@ public class FrontTest {
  h=new FrontTest();h.focus(h.top);h.top.visible=false;check(!h.update(true,false),"hidden task rejected");
  h=new FrontTest();h.focus(h.top);h.top.bounds.bottom=0;check(!h.update(true,false),"empty task bounds rejected");
  h=new FrontTest();h.focus(h.top);h.top.translucent=false;check(!h.update(true,false),"wrong native mode state rejected");
- h=new FrontTest();h.focus(h.top);MiStepDesktopLaunchBridge.alive=false;check(!h.update(true,false),"dead lease rejected");
+ h=new FrontTest();h.focus(h.top);DesktopLaunchBridge.alive=false;check(!h.update(true,false),"dead lease rejected");
  h=new FrontTest();h.focus(h.side);check(!h.update(true,false),"passive ordinary side never announced");
  h=new FrontTest();h.focus(h.top);check(!h.update(false,false),"outside WM lock never broadcasts");
  check(!h.update(true,true),"failed native focus update never announces");
@@ -116,7 +116,7 @@ public class FrontTest {
 }"""
 for name,data in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(data,encoding='utf-8')
-production=['MiStepTopFocusNotification.java','MiStepImePolicy.java','MiStepSideRoleChange.java','ZoomChannelState.java','ZoomCommand.java','ZoomAnimCommand.java']
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+production=['TopFocusNotification.java','ImePolicy.java','SideRoleChange.java','ZoomChannelState.java','ZoomCommand.java','ZoomAnimCommand.java']
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/name) for name in files],*[str(src/name) for name in production]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.FrontTest'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.FrontTest'],check=True)

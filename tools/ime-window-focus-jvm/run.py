@@ -7,9 +7,9 @@ import sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC=package_dir(os.environ.get('MISTEP_FOCUS_SOURCE',ROOT))
+SRC=package_dir(os.environ.get('ONESTEPLITE_FOCUS_SOURCE',ROOT))
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'build/tests/ime-window-focus-jvm'
-JDK = Path(os.environ['MISTEP_JAVA_BIN'])
+JDK = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 host = (SRC / 'HostEntry.java').read_text(encoding='utf-8-sig')
 start = host.index('    private void installWorkspaceWindowFocus(ClassLoader cl) {')
 end = host.index('\n    private void ', start + 10)
@@ -91,15 +91,15 @@ public class DisplayContent{
  public boolean lambda$new$3(WindowState window){return true;}
  public void unrelatedNativeMethod(){}
 }''',
-    'com/jiusis/mistep/MiStepDesktopLaunchBridge.java': r'''package com.jiusis.mistep;
-public class MiStepDesktopLaunchBridge{
+    'io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java': r'''package io.github.zerohomers0.onesteplite;
+public class DesktopLaunchBridge{
  static final java.util.Map<Object,Lease> leases=new java.util.IdentityHashMap<>();
  static class Lease{boolean alive=true,fail;}
  static Object topTask;static Object topTaskAt(Object display,float x,float y){return x>=0&&x<1080&&y>=0&&y<622?topTask:null;}static boolean ownsTopTask(Object task){return task!=null&&task==topTask;}
  static Object recentsLease(Object task){return leases.get(task);}
  static boolean recentsLeaseAlive(Object value){Lease lease=(Lease)value;if(lease.fail)throw new IllegalStateException("lease read failure");return lease.alive;}
 }''',
-    'com/jiusis/mistep/HostEntry.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/HostEntry.java': r'''package io.github.zerohomers0.onesteplite;
 import de.robv.android.xposed.*;
 class HostEntry{
  static boolean sZoomed;static Object sDisplayContent;
@@ -109,7 +109,7 @@ class HostEntry{
  static void log(String text){logs.add(text);}
  static void install(){new HostEntry().installWorkspaceWindowFocus(HostEntry.class.getClassLoader());}
 ''' + install + '\n}',
-    'com/jiusis/mistep/ImeWindowFocusTest.java': r'''package com.jiusis.mistep;
+    'io/github/zerohomers0/onesteplite/ImeWindowFocusTest.java': r'''package io.github.zerohomers0.onesteplite;
 import android.graphics.Rect;import de.robv.android.xposed.*;import com.android.server.wm.*;
 public class ImeWindowFocusTest{
  static int checks;static void check(boolean value,String message){checks++;if(!value)throw new AssertionError(message);}
@@ -141,7 +141,7 @@ public class ImeWindowFocusTest{
   DisplayContent d=new DisplayContent();HostEntry.sDisplayContent=d;HostEntry.sZoomed=true;
   Task sideTask=new Task(),mainTask=new Task();sideTask.display=d;mainTask.display=d;mainTask.mode=1;mainTask.translucent=false;
   WindowState side=new WindowState(d,sideTask),main=new WindowState(d,mainTask);d.windows=new WindowState[]{side,main};
-  var lease=new MiStepDesktopLaunchBridge.Lease();MiStepDesktopLaunchBridge.leases.put(sideTask,lease);
+  var lease=new DesktopLaunchBridge.Lease();DesktopLaunchBridge.leases.put(sideTask,lease);
   check(keys(side,false),"eligibility changed outside focus scan");check(keys(side,true),"direct touch eligibility changed");
   check(scan(d)==main,"passive side above main retained actual window focus");check(HostEntry.sWindowFocusScanDisplay.get()==null,"normal scan leaked marker");
   main.eligible=false;check(scan(d)==null,"native false main became eligible");main.eligible=true;
@@ -152,7 +152,7 @@ public class ImeWindowFocusTest{
   check(scan(foreign)==foreignSide,"foreign display scan changed focus");
   d.windows=new WindowState[]{foreignSide,main};check(scan(d)==foreignSide,"foreign window changed focus in workspace scan");d.windows=new WindowState[]{side,main};
   lease.alive=false;check(scan(d)==side,"expired exact lease changed native focus");lease.alive=true;
-  MiStepDesktopLaunchBridge.leases.clear();check(scan(d)==side,"unleased portrait mode6 was suppressed");MiStepDesktopLaunchBridge.leases.put(sideTask,lease);
+  DesktopLaunchBridge.leases.clear();check(scan(d)==side,"unleased portrait mode6 was suppressed");DesktopLaunchBridge.leases.put(sideTask,lease);
   sideTask.bounds=new Rect(0,0,2460,1080);d.mCurrentFocus=null;check(scan(d)==main,"landscape passive cell cannot steal focus");
   sideTask.bounds=null;check(scan(d)==side,"unknown bounds were suppressed");sideTask.bounds=new Rect(0,0,1080,2460);
   d.booleanEligibility=true;d.touchEligibility=false;check(scan(d)==main,"direct boolean false path bypassed scan filter");
@@ -185,26 +185,26 @@ public class ImeWindowFocusTest{
   Task upperTask=new Task();upperTask.display=d;upperTask.bounds=new Rect(0,0,1251,2519);
   Activity upperApp=new Activity(upperTask,area);WindowState upper=new WindowState(d,upperTask);upper.mActivityRecord=upperApp;
   HostEntry.sZoomTarget=new HostEntry.ZoomTarget();HostEntry.sZoomTarget.display=d;
-  MiStepDesktopLaunchBridge.topTask=upperTask;d.windows=new WindowState[]{upper,main};d.nativeCutoff=false;
+  DesktopLaunchBridge.topTask=upperTask;d.windows=new WindowState[]{upper,main};d.nativeCutoff=false;
   d.mCurrentFocus=upper;d.mFocusedApp=mainApp;
   check(scan(d)==main,"stale TOP window retained native focus over main app");
   check(d.mFocusedApp==mainApp,"IME scan stole main Activity focus");
   check(keys(upper,true),"explicit TOP user touch was rejected");
   synchronized(HostEntry.sZoomTarget.globalLock){XposedHelpers.invoke(upper,"handleTapOutsideFocusInsideSelf",new Class<?>[0]);}
   check(d.mFocusedApp==upperApp && scan(d)==upper,"explicit TOP tap failed native Activity/window selection");
-  d.mCurrentFocus=upper;check(MiStepImePolicy.isFocusedTopWindow(upper,d,MiStepDesktopLaunchBridge::ownsTopTask),"selected portrait interactive task could not control IME");
+  d.mCurrentFocus=upper;check(ImePolicy.isFocusedTopWindow(upper,d,DesktopLaunchBridge::ownsTopTask),"selected portrait interactive task could not control IME");
   d.setFocusedApp(mainApp);check(scan(d)==main,"later main touch could not release TOP window");
-  check(!MiStepImePolicy.isFocusedTopWindow(upper,d),"stale TOP still controlled main IME");
-  MiStepDesktopLaunchBridge.topTask=null;
+  check(!ImePolicy.isFocusedTopWindow(upper,d),"stale TOP still controlled main IME");
+  DesktopLaunchBridge.topTask=null;
   synchronized(HostEntry.sZoomTarget.globalLock){XposedHelpers.invoke(upper,"handleTapOutsideFocusInsideSelf",new Class<?>[0]);}
-  check(d.mFocusedApp==mainApp,"unleased TOP pointer changed Activity focus");MiStepDesktopLaunchBridge.topTask=upperTask;
+  check(d.mFocusedApp==mainApp,"unleased TOP pointer changed Activity focus");DesktopLaunchBridge.topTask=upperTask;
   XposedHelpers.invoke(upper,"handleTapOutsideFocusInsideSelf",new Class<?>[0]);check(d.mFocusedApp==mainApp,"touch without WM lock changed focus");
-  upperApp.focusable=false;check(!MiStepImePolicy.admitTopTouch(upper,d,t->true),"nonfocusable TOP admitted");upperApp.focusable=true;
-  upperApp.visible=false;check(!MiStepImePolicy.admitTopTouch(upper,d,t->true),"hidden TOP admitted");upperApp.visible=true;
-  check(!MiStepImePolicy.admitTopTouch(upper,foreign,t->true),"foreign TOP touch admitted");
-  upperTask.mode=1;check(!MiStepImePolicy.admitTopTouch(upper,d,t->true),"returned main task admitted");upperTask.mode=6;
-  upperTask.mode=1;check(!MiStepImePolicy.isInactiveTopWindow(upper,d,t->true),"returned mode1 suppressed by lingering registry");upperTask.mode=6;
-  check(!MiStepImePolicy.isInactiveTopWindow(upper,foreign,t->true),"foreign TOP window suppressed");
+  upperApp.focusable=false;check(!ImePolicy.admitTopTouch(upper,d,t->true),"nonfocusable TOP admitted");upperApp.focusable=true;
+  upperApp.visible=false;check(!ImePolicy.admitTopTouch(upper,d,t->true),"hidden TOP admitted");upperApp.visible=true;
+  check(!ImePolicy.admitTopTouch(upper,foreign,t->true),"foreign TOP touch admitted");
+  upperTask.mode=1;check(!ImePolicy.admitTopTouch(upper,d,t->true),"returned main task admitted");upperTask.mode=6;
+  upperTask.mode=1;check(!ImePolicy.isInactiveTopWindow(upper,d,t->true),"returned mode1 suppressed by lingering registry");upperTask.mode=6;
+  check(!ImePolicy.isInactiveTopWindow(upper,foreign,t->true),"foreign TOP window suppressed");
   var dispatcher=new PointerEventDispatcher();var event=new android.view.MotionEvent();d.mFocusedApp=mainApp;d.mCurrentFocus=main;
   XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==upperApp&&d.mCurrentFocus==upper,"native pointer DOWN failed TOP focus before edge back");
   check(d.localFocusDisplay==-1,"local pointer update preselected default display and skipped native focus scan");
@@ -214,7 +214,7 @@ public class ImeWindowFocusTest{
   event.display=1;XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==mainApp,"foreign display selected TOP");event.display=0;
   event.source=8194;XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==mainApp,"mouse selected TOP");event.source=4098;
   HostEntry.sZoomed=false;XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==mainApp,"inactive host selected TOP");HostEntry.sZoomed=true;
-  MiStepDesktopLaunchBridge.topTask=null;XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==mainApp,"missing lease selected TOP");
+  DesktopLaunchBridge.topTask=null;XposedHelpers.invoke(dispatcher,"onInputEvent",new Class<?>[]{android.view.MotionEvent.class},event);check(d.mFocusedApp==mainApp,"missing lease selected TOP");
   System.out.println("actual installed WM window-focus callbacks checks="+checks+" passed");
  }
 }'''
@@ -227,6 +227,6 @@ for name, body in FILES.items():
     sources.append(str(path))
 sources.append(str(ROOT / 'tools/test-stubs/android/graphics/Rect.java'))
 sources.extend(str(SRC / (name + '.java')) for name in
-               ['MiStepTopPointerFocus', 'MiStepImePolicy', 'MiStepSideRoleChange', 'ZoomChannelState', 'ZoomCommand', 'ZoomAnimCommand'])
+               ['TopPointerFocus', 'ImePolicy', 'SideRoleChange', 'ZoomChannelState', 'ZoomCommand', 'ZoomAnimCommand'])
 subprocess.run([str(JDK / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT), *sources], check=True)
-subprocess.run([str(JDK / 'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.ImeWindowFocusTest'], check=True)
+subprocess.run([str(JDK / 'java.exe'), '-cp', str(OUT), 'io.github.zerohomers0.onesteplite.ImeWindowFocusTest'], check=True)

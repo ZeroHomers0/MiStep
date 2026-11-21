@@ -7,7 +7,7 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 
 root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
-source = (src / 'MiStepHost.java').read_text(encoding='utf-8-sig')
+source = (src / 'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 
 
 def method(signature):
@@ -25,7 +25,7 @@ def method(signature):
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 body = r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 public class WallpaperLayoutRegression {
  static int checks;
  static void check(boolean value,String why){checks++;if(!value)throw new AssertionError(why);}
@@ -60,7 +60,7 @@ public class WallpaperLayoutRegression {
   static int topWallpaperTint(Object c){return 0x1fffffff;}
   static int accent(Object c){return 0;}static int textSecondary(Object c){return 0;}
  }
- static class MiStepVideoPane {void setWallpaper(Bitmap b,int w,int h){}}MiStepVideoPane videoPane;
+ static class VideoPane {void setWallpaper(Bitmap b,int w,int h){}}VideoPane videoPane;
  static class Bar extends View{void setWallpaperBackdrop(Bitmap b,int w,int h){}}
  static class Slot{
   final int index;int sideRow=-1;boolean occupied,parked,sideShown;
@@ -72,12 +72,12 @@ public class WallpaperLayoutRegression {
  static class Geometry{int left,top;Geometry(int[]b){left=b[0];top=b[1];}}
  static final int SLOT_MAIN=0,SLOT_TOP=5;
  int screenW,screenH,CELL_SLOT_COUNT;
- Object ctx=new Object();FrameLayout root=new FrameLayout();MiStepLayout layout;
+ Object ctx=new Object();FrameLayout root=new FrameLayout();WorkspaceLayout layout;
  View mainGapBacking,topStripBacking=new View();View[]sideBackingViews=new View[6];
  Slot[]slots=new Slot[8];Bar topBar=new Bar();Bitmap wallpaperBackdrop=new Bitmap(),wellWallpaperBackdrop=new Bitmap();
  TopTaskPane topTaskPane;boolean taskCellsCovered,sideCompacting;float workspaceAlpha=1f;
  void geometry(int w,int h){
-  screenW=w;screenH=h;layout=MiStepLayout.of(w,h,false,2.5f,true);CELL_SLOT_COUNT=1+layout.cellCount;
+  screenW=w;screenH=h;layout=WorkspaceLayout.of(w,h,false,2.5f,true);CELL_SLOT_COUNT=1+layout.cellCount;
   for(int i=1;i<CELL_SLOT_COUNT;i++)slots[i].rect=layout.cellBounds(i-1);
  }
  WallpaperLayoutRegression(){for(int i=1;i<6;i++)slots[i]=new Slot(i);}
@@ -146,7 +146,7 @@ typed_value.parent.mkdir(parents=True, exist_ok=True)
 typed_value.write_text(
     'package android.util; public class TypedValue {public static final int COMPLEX_UNIT_SP=2;}',
     encoding='utf-8')
-jdk = Path(os.environ['MISTEP_JAVA_BIN'])
+jdk = Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(out),
-                str(src/'MiStepLayout.java'), str(java), str(typed_value)], check=True)
-subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'com.jiusis.mistep.WallpaperLayoutRegression'], check=True)
+                str(src/'WorkspaceLayout.java'), str(java), str(typed_value)], check=True)
+subprocess.run([str(jdk/'java.exe'), '-cp', str(out), 'io.github.zerohomers0.onesteplite.WallpaperLayoutRegression'], check=True)

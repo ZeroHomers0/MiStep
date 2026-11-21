@@ -1,4 +1,4 @@
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 
 /** Task ids may be reused; the covered Home and app must both retain binder identities. */
 public final class HomeTaskReturnTest {

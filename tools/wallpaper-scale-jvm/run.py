@@ -23,8 +23,8 @@ public class XposedHelpers {
  public static int getIntField(Object o,String n){return (Integer)getObjectField(o,n);}
  public static Object callMethod(Object o,String n,Object...a){try{for(var m:o.getClass().getMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)return m.invoke(o,a);throw new NoSuchMethodException(n);}catch(Exception e){throw new RuntimeException(e);}}
 }''',
-'com/jiusis/mistep/ShellCompat.java':'package com.jiusis.mistep;class ShellCompat{static boolean hasMethod(Class<?>c,String n,int a){return false;}}',
-'com/jiusis/mistep/WallpaperScaleRegression.java':'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/ShellCompat.java':'package io.github.zerohomers0.onesteplite;class ShellCompat{static boolean hasMethod(Class<?>c,String n,int a){return false;}}',
+'io/github/zerohomers0/onesteplite/WallpaperScaleRegression.java':'''package io.github.zerohomers0.onesteplite;
 import de.robv.android.xposed.*;
 public class WallpaperScaleRegression {
  static int checks;static void check(boolean ok,String s){checks++;if(!ok)throw new AssertionError(s);}
@@ -41,7 +41,7 @@ public class WallpaperScaleRegression {
   return (Float)p.result;
  }
  public static void main(String[]args)throws Throwable{
-  MiStepWallpaperScale.install(WallpaperScaleRegression.class.getClassLoader(),()->active);
+  WallpaperScale.install(WallpaperScaleRegression.class.getClassLoader(),()->active);
   active=new Display();var d=active;var c=new Controller(d);
   check(apply(c,1.108f,true,false)==1f,"OS2 active wallpaper must remove extra 1.108 scene scale without absent AOD method");
   check(apply(c,1.108f,false,false)==1.108f,"must hold exact WM global lock");
@@ -61,7 +61,7 @@ public class WallpaperScaleRegression {
 paths=[]
 for name,content in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content,encoding='utf-8');paths.append(str(p))
-paths.append(str(package_dir(root)/'MiStepWallpaperScale.java'))
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+paths.append(str(package_dir(root)/'WallpaperScale.java'))
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WallpaperScaleRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.WallpaperScaleRegression'],check=True)

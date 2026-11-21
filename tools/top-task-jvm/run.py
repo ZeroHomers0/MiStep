@@ -4,7 +4,7 @@ import os,subprocess,sys
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]
 src=package_dir(root)
-host=(src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host=(src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 def member(signature,occurrence=0):
     start=-1
@@ -13,7 +13,7 @@ def member(signature,occurrence=0):
     while depth:
         depth+=(host[end]=='{')-(host[end]=='}');end+=1
     return host[start:end]
-body='''package com.jiusis.mistep;
+body='''package io.github.zerohomers0.onesteplite;
 import java.util.function.Consumer;import android.content.*;import android.os.*;import android.graphics.Rect;import de.robv.android.xposed.XposedHelpers;
 public final class TopAdmissionRegression {
  static final int ACTIVE=1,SLOT_TOP=4;int scene=ACTIVE;long sceneEpoch=1;
@@ -79,18 +79,18 @@ files={
 'android/content/BroadcastReceiver.java':'package android.content;public abstract class BroadcastReceiver{public int result;public int getResultCode(){return result;}public abstract void onReceive(Context c,Intent i);}',
 'android/content/Context.java':'package android.content;import android.os.*;public class Context{public boolean auto=true;BroadcastReceiver callback;public void sendOrderedBroadcast(Intent i,String p,BroadcastReceiver r,Handler h,int code,String data,Bundle extras){callback=r;if(auto)ack(-1);}public void ack(int c){callback.result=c;callback.onReceive(this,null);}}',
 'de/robv/android/xposed/XposedHelpers.java':'package de.robv.android.xposed;public class XposedHelpers{public static Object callMethod(Object o,String n,Object...a){return o;}}',
-'com/jiusis/mistep/MiStepDesktopLaunchBridge.java':'package com.jiusis.mistep;public class MiStepDesktopLaunchBridge{static final String PREPARE_TOP="prepare";}',
+'io/github/zerohomers0/onesteplite/DesktopLaunchBridge.java':'package io.github.zerohomers0.onesteplite;public class DesktopLaunchBridge{static final String PREPARE_TOP="prepare";}',
 }
 for name,text in files.items():
  q=out/name;q.parent.mkdir(parents=True,exist_ok=True);q.write_text(text,encoding='utf8')
-p=out/'com/jiusis/mistep/TopAdmissionRegression.java';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
+p=out/'io/github/zerohomers0/onesteplite/TopAdmissionRegression.java';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(p),str(src/'TopTaskState.java'),*[str(out/n) for n in files]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopAdmissionRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopAdmissionRegression'],check=True)
 
 # Replay the actual face/suspend methods. A visible control face must paint after
 # the SurfaceView hole, including while the old task is being returned by Shell.
-layer='''package com.jiusis.mistep;
+layer='''package io.github.zerohomers0.onesteplite;
 public final class TopLayerRegression {
  static final int ACTIVE=1,SLOT_TOP=4;int scene=ACTIVE;boolean screenOn=true,keyguardLocked,topFace=true,topSelectionPending;
  long topFaceGeneration;static int checks;int returned,selected,claimed,hints;static String order="";
@@ -151,11 +151,11 @@ public final class TopLayerRegression {
   System.out.println("Production top face/layer/suspend checks="+checks+" passed");
  }
 }'''
-p=out/'com/jiusis/mistep/TopLayerRegression.java';p.write_text(layer,encoding='utf-8')
+p=out/'io/github/zerohomers0/onesteplite/TopLayerRegression.java';p.write_text(layer,encoding='utf-8')
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(p),str(src/'TopTaskReturnPolicy.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopLayerRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopLayerRegression'],check=True)
 
-direction='''package com.jiusis.mistep;
+direction='''package io.github.zerohomers0.onesteplite;
 import java.util.*;
 public class TopDirectionRegression {
  Object root=new Object();Map<TopTaskState.Key,Boolean> topDirections=new HashMap<>();
@@ -179,17 +179,17 @@ public class TopDirectionRegression {
   System.out.println("Production upper manual-only direction checks=4 passed");
  }
 }'''
-p=out/'com/jiusis/mistep/TopDirectionRegression.java';p.write_text(direction,encoding='utf-8')
+p=out/'io/github/zerohomers0/onesteplite/TopDirectionRegression.java';p.write_text(direction,encoding='utf-8')
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(p)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopDirectionRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopDirectionRegression'],check=True)
 
-returning='''package com.jiusis.mistep;
+returning='''package io.github.zerohomers0.onesteplite;
 public class TopReturnBridgeRegression {
  static final int SLOT_TOP=4;static int checks;
  static void check(boolean v,String s){checks++;if(!v)throw new AssertionError(s);}
  static class Slot {boolean occupied=true,promoting;int taskId=7;long taskEpoch=1;Object taskToken="upper";}
  Slot[] slots={null,null,null,null,new Slot()};boolean suspendRequested,ready=true,accept=true,topFace=true;
- static class MiStepTopTaskTransition {}
+ static class TopTaskTransition {}
  static class Layout {boolean tabletLandscape;}
  final Layout layout=new Layout();
  class Roll {
@@ -197,13 +197,13 @@ public class TopReturnBridgeRegression {
   void reset(boolean task){if(!task)throw new AssertionError("cancelled return restores the TOP face");}
  }
  final Roll topRoll=new Roll();
- MiStepTopTaskTransition topTransition;
+ TopTaskTransition topTransition;
  int nativeCalls,animations,cancels;boolean nativeFront,nativeLive,prepared;Runnable pending,settled;
  boolean topReady(){return ready;}
  void prepareLiveTopRoll(){prepared=true;}
  boolean startLiveMainRevealTransition(Runnable r){
   animations++;pending=r;
-  if(accept)topTransition=new MiStepTopTaskTransition();
+  if(accept)topTransition=new TopTaskTransition();
   return accept;
  }
  void releaseTopTaskNow(boolean front,boolean dismissed,Runnable after,boolean live){nativeCalls++;nativeFront=front;nativeLive=live;}
@@ -236,6 +236,6 @@ public class TopReturnBridgeRegression {
   System.out.println("Production upper return animation scope checks="+checks+" passed");
  }
 }'''
-p=out/'com/jiusis/mistep/TopReturnBridgeRegression.java';p.write_text(returning,encoding='utf-8')
+p=out/'io/github/zerohomers0/onesteplite/TopReturnBridgeRegression.java';p.write_text(returning,encoding='utf-8')
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-cp',str(out),'-d',str(out),str(p)],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopReturnBridgeRegression'],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.TopReturnBridgeRegression'],check=True)

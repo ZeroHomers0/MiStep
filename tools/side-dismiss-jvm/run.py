@@ -7,16 +7,16 @@ root = Path(__file__).resolve().parents[2]
 src=package_dir(root)
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
-host = (src/'MiStepHost.java').read_text(encoding='utf-8-sig')
+host = (src/'WorkspaceHost.java').read_text(encoding='utf-8-sig')
 def method(signature):
     start = host.index(signature); end = host.index('{', start)+1; depth = 1
     while depth:
         depth += (host[end] == '{') - (host[end] == '}'); end += 1
     return host[start:end]
 methods = '\n'.join(method(s) for s in ['    private boolean onSlotTouch(',
-    '    private void recycleBuffered(', '    private boolean followSideDismiss(', '    private void dismissSideToBackground(']).replace('MiStepHost::log','SideDismissRegression::log')
+    '    private void recycleBuffered(', '    private boolean followSideDismiss(', '    private void dismissSideToBackground(']).replace('WorkspaceHost::log','SideDismissRegression::log')
 body = r'''
-package com.jiusis.mistep;
+package io.github.zerohomers0.onesteplite;
 import java.util.function.Consumer;
 public class SideDismissRegression {
  static int checks; static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}
@@ -24,20 +24,20 @@ public class SideDismissRegression {
  int scene=ACTIVE,taps,compactions,returns,clears;long sceneEpoch=1;
  boolean screenOn=true,keyguardLocked,transferBusy,taskCellsCovered,mainOnRight,compactPending,front;
  Object promotion,cellMotion; Context ctx=new Context(); Slot[] slots={new Slot(),new Slot(),new Slot(),new Slot()};
- View root=new View();MiStepSideDismiss sideDismiss; Slot sideDismissSlot;MiStepLayout layout=new MiStepLayout();Object wallpaperBackdrop=new Object();int screenW=1080,screenH=2460;
+ View root=new View();SideDismiss sideDismiss; Slot sideDismissSlot;WorkspaceLayout layout=new WorkspaceLayout();Object wallpaperBackdrop=new Object();int screenW=1080,screenH=2460;
  Object[] sideBackingViews=new Object[4];static class LiveSwapVisualLease{LiveSwapVisualLease(Object b,Object h){}void restore(){}}
- static class View{void invalidate(){}}static class Rect{}static class MiStepLayout{}
+ static class View{void invalidate(){}}static class Rect{}static class WorkspaceLayout{}
  static class HyperOsStyle{static float dp(Context c,float f){return f*2.75f;}}
- static class MiStepLiveBackdrop{
-  static MiStepLiveBackdrop create(Object p,Object w,int sw,int sh,Rect a,Rect b,Consumer<Object> painter,Consumer<String> log){return new MiStepLiveBackdrop();}
+ static class LiveBackdrop{
+  static LiveBackdrop create(Object p,Object w,int sw,int sh,Rect a,Rect b,Consumer<Object> painter,Consumer<String> log){return new LiveBackdrop();}
   void closeAfterFrame(View v){}
  }
- static class MiStepSideDismiss{
-  boolean tracking=true;float dx;final Consumer<Boolean> cb;MiStepSideDismiss(View r,Object v,float distance,java.util.function.BooleanSupplier c,Consumer<Boolean>b,Consumer<String>l){cb=b;}
+ static class SideDismiss{
+  boolean tracking=true;float dx;final Consumer<Boolean> cb;SideDismiss(View r,Object v,float distance,java.util.function.BooleanSupplier c,Consumer<Boolean>b,Consumer<String>l){cb=b;}
   boolean isTracking(){return tracking;}void follow(float x){dx=x;}void settle(boolean commit){tracking=false;cb.accept(commit);}void close(){}
  }
- Rect liveSideStrip(MiStepLayout g){return new Rect();}Object liveHostRootSurface(){return new Object();}
- void drawLiveEmptyHints(Object c,MiStepLayout a,MiStepLayout b,int mask){}void updateCellSurfaceVisibility(Slot s){}
+ Rect liveSideStrip(WorkspaceLayout g){return new Rect();}Object liveHostRootSurface(){return new Object();}
+ void drawLiveEmptyHints(Object c,WorkspaceLayout a,WorkspaceLayout b,int mask){}void updateCellSurfaceVisibility(Slot s){}
  Runnable success;Consumer<String> failure;
  static class Slot {int touchAxis;
   int index=1,taskId=42;long taskEpoch=2,touchTaskEpoch,touchSceneEpoch;
@@ -94,19 +94,19 @@ public class SideDismissRegression {
   h=new SideDismissRegression();h.swipe(110,0,400);h.failure.accept("incomplete");check(h.clears==0&&h.slots[1].taskId==42,"failure retains binding");
   h=new SideDismissRegression();h.swipe(110,0,400);h.slots[1].taskEpoch++;h.slots[1].taskId=77;h.success.run();check(h.clears==0&&h.slots[1].taskId==77,"stale ack never clears replacement");
   for(float bad:new float[]{Float.NaN,Float.POSITIVE_INFINITY,Float.NEGATIVE_INFINITY})
-   check(!MiStepSideDismissGesture.accepts(false,bad,0,266,2.75f,8,400),"nonfinite dx rejected");
-  check(!MiStepSideDismissGesture.accepts(false,110,0,0,2.75f,8,400),"missing geometry rejected");
-  check(!MiStepSideDismissGesture.accepts(false,110,0,266,2.75f,8,-1),"stale clock rejected");
+   check(!SideDismissGesture.accepts(false,bad,0,266,2.75f,8,400),"nonfinite dx rejected");
+  check(!SideDismissGesture.accepts(false,110,0,0,2.75f,8,400),"missing geometry rejected");
+  check(!SideDismissGesture.accepts(false,110,0,266,2.75f,8,-1),"stale clock rejected");
   h=new SideDismissRegression();h.event(0,940,900,0);h.event(2,950,950,100);h.event(2,1080,950,200);h.event(1,1080,950,300);check(h.returns==0&&h.taps==0,"vertical ownership cannot turn into outward dismissal later");
   h=new SideDismissRegression();h.event(0,940,900,0);h.event(1,941,900,900);check(h.taps==0,"long press release does not swap");
   System.out.println("actual side-dismiss checks="+checks+" passed");
  }
 }
 '''.replace('__METHODS__',methods)
-files = {'com/jiusis/mistep/SideDismissRegression.java':body,
+files = {'io/github/zerohomers0/onesteplite/SideDismissRegression.java':body,
  'android/widget/Toast.java':'package android.widget; public class Toast { public static final int LENGTH_SHORT=0; public static Toast makeText(Object c,String s,int n){return new Toast();}public void show(){} }'}
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
-jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/'MiStepSideDismissGesture.java'),str(src/'MiStepSideGestureAxis.java')],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideDismissRegression'],check=True)
+jdk=Path(os.environ["ONESTEPLITE_JAVA_BIN"])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/'SideDismissGesture.java'),str(src/'SideGestureAxis.java')],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.SideDismissRegression'],check=True)

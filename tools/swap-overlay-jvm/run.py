@@ -10,8 +10,8 @@ files={
  public static int getIntField(Object o,String n){return (Integer)getObjectField(o,n);}
  public static Object callMethod(Object o,String n,Object...a){for(Class<?>c=o.getClass();c!=null;c=c.getSuperclass())for(var m:c.getDeclaredMethods())if(m.getName().equals(n)&&m.getParameterCount()==a.length)try{m.setAccessible(true);return m.invoke(o,a);}catch(Exception e){throw new IllegalStateException(e);}throw new IllegalStateException(n);}}
 ''',
-'com/jiusis/mistep/LiveTaskSwapDriver.java':'package com.jiusis.mistep;class LiveTaskSwapDriver{interface Overlays{void paint(Object tx,double f);void finish(Object tx,boolean original);void close();}}',
-'com/jiusis/mistep/OverlayRegression.java':r'''package com.jiusis.mistep;
+'io/github/zerohomers0/onesteplite/LiveTaskSwapDriver.java':'package io.github.zerohomers0.onesteplite;class LiveTaskSwapDriver{interface Overlays{void paint(Object tx,double f);void finish(Object tx,boolean original);void close();}}',
+'io/github/zerohomers0/onesteplite/OverlayRegression.java':r'''package io.github.zerohomers0.onesteplite;
 import java.util.*;import android.view.WindowManager;
 public class OverlayRegression{
  static int checks;static void check(boolean b,String why){checks++;if(!b)throw new AssertionError(why);}static void near(float a,float b,String why){check(Math.abs(a-b)<.001,why+" "+a+"/"+b);}
@@ -29,21 +29,21 @@ public class OverlayRegression{
   var old=new LiveSwapZoom.Zoom(1,.7472f,0,622);var target=new LiveSwapZoom.Zoom(2,.7472f,273,622);Display d=new Display();
   Window panel=window(d,2003,"com.miui.securitycenter/.FloatingWindow",11);((Owner)panel.mToken).mLastSurfacePosition=new Pos(7,13);
   Window trigger=window(d,2026,"DockAssistantView",12);trigger.mLastMagnificationSpec=d.mMagnificationSpec;((Owner)trigger.mToken).mLastMagnificationSpec=null;trigger.mLastSurfacePosition=new Pos(0,770);
-  var rows=MiStepSwapOverlaySelection.capture(d,old);check(rows.length==2&&rows[0].surface==((Owner)panel.mToken).mSurfaceControl,"native token owner not selected");check(rows[1].surface==trigger.mSurfaceControl,"native window owner not selected");
-  Window foreign=window(d,2003,"com.miui.securitycenter/.FloatingWindow",99);foreign.mAttrs.packageName="other";check(MiStepSwapOverlaySelection.capture(d,old).length==2,"other package altered");foreign.mAttrs.packageName="com.miui.securitycenter";foreign.mOwnerUid=10001;check(MiStepSwapOverlaySelection.capture(d,old).length==2,"other UID altered");foreign.mOwnerUid=1000;foreign.display=new Display();check(MiStepSwapOverlaySelection.capture(d,old).length==2,"other display altered");foreign.display=d;foreign.visible=false;check(MiStepSwapOverlaySelection.capture(d,old).length==2,"hidden stale window altered");foreign.visible=true;foreign.mAttrs.title="other alert";check(MiStepSwapOverlaySelection.capture(d,old).length==2,"unrelated alert altered");
-  ((Owner)panel.mToken).mLastMagnificationSpec=null;boolean rejected=false;try{MiStepSwapOverlaySelection.capture(d,old);}catch(IllegalStateException e){rejected=true;}check(rejected,"shared unknown ancestor borrowed");((Owner)panel.mToken).mLastMagnificationSpec=d.mMagnificationSpec;
-  d.mMagnificationSpec.offsetX=273;rejected=false;try{MiStepSwapOverlaySelection.capture(d,old);}catch(IllegalStateException e){rejected=true;}check(rejected,"stale native zoom accepted");d.mMagnificationSpec.offsetX=0;
-  Surface copy=new Surface(11);var lease=new MiStepSwapOverlayFrames(new MiStepSwapOverlayFrames.Row[]{new MiStepSwapOverlayFrames.Row(copy,7,13)},old,target);
+  var rows=SwapOverlaySelection.capture(d,old);check(rows.length==2&&rows[0].surface==((Owner)panel.mToken).mSurfaceControl,"native token owner not selected");check(rows[1].surface==trigger.mSurfaceControl,"native window owner not selected");
+  Window foreign=window(d,2003,"com.miui.securitycenter/.FloatingWindow",99);foreign.mAttrs.packageName="other";check(SwapOverlaySelection.capture(d,old).length==2,"other package altered");foreign.mAttrs.packageName="com.miui.securitycenter";foreign.mOwnerUid=10001;check(SwapOverlaySelection.capture(d,old).length==2,"other UID altered");foreign.mOwnerUid=1000;foreign.display=new Display();check(SwapOverlaySelection.capture(d,old).length==2,"other display altered");foreign.display=d;foreign.visible=false;check(SwapOverlaySelection.capture(d,old).length==2,"hidden stale window altered");foreign.visible=true;foreign.mAttrs.title="other alert";check(SwapOverlaySelection.capture(d,old).length==2,"unrelated alert altered");
+  ((Owner)panel.mToken).mLastMagnificationSpec=null;boolean rejected=false;try{SwapOverlaySelection.capture(d,old);}catch(IllegalStateException e){rejected=true;}check(rejected,"shared unknown ancestor borrowed");((Owner)panel.mToken).mLastMagnificationSpec=d.mMagnificationSpec;
+  d.mMagnificationSpec.offsetX=273;rejected=false;try{SwapOverlaySelection.capture(d,old);}catch(IllegalStateException e){rejected=true;}check(rejected,"stale native zoom accepted");d.mMagnificationSpec.offsetX=0;
+  Surface copy=new Surface(11);var lease=new SwapOverlayFrames(new SwapOverlayFrames.Row[]{new SwapOverlayFrames.Row(copy,7,13)},old,target);
   Tx start=new Tx();lease.paint(start,0);near(start.values.get(copy)[1],7,"first frame jumped");near(start.values.get(copy)[2],635,"native position added incorrectly");
   Tx mid=new Tx();lease.paint(mid,.5);near(mid.values.get(copy)[1],143.5f,"overlay skipped task midpoint");near(mid.values.get(copy)[0],.7472f,"native scale applied twice");check(mid.matrices==1&&mid.positions==1,"frame not appended to supplied transaction");
   Tx finish=new Tx();lease.finish(finish,false);near(finish.values.get(copy)[1],280,"target finish pose");Tx cancel=new Tx();lease.finish(cancel,true);near(cancel.values.get(copy)[1],7,"cancel failed to restore original pose");
   lease.close();lease.close();check(copy.releases==1&&((Owner)panel.mToken).mSurfaceControl.releases==0,"released server owner or leaked client reference");
-  var reverse=new MiStepSwapOverlayFrames(new MiStepSwapOverlayFrames.Row[]{new MiStepSwapOverlayFrames.Row(new Surface(33),0,0)},target,old);Tx rev=new Tx();reverse.paint(rev,.5);near(rev.values.values().iterator().next()[1],136.5f,"reverse midpoint jumped");reverse.close();
+  var reverse=new SwapOverlayFrames(new SwapOverlayFrames.Row[]{new SwapOverlayFrames.Row(new Surface(33),0,0)},target,old);Tx rev=new Tx();reverse.paint(rev,.5);near(rev.values.values().iterator().next()[1],136.5f,"reverse midpoint jumped");reverse.close();
   System.out.println("actual toolbox native owner/same-frame/cancel checks="+checks+" passed");
  }
 }'''}
 for n,s in files.items():
  p=out/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(s,encoding='utf8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],*[str(src/(n+'.java')) for n in ['MiStepSwapOverlayFrames','MiStepSwapOverlaySelection','LiveSwapZoom']]],check=True)
-subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.OverlayRegression'],check=True)
+jdk=Path(os.environ['ONESTEPLITE_JAVA_BIN'])
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],*[str(src/(n+'.java')) for n in ['SwapOverlayFrames','SwapOverlaySelection','LiveSwapZoom']]],check=True)
+subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'io.github.zerohomers0.onesteplite.OverlayRegression'],check=True)

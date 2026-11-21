@@ -1,0 +1,209 @@
+package io.github.zerohomers0.onesteplite;
+
+/**
+ * OneStepLite的自适应几何（纯整数运算，不依赖任何 Android 类，便于离线验证）。
+ *
+ * 来源与两次更正：
+ *   官方量测（报告六原始数值，R2 1080×2340）：满宽顶栏 592、主区 807 宽（自顶栏下沿至底）、
+ *   官方侧栏容器 273（= 267 格宽 + 6 间隔）、格起始 y=592、格 267×579。
+ *   2026-10-16 用户产品指令：**不要圆角**；2026-10-17 用户补充：**要一点缝隙区分窗口**（恢复官方 6px）。
+ *
+ * 主区和三个副任务均按当前屏幕宽高比等比显示。按三格总高度反求侧栏宽度，
+ * 间隔按密度换算；顶栏内容适应剩余空间，不再以固定dp高度挤压应用画面。
+ */
+public final class WorkspaceLayout {
+
+    public static final int CELL_COUNT = 3;
+    public static final int MAX_CELL_COUNT = 4;
+    public final boolean tabletLandscape;
+    public final int cellCount;
+    public final int toolHeight;
+
+    public final float mainRatio;
+    public final int width;
+    public final int height;
+    /** The 0.7472 main pane can occupy either side while the cell column stays opposite. */
+    public final boolean mainOnRight;
+    /** 侧栏（副任务列）宽度 = 格子宽（无缝）。 */
+    public final int sideWidth;
+    /** 顶部横条高度（满宽，含标题栏与快捷栏）；主区与格子都从它的下沿开始。 */
+    public final int topStrip;
+    /** 窗口间隔（px）。 */
+    public final int gap;
+    public final int cellWidth;
+    public final int[] cellHeight = new int[MAX_CELL_COUNT];
+    private final int[] cellLeft = new int[MAX_CELL_COUNT];
+    private final int[] cellWidths = new int[MAX_CELL_COUNT];
+
+    /** 主区矩形（宿主视图布局区域）。 */
+    public final int mainX;
+    public final int mainY;
+    public final int mainWidth;
+    public final int mainHeight;
+
+    /** 整屏内容等比放进主区后的实际缩放/居中显示矩形（不裁切）。 */
+    public final float mainScale;
+    public final int mainOffsetX;
+    public final int mainOffsetY;
+    public final int mainDispWidth;
+    public final int mainDispHeight;
+
+    /** 格子列 x（无缝：= 主区宽）。 */
+    public final int cellX;
+    /** 三个格子的起始 y，顺序为从上到下。 */
+    public final int[] cellY = new int[MAX_CELL_COUNT];
+
+    private WorkspaceLayout(int width, int height, boolean mainOnRight, float density) {
+        this(width, height, mainOnRight, density, false);
+    }
+
+    private WorkspaceLayout(int width, int height, boolean mainOnRight, float density, boolean tablet) {
+        this.width = width;
+        this.height = height;
+        tabletLandscape = tablet && width > height && width <= 2L * height;
+        cellCount = tabletLandscape ? MAX_CELL_COUNT : CELL_COUNT;
+        this.mainOnRight = mainOnRight;
+        toolHeight = tabletLandscape ? Math.round(36f * density) : 0;
+
+        this.gap = Math.max(2, Math.round(DESIGN_GAP_DP * density));
+        // Fit one full-screen main task and three full-screen side tasks, all with
+        // the display's aspect ratio. Solving their shared remaining height gives
+        // S = W/4 + gap*(3/4 - W/(2H)). Density controls the gap, never task width.
+        if (tabletLandscape) {
+            int widestCell = (width - gap * (cellCount - 1) + cellCount - 1) / cellCount;
+            int rowHeight = Math.round(widestCell * (height / (float) width));
+            this.topStrip = toolHeight + gap * 2 + rowHeight;
+            // The toolbar consumes display height, so both task rows must be
+            // solved together instead of shortening only the small task panes.
+            int fittedMainWidth = Math.round((height - topStrip) * (width / (float) height));
+            this.sideWidth = width - fittedMainWidth;
+        } else {
+            this.sideWidth = Math.round(width / 4f + gap * (0.75f - width / (2f * height)));
+            this.topStrip = Math.round(this.sideWidth / (float) width * height);
+        }
+
+        // 主区在顶栏下方；交换主副角色时整条主屏可移到右侧，侧栏同时移到左侧。
+        this.mainX = mainOnRight ? sideWidth : 0;
+        this.mainY = topStrip;
+        this.mainWidth = width - sideWidth;
+        this.mainRatio = mainWidth / (float) width;
+        this.mainHeight = height - topStrip;
+        float widthRatio = mainWidth / (float) width;
+        float fitScale = Math.min(widthRatio, mainHeight / (float) height);
+        this.mainScale = fitScale;
+        this.mainDispWidth = Math.round(fitScale * width);
+        this.mainDispHeight = Math.round(fitScale * height);
+        this.mainOffsetX = mainX + (mainWidth - mainDispWidth) / 2;
+        this.mainOffsetY = mainY + (mainHeight - mainDispHeight) / 2;
+
+        // 格子宽 = 侧栏容器 − 一个间隔；格子列与主区之间也有一个间隔（官方几何）。
+        this.cellWidth = sideWidth - gap;
+        this.cellX = mainOnRight ? 0 : mainWidth + gap;
+
+        // 3 格以 gap 间隔堆叠、填满到底：余数分给前几格。
+        int usable = mainHeight - gap * (CELL_COUNT - 1);
+        int base = usable / CELL_COUNT;
+        int extra = usable % CELL_COUNT;
+        int y = topStrip;
+        for (int i = 0; i < CELL_COUNT; i++) {
+            int h = base + (i < extra ? 1 : 0);
+            cellHeight[i] = h;
+            cellY[i] = y;
+            cellLeft[i] = cellX;
+            cellWidths[i] = cellWidth;
+            y += h + gap;
+        }
+        if (tabletLandscape) {
+            int available = width - gap * (cellCount - 1);
+            int x = 0;
+            for (int i = 0; i < cellCount; i++) {
+                cellLeft[i] = x;
+                cellWidths[i] = available / cellCount + (i < available % cellCount ? 1 : 0);
+                cellY[i] = toolHeight + gap;
+                cellHeight[i] = Math.max(1, topStrip - toolHeight - gap * 2);
+                x += cellWidths[i] + gap;
+            }
+        }
+    }
+
+    public static WorkspaceLayout of(int width, int height) {
+        return of(width, height, false);
+    }
+
+    /** 设计基准间隔 2.18dp（R2 440dpi 下 6px）。 */
+    public static final float DESIGN_GAP_DP = 2.18f;
+
+    public static WorkspaceLayout of(int width, int height, boolean mainOnRight) {
+        return of(width, height, mainOnRight, 440f / 160f);
+    }
+
+    public static WorkspaceLayout of(int width, int height, boolean mainOnRight, float density) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("bad screen size " + width + "x" + height);
+        }
+        return new WorkspaceLayout(width, height, mainOnRight, density <= 0f ? 2.75f : density);
+    }
+
+    public static WorkspaceLayout of(int width, int height, boolean right, float density, boolean tablet) {
+        if (width <= 0 || height <= 0) throw new IllegalArgumentException("bad screen size");
+        return new WorkspaceLayout(width, height, right, density > 0f ? density : 2.75f, tablet);
+    }
+
+    public float cellScale(int i) {
+        if (i < 0 || i >= cellCount) throw new IllegalArgumentException("cell index " + i);
+        return Math.min(cellWidths[i] / (float) width, cellHeight[i] / (float) height);
+    }
+
+    /** 第 i 个格子的矩形，顺序即 [左, 上, 右, 下]。 */
+    public int[] cellBounds(int i) {
+        if (i < 0 || i >= cellCount) {
+            throw new IllegalArgumentException("cell index " + i);
+        }
+        return new int[]{cellLeft[i], cellY[i], cellLeft[i] + cellWidths[i], cellY[i] + cellHeight[i]};
+    }
+
+    public int[] interactiveBounds() {
+        return new int[]{cellX, topStrip, cellX + cellWidth, height};
+    }
+
+    public int[] mainGapBounds() {
+        int left = mainOnRight ? cellWidth : mainWidth;
+        return new int[]{left, topStrip, left + gap, height};
+    }
+
+    public int[] mainBounds() {
+        return new int[]{mainX, mainY, mainX + mainWidth, mainY + mainHeight};
+    }
+
+    /** 布局是否铺满且不越界（用于离线自检；无缝版应恰好到屏幕底边）。 */
+    public boolean fillsScreen() {
+        if (tabletLandscape) return cellBounds(3)[2] == width
+                && mainY + mainHeight == height
+                && (mainOnRight ? cellX == 0 && mainX + mainWidth == width
+                                : mainX == 0 && cellX + cellWidth == width);
+        int[] last = cellBounds(CELL_COUNT - 1);
+        boolean sideFits = mainOnRight
+                ? cellX == 0 && mainX + mainWidth == width
+                : cellX + cellWidth == width && mainX == 0;
+        return sideFits && last[3] == height
+                && mainWidth + sideWidth == width
+                && mainY + mainHeight == height
+                && mainY == topStrip;
+    }
+
+    public String describe() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("screen=").append(width).append('x').append(height)
+                .append(" mainOnRight=").append(mainOnRight)
+                .append(" main=").append(java.util.Arrays.toString(mainBounds()))
+                .append(" sideWidth=").append(sideWidth)
+                .append(" topStrip=").append(topStrip)
+                .append(" gap=").append(gap)
+                .append(" cell=").append(cellWidth).append("x")
+                .append(java.util.Arrays.toString(cellHeight));
+        for (int i = 0; i < cellCount; i++) {
+            sb.append(" cell").append(i).append('=').append(java.util.Arrays.toString(cellBounds(i)));
+        }
+        return sb.toString();
+    }
+}

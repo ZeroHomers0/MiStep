@@ -1,8 +1,8 @@
 param([string]$BuildDirectory = 'build')
 $ErrorActionPreference = 'Stop'
 $module = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$jdk = $env:MISTEP_JAVA_BIN
-$android = $env:MISTEP_ANDROID_JAR
+$jdk = $env:ONESTEPLITE_JAVA_BIN
+$android = $env:ONESTEPLITE_ANDROID_JAR
 $classes = Join-Path $module "$BuildDirectory\classes"
 if (-not (Test-Path -LiteralPath $classes)) { throw 'Build the APK first.' }
 $xposed = Join-Path $module 'libs\xposed-api-82.jar'
@@ -14,14 +14,14 @@ $sources = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.java' |
     -cp "$classes;$android;$xposed" -d $out @sources
 if ($LASTEXITCODE -ne 0) { throw 'Rotation bridge test compilation failed.' }
 & (Join-Path $jdk 'java.exe') -cp "$out;$classes;$android;$xposed" `
-    com.jiusis.mistep.TaskRotationBridgeTest
+    io.github.zerohomers0.onesteplite.TaskRotationBridgeTest
 if ($LASTEXITCODE -ne 0) { throw 'Rotation bridge regression failed.' }
 & (Join-Path $jdk 'java.exe') -cp "$out;$classes;$android;$xposed" `
-    com.jiusis.mistep.TaskRotationLifecycleTest
+    io.github.zerohomers0.onesteplite.TaskRotationLifecycleTest
 if ($LASTEXITCODE -ne 0) { throw 'Task rotation lifecycle regression failed.' }
 & (Join-Path $jdk 'java.exe') -cp "$out;$classes;$android;$xposed" `
-    com.jiusis.mistep.NativeFreeformLayerBridgeTest
+    io.github.zerohomers0.onesteplite.NativeFreeformLayerBridgeTest
 if ($LASTEXITCODE -ne 0) { throw 'Native freeform layer bridge regression failed.' }
 & (Join-Path $jdk 'java.exe') -cp "$out;$classes;$android;$xposed" `
-    com.jiusis.mistep.LiveFinishSnapshotTest
+    io.github.zerohomers0.onesteplite.LiveFinishSnapshotTest
 if ($LASTEXITCODE -ne 0) { throw 'Live finish magnification snapshot regression failed.' }
