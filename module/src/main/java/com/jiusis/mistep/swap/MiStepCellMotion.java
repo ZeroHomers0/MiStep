@@ -58,7 +58,7 @@ final class MiStepCellMotion {
                 ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
                 animation = animator;
                 animator.setDuration(240L);
-                animator.setInterpolator(new android.view.animation.PathInterpolator(.22f, .7f, .12f, 1f));
+                animator.setInterpolator(new android.view.animation.PathInterpolator(.4f, 0f, .2f, 1f));
                 animator.addUpdateListener(value -> {
                     if (animation == animator) frame((Float) value.getAnimatedValue());
                 });

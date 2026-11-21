@@ -1,6 +1,6 @@
+"""Run the production clip owner against traced geometry and WM lifecycle fakes."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Run the production clip owner against traced geometry and WM lifecycle fakes."""
 from pathlib import Path
 import ast
 import subprocess

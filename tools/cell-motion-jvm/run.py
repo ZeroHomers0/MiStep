@@ -1,6 +1,6 @@
+"""Run real View-motion and transition-input classes against deterministic Android frame queues."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Run real View-motion and transition-input classes against deterministic Android frame queues."""
 from pathlib import Path
 import subprocess, sys
 root=Path(__file__).resolve().parents[2]

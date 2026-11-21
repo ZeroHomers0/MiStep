@@ -1,6 +1,6 @@
+"""Exercise the actual Run.finish method, preserving transaction ordering and ownership."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Exercise the actual Run.finish method, preserving transaction ordering and ownership."""
 from pathlib import Path
 import ast
 import subprocess

@@ -2,7 +2,7 @@ package com.jiusis.mistep;
 
 /** Every broadcast action this module sends or listens for, in one place. */
 final class MiStepActions {
-    /** Debug console: toggles the workspace and accepts diagnostic requests. */
+    /** Debug console: toggles MiStep and accepts developer commands. */
     static final String DEBUG = "com.jiusis.mistep.DEBUG";
     static final String TOGGLE = "com.jiusis.mistep.TOGGLE";
     /** Desktop icon launch and the side-task registry it consults. */

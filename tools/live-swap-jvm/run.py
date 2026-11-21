@@ -1,6 +1,6 @@
+"""Compile the actual pair ownership class against bounded, source-shaped Android/Shell fakes."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Compile the actual pair ownership class against bounded, source-shaped Android/Shell fakes."""
 from pathlib import Path
 import subprocess
 import sys

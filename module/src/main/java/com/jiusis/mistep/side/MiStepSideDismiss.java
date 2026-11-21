@@ -58,7 +58,7 @@ final class MiStepSideDismiss {
             ValueAnimator run = ValueAnimator.ofFloat(0f, 1f);
             animator = run;
             run.setDuration(Math.max(90L, Math.round(220f * Math.abs(to - from) / Math.abs(distance))));
-            run.setInterpolator(new android.view.animation.PathInterpolator(.22f, .7f, .12f, 1f));
+            run.setInterpolator(new android.view.animation.PathInterpolator(.4f, 0f, .2f, 1f));
             run.addUpdateListener(value -> {
                 if (animator != run || delivered || closed) return;
                 if (!current.getAsBoolean()) { finish(false); return; }

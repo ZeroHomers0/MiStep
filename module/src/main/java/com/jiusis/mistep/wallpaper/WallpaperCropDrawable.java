@@ -44,7 +44,14 @@ final class WallpaperCropDrawable extends Drawable {
     }
 
     void setMainHole(RectF hole) {
-        mainHole = hole == null ? null : new RectF(hole);
+        if (hole == null) {
+            if (mainHole == null) return;
+            mainHole = null;
+        } else {
+            if (mainHole != null && mainHole.equals(hole)) return;
+            if (mainHole == null) mainHole = new RectF(hole);
+            else mainHole.set(hole);
+        }
         invalidateSelf();
     }
 

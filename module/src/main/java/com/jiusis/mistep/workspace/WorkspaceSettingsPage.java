@@ -27,16 +27,12 @@ import android.widget.Toast;
 
 /** Settings use the installed system Settings resources and layout proportions. */
 final class WorkspaceSettingsPage extends FrameLayout {
-    private static final int HOME = 0, SWAP = 3, LOGS = 4, GESTURE = 5, VIDEO = 6;
+    private static final int HOME = 0, SWAP = 3, GESTURE = 5, VIDEO = 6;
     private static final int BLUE = HyperOsStyle.CONTROL_ACCENT;
     private final SettingsActivity activity;
     private final boolean dark;
     private final int primary, secondary, surface;
     private final int[] scrollPositions = new int[VIDEO + 1];
-    private final RuntimeLogController runtimeLogs;
-    private TextView logStatus, logPreview;
-    private View refreshLogs, exportLogs;
-    private TextView recordLogs;
     private final android.database.ContentObserver gestureObserver =
             new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())) {
         @Override public void onChange(boolean selfChange) {
@@ -47,10 +43,9 @@ final class WorkspaceSettingsPage extends FrameLayout {
     private ScrollView scroll;
     private LinearLayout content;
 
-    WorkspaceSettingsPage(SettingsActivity activity, Bundle state, RuntimeLogController runtimeLogs) {
+    WorkspaceSettingsPage(SettingsActivity activity, Bundle state) {
         super(activity);
         this.activity = activity;
-        this.runtimeLogs = runtimeLogs;
         dark = (getResources().getConfiguration().uiMode & 48) == 32;
         primary = activity.settingsColor("miuix_preference_primary_text_color_" + (dark ? "dark" : "light"),
                 dark ? 0xfff4f5f8 : 0xff000000);
@@ -63,7 +58,7 @@ final class WorkspaceSettingsPage extends FrameLayout {
                 System.arraycopy(saved, 0, scrollPositions, 0, Math.min(saved.length, scrollPositions.length));
         }
         int restored = state == null ? HOME : state.getInt("settings_page", HOME);
-        show(restored == SWAP || restored == LOGS || restored == GESTURE || restored == VIDEO ? restored : HOME, false);
+        show(restored == SWAP || restored == GESTURE || restored == VIDEO ? restored : HOME, false);
     }
 
     void save(Bundle state) {
@@ -99,10 +94,9 @@ final class WorkspaceSettingsPage extends FrameLayout {
                 -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
         scroll.addView(centered, new ScrollView.LayoutParams(-1, -1));
         addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-        activity.setPageTitle(next == SWAP ? "主副交换逻辑" : next == LOGS ? "运行日志"
-                : next == GESTURE ? "唤出手势" : next == VIDEO ? "视频" : "Mi Step");
-        if (next == LOGS) logs();
-        else if (next == SWAP) swap();
+        activity.setPageTitle(next == SWAP ? "主窗与小窗交换方式"
+                : next == GESTURE ? "打开 MiStep 的手势" : next == VIDEO ? "横屏视频显示位置" : "MiStep");
+        if (next == SWAP) swap();
         else if (next == GESTURE) gesture();
         else if (next == VIDEO) video();
         else home();
@@ -118,31 +112,34 @@ final class WorkspaceSettingsPage extends FrameLayout {
         WorkspaceOptions options = WorkspaceSettingsStore.read(activity);
         section("外观");
         LinearLayout appearance = card();
-        switchOption(appearance, "显示农历", null, options.showLunar,
+        switchOption(appearance, "显示农历", "在顶部日期下方显示农历", options.showLunar,
                 checked -> persist(WorkspaceSettingsStore.read(activity).withShowLunar(checked)));
         add(appearance, 0, 12);
-        section("交互");
+
+        section("窗口与操作");
         LinearLayout interaction = card();
-        menu(interaction, "视频", WorkspaceOptions.videoLabel(options.landscapeVideo), () -> show(VIDEO, true));
+        menu(interaction, "打开 MiStep 的手势", gestureLabel(EntryGesturePolicy.effectiveMode(
+                options.entryGesture, EntryGestureSettings.lineHidden(activity))), () -> show(GESTURE, true));
         divider(interaction);
-        menu(interaction, "主副交换逻辑", WorkspaceOptions.modeLabel(options.swapMode), () -> show(SWAP, true));
+        menu(interaction, "主窗与小窗交换方式", WorkspaceOptions.modeLabel(options.swapMode), () -> show(SWAP, true));
         divider(interaction);
-        menu(interaction, "唤出手势", gestureLabel(EntryGesturePolicy.effectiveMode(
-                        options.entryGesture, EntryGestureSettings.lineHidden(activity))), () -> show(GESTURE, true));
-        divider(interaction);
-        switchOption(interaction, "锁屏时保留 MiStep", "开启后解锁恢复工作台；关闭后解锁回到正常界面", options.keepOnLock,
-                checked -> persist(WorkspaceSettingsStore.read(activity).withKeepOnLock(checked)));
-        divider(interaction);
-        switchOption(interaction, "无限小窗", null, options.scrollSideTasks,
+        switchOption(interaction, "滚动切换小窗", "上下滑动小窗区域，查看更多小窗", options.scrollSideTasks,
                 checked -> persist(WorkspaceSettingsStore.read(activity).withScrollSideTasks(checked)));
         divider(interaction);
-        switchOption(interaction, "最近任务里不显示小窗里的应用", "只在 One Step 打开时生效，不会关闭应用", options.hideSideRecents,
+        switchOption(interaction, "在最近任务中隐藏小窗应用", "仅在 MiStep 打开时生效，不会关闭应用", options.hideSideRecents,
                 checked -> persist(WorkspaceSettingsStore.read(activity).withHideSideRecents(checked)));
         add(interaction, 0, 12);
-        section("诊断");
-        LinearLayout diagnostics = card();
-        menu(diagnostics, "运行日志", "诊断信息与问题反馈", () -> show(LOGS, true));
-        add(diagnostics, 0, 0);
+
+        section("视频");
+        LinearLayout video = card();
+        menu(video, "横屏视频显示位置", WorkspaceOptions.videoLabel(options.landscapeVideo), () -> show(VIDEO, true));
+        add(video, 0, 12);
+
+        section("锁屏");
+        LinearLayout lock = card();
+        switchOption(lock, "解锁后恢复 MiStep", "开启后，解锁恢复原有窗口布局；关闭后，解锁返回正常全屏界面", options.keepOnLock,
+                checked -> persist(WorkspaceSettingsStore.read(activity).withKeepOnLock(checked)));
+        add(lock, 0, 0);
     }
 
     private void switchOption(LinearLayout group, String label, String detail, boolean checked,
@@ -197,9 +194,9 @@ final class WorkspaceSettingsPage extends FrameLayout {
     private void video() {
         section("视频进入横屏全屏时");
         LinearLayout group=card();
-        String[] descriptions={"仅接入播放器的画中画或悬浮视频窗口，下面的主窗和小窗照常使用。不支持的播放器留在主窗。",
-                "视频在主窗里横屏显示，小窗照常使用。",
-                "关闭工作台，恢复正常的全屏视频界面。"};
+        String[] descriptions={"支持的播放器可在顶部显示视频，主窗和小窗仍可使用；不支持时保留在主窗播放。",
+                "视频在主窗内横屏播放，小窗仍可使用。",
+                "退出 MiStep，使用应用原有的全屏播放界面。"};
         int selected=WorkspaceSettingsStore.read(activity).landscapeVideo;
         for(int mode=0;mode<descriptions.length;mode++) {
             final int choice=mode;if(mode>0)divider(group);
@@ -211,72 +208,6 @@ final class WorkspaceSettingsPage extends FrameLayout {
         add(group,0,14);
         TextView note=text("从下一次进入横屏全屏开始生效",13,secondary);
         note.setPadding(dp(16),dp(2),dp(16),0);add(note,0,0);
-    }
-
-    private void logs() {
-        TextView note = text("先开始录制，再复现问题，返回后点结束并导出；最长60秒，支持锁屏复现。需要 Root 权限。诊断包含系统日志及窗口信息，分享前请检查。", 13, secondary);
-        note.setPadding(dp(16), 0, dp(16), 0);
-        add(note, 0, 18);
-        LinearLayout description = card();
-        android.widget.EditText input = new android.widget.EditText(activity);
-        input.setTextSize(14); input.setTextColor(primary); input.setHintTextColor(secondary);
-        input.setHint("问题现象、发生时间与复现步骤（选填）");
-        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        input.setMinLines(2); input.setMaxLines(5);
-        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(4000)});
-        input.setBackgroundColor(0x00000000); input.setPadding(dp(16), dp(12), dp(16), dp(12));
-        input.setText(runtimeLogs.description());
-        input.addTextChangedListener(new android.text.TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            public void onTextChanged(CharSequence s, int start, int before, int count) { runtimeLogs.description(s.toString()); }
-            public void afterTextChanged(android.text.Editable text) {}
-        });
-        description.addView(input, new LinearLayout.LayoutParams(-1, -2)); add(description, 0, 18);
-        LinearLayout actions = new LinearLayout(activity);
-        refreshLogs = action("刷新诊断", false, runtimeLogs::refresh);
-        exportLogs = action("导出诊断包", true, runtimeLogs::export);
-        LinearLayout.LayoutParams refresh = new LinearLayout.LayoutParams(0, dp(50), 1);
-        refresh.rightMargin = dp(12);
-        actions.addView(refreshLogs, refresh);
-        actions.addView(exportLogs, new LinearLayout.LayoutParams(0, dp(50), 1));
-        add(actions, 0, 18);
-        recordLogs = action("开始录制问题（最长60秒）", false, runtimeLogs::record);
-        recordLogs.setMinimumHeight(dp(50));
-        add(recordLogs, 0, 14);
-        logStatus = text("", 13, secondary);
-        logStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        logStatus.setPadding(dp(16), 0, dp(16), 0);
-        add(logStatus, 0, 12);
-        LinearLayout preview = card();
-        logPreview = text("", 11, primary);
-        logPreview.setTypeface(Typeface.MONOSPACE);
-        logPreview.setTextIsSelectable(true);
-        logPreview.setPadding(dp(16), dp(16), dp(16), dp(16));
-        preview.addView(logPreview, new LinearLayout.LayoutParams(-1, -2));
-        add(preview, 0, 0);
-        runtimeLogs.open(); updateLogs();
-    }
-
-    private TextView action(String label, boolean selected, Runnable run) {
-        TextView button = text(label, 16, selected ? 0xffffffff : primary);
-        button.setGravity(Gravity.CENTER);
-        button.setTypeface(Typeface.create("sans-serif-medium", 0));
-        button.setBackground(HyperOsStyle.controlButton(activity, selected, 18));
-        button.setFocusable(true);
-        button.setOnClickListener(v -> run.run());
-        return button;
-    }
-
-    void updateLogs() {
-        if (screen != LOGS || logStatus == null) return;
-        logStatus.setText(runtimeLogs.status());
-        logPreview.setText(runtimeLogs.preview());
-        refreshLogs.setEnabled(!runtimeLogs.busy());
-        refreshLogs.setAlpha(runtimeLogs.busy() ? .45f : 1f);
-        exportLogs.setEnabled(runtimeLogs.canExport());
-        exportLogs.setAlpha(runtimeLogs.canExport() ? 1f : .45f);
-        recordLogs.setText(runtimeLogs.recording()?"结束录制并采集诊断":"开始录制问题（最长60秒）");
-        recordLogs.setEnabled(runtimeLogs.recording()||!runtimeLogs.busy()); recordLogs.setAlpha(runtimeLogs.recording()||!runtimeLogs.busy()?1f:.45f);
     }
 
     private Switch settingsSwitch(String label, boolean checked) {
@@ -337,13 +268,13 @@ final class WorkspaceSettingsPage extends FrameLayout {
                 if(persist(WorkspaceSettingsStore.read(activity).withSwapMode(choice)))show(SWAP,false);
             };
             choiceOption(group,WorkspaceOptions.modeLabel(mode),mode==WorkspaceOptions.FIXED_MAIN
-                    ?"主区域保持在当前一侧，只交换应用":"副任务在原侧放大，主区域随之换边",mode==selected,true,null,select);
+                    ?"主窗保持在当前一侧，只交换主窗与小窗中的应用":"小窗中的应用在原侧放大，主窗随之切换位置",mode==selected,true,null,select);
             group.setOnClickListener(v->select.run());
             ModeDiagram diagram=new ModeDiagram(mode);
             LinearLayout.LayoutParams preview=new LinearLayout.LayoutParams(-1,dp(104));
             preview.setMargins(dp(18),0,dp(18),dp(16));group.addView(diagram,preview);add(group,0,14);
         }
-        TextView note=text("从下一次主副交换开始生效",13,secondary);
+        TextView note=text("从下一次交换主窗与小窗开始生效",13,secondary);
         note.setPadding(dp(16),dp(2),dp(16),0);add(note,0,0);
     }
 
@@ -355,13 +286,13 @@ final class WorkspaceSettingsPage extends FrameLayout {
         WorkspaceOptions options = WorkspaceSettingsStore.read(activity);
         boolean lineHidden = EntryGestureSettings.lineHidden(activity);
         int selected = EntryGesturePolicy.effectiveMode(options.entryGesture, lineHidden);
-        section("唤出手势");
+        section("选择打开 MiStep 的手势");
         LinearLayout group = card();
         entryGestureOption(group, WorkspaceOptions.STATUS_BAR_INWARD,
                 "状态栏向内滑", "从状态栏左侧或右侧向屏幕中间滑动", selected, true);
         divider(group);
         String detail = lineHidden ? "从屏幕底部任意位置向左或向右滑动"
-                : "需先关闭澎湃小白条（手势提示线）";
+                : "需先在系统设置中关闭手势提示线";
         entryGestureOption(group, WorkspaceOptions.BOTTOM_CENTER_OUTWARD,
                 "底部向外滑", detail, selected, lineHidden);
         add(group, 0, 0);
@@ -371,7 +302,7 @@ final class WorkspaceSettingsPage extends FrameLayout {
             int selectedMode, boolean enabled) {
         choiceOption(group,label,detail,selectedMode==mode,enabled,null,()->{
             if(!EntryGesturePolicy.canSelect(mode,EntryGestureSettings.lineHidden(activity)))
-                Toast.makeText(activity,"请先关闭澎湃的手势提示线",Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity,"请先在系统设置中关闭手势提示线",Toast.LENGTH_SHORT).show();
             else persist(WorkspaceSettingsStore.read(activity).withEntryGesture(mode));
             show(GESTURE,false);
         });

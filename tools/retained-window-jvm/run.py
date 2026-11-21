@@ -5,7 +5,6 @@ import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(_
 root=Path(__file__).resolve().parents[2]
 out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)
 files={
-'com/jiusis/mistep/RuntimeDiagnosticEvents.java':'package com.jiusis.mistep;class RuntimeDiagnosticEvents {static void event(String s){}}',
 'com/jiusis/mistep/ShellCompat.java':'package com.jiusis.mistep;class ShellCompat {static boolean hasMethod(Class<?> c,String name,int count){for(var m:c.getMethods())if(m.getName().equals(name)&&m.getParameterCount()==count)return true;return false;}}',
 'android/os/IBinder.java':'package android.os;public interface IBinder {}',
 'android/os/Handler.java':'package android.os;public class Handler {public Runnable timeout;public void postDelayed(Runnable r,long delay){timeout=r;}}',

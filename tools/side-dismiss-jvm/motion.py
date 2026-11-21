@@ -1,6 +1,6 @@
+"""Use existing deterministic Android fixtures to test the actual outward animation."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Use existing deterministic Android fixtures to test the actual outward animation."""
 from pathlib import Path
 import ast,subprocess,sys
 root=Path(__file__).resolve().parents[2];out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=True)

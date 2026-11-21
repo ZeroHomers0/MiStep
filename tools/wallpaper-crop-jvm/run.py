@@ -1,6 +1,6 @@
+"""Exercise actual wallpaper sampling during an offscreen empty-control render."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Exercise actual wallpaper sampling during an offscreen empty-control render."""
 from pathlib import Path
 import subprocess
 import sys
@@ -16,7 +16,7 @@ files = {
 'android/graphics/ColorFilter.java': 'package android.graphics; public class ColorFilter {}',
 'android/graphics/Paint.java': 'package android.graphics; public class Paint {public int color,alpha=255;public Paint(){}public Paint(int f){}public void setColor(int c){color=c;}public void setAlpha(int a){alpha=a;}public void setColorFilter(ColorFilter f){} }',
 'android/graphics/Rect.java': 'package android.graphics; public class Rect { public int left,top,right,bottom;public Rect(){}public Rect(int a,int b,int c,int d){set(a,b,c,d);}public void set(int a,int b,int c,int d){left=a;top=b;right=c;bottom=d;}public int width(){return right-left;}public int height(){return bottom-top;}public boolean isEmpty(){return width()<=0||height()<=0;} }',
-'android/graphics/RectF.java': 'package android.graphics; public class RectF {public float left,top,right,bottom;public RectF(){}public RectF(Rect r){this(r.left,r.top,r.right,r.bottom);}public RectF(RectF r){this(r.left,r.top,r.right,r.bottom);}public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(Rect r){set(r.left,r.top,r.right,r.bottom);} }',
+'android/graphics/RectF.java': 'package android.graphics; public class RectF {public float left,top,right,bottom;public RectF(){}public RectF(Rect r){this(r.left,r.top,r.right,r.bottom);}public RectF(RectF r){this(r.left,r.top,r.right,r.bottom);}public RectF(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(float a,float b,float c,float d){left=a;top=b;right=c;bottom=d;}public void set(RectF r){set(r.left,r.top,r.right,r.bottom);}public void set(Rect r){set(r.left,r.top,r.right,r.bottom);} }',
 'android/graphics/Canvas.java': 'package android.graphics; public class Canvas {public Rect source;public RectF excluded;public int depth,tint,alpha;public int save(){return ++depth;}public void restoreToCount(int v){depth=v-1;}public boolean clipPath(Path p){return true;}public boolean clipOutRect(float a,float b,float c,float d){excluded=new RectF(a,b,c,d);return true;}public void drawBitmap(Bitmap b,Rect r,RectF d,Paint p){source=new Rect(r.left,r.top,r.right,r.bottom);alpha=p.alpha;}public void drawRect(Rect r,Paint p){tint=p.color;} }',
 'android/graphics/drawable/Drawable.java': 'package android.graphics.drawable; import android.graphics.*;public abstract class Drawable {private Rect bounds=new Rect();public int invalidations;public Rect getBounds(){return bounds;}public void setBounds(int a,int b,int c,int d){bounds.set(a,b,c,d);}public void invalidateSelf(){invalidations++;}public abstract void draw(Canvas c);public abstract void setAlpha(int a);public abstract void setColorFilter(ColorFilter f);public abstract int getOpacity(); }',
 'WallpaperCropRegression.java': r'''package com.jiusis.mistep;

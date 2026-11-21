@@ -1,6 +1,6 @@
+"""Exercise the production process lease, hook, routing, and restoration together."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Exercise the production process lease, hook, routing, and restoration together."""
 from pathlib import Path
 import ast, subprocess, sys
 ROOT=Path(__file__).resolve().parents[2]

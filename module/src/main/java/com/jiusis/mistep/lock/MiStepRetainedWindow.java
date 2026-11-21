@@ -46,11 +46,6 @@ final class MiStepRetainedWindow {
         Object service = XposedHelpers.getObjectField(display, "mWmService");
         Object candidate = ((Map<?, ?>) XposedHelpers.getObjectField(service, "mWindowMap")).get(token);
         if (!owns(candidate, display)) {
-            try { RuntimeDiagnosticEvents.event("RETAIN_REJECT generation="+intent.getLongExtra("generation",0)
-                        +" reason=window_identity candidate="+candidate
-                        +" ownerUid="+(candidate==null?"NONE":XposedHelpers.getIntField(candidate,"mOwnerUid"))
-                        +" expectedOwner=registered_SystemUI_package_and_native_session");
-            } catch(Throwable ignored) { /* Diagnostics never changes the ownership decision. */ }
             return null;
         }
         long next = intent.getLongExtra("generation", 0);

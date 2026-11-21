@@ -1,6 +1,6 @@
+"""Exercise Host's actual live cell identity gate across token parcel updates."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Exercise Host's actual live cell identity gate across token parcel updates."""
 from pathlib import Path
 import subprocess
 import sys

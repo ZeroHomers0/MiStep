@@ -38,7 +38,7 @@ files = {
  if(monitor.mInputMonitor.claims==0)monitor.listener.onInputEvent(new MotionEvent(3,552,2459,0));}
  p.x=width;p.y=height;}}''',
 'android/view/WindowManager.java': '''package android.view;public class WindowManager {public Display display=new Display();public Display getDefaultDisplay(){return display;}
- public static class LayoutParams {public static final int TYPE_STATUS_BAR=2000;public int type=TYPE_STATUS_BAR;public String title="StatusBar";public CharSequence getTitle(){return title;}}}''',
+}''',
 'android/view/Choreographer.java': 'package android.view;public class Choreographer {public static Choreographer getInstance(){return new Choreographer();}}',
 'android/view/InputDevice.java': 'package android.view;public class InputDevice {public static final int SOURCE_TOUCHSCREEN=4098;}',
 'android/view/MotionEvent.java': '''package android.view;public class MotionEvent {

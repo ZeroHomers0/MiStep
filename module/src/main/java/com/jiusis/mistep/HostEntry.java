@@ -310,6 +310,10 @@ public class HostEntry implements IXposedHookLoadPackage {
             return sZoomed && target != null && target.display == sDisplayContent
                     ? target.display : null;
         });
+        MiStepDropPermissions.install(cl, () -> {
+            ZoomTarget target=sZoomTarget;
+            return sZoomed && target!=null && target.display==sDisplayContent?target.display:null;
+        });
         installMagnificationSurfaceTracking(cl);
         try {
             MiStepKeyguardZoom.Reset resetForLock=() -> {
@@ -617,7 +621,6 @@ public class HostEntry implements IXposedHookLoadPackage {
         try {
             final Context context = (Context) XposedHelpers.getObjectField(service, "mContext");
             sWmsContext = context;
-            RuntimeDiagnosticEvents.initialize(context, true);
             MiStepVideoDock.install(service,context,service.getClass().getClassLoader());
             startZoomSettingsWatcher();
             if (sZoomBridgeArmed) return;
@@ -711,10 +714,7 @@ public class HostEntry implements IXposedHookLoadPackage {
                         return;
                     }
                     if (MiStepInputTrace.ACTION.equals(intent.getAction())) {
-                        if(intent.hasExtra("diagnosticRequest")) {
-                            RuntimeDiagnosticEvents.request(intent.getStringExtra("diagnosticRequest"),intent.getBooleanExtra("diagnosticStart",false),intent.getStringExtra("diagnosticBootId"));
-                            return;
-                        }
+
                         if (intent.getBooleanExtra("stopInputTrace", false)) {
                             MiStepInputTrace.stop();
                             return;
@@ -3985,7 +3985,6 @@ public class HostEntry implements IXposedHookLoadPackage {
                     Object self = param.thisObject;
                     if (self instanceof Context) {
                         sContext = (Context) self;
-                        RuntimeDiagnosticEvents.initialize(sContext, false);
                         MiStepClipboard.start(sContext);
                         MiStepWarmup.start(sContext, cl);
                         log("captured Context -> " + sContext);
@@ -4061,7 +4060,6 @@ public class HostEntry implements IXposedHookLoadPackage {
         }
 
     }
-
 
     private static void logBackEvent(String source, android.view.MotionEvent event) {
         int action = event.getActionMasked();
@@ -4304,16 +4302,7 @@ public class HostEntry implements IXposedHookLoadPackage {
      * 先确保宿主已启动，再转给 MiStepHost。
      */
     private void handleDebugBroadcast(android.content.Intent intent) {
-        if(intent.hasExtra("diagnosticRequest")) {
-            String token=intent.getStringExtra("diagnosticRequest");
-            if(token==null||!token.matches("[a-f0-9]{32}"))return;
-            boolean start=intent.getBooleanExtra("diagnosticStart",false);
-            RuntimeDiagnosticEvents.request(token,start,intent.getStringExtra("diagnosticBootId"));
-            if(sContext!=null)sContext.sendBroadcast(new Intent(MiStepInputTrace.ACTION).setPackage("android")
-                    .putExtra("diagnosticRequest",token).putExtra("diagnosticStart",start)
-                    .putExtra("diagnosticBootId",intent.getStringExtra("diagnosticBootId")));
-            return;
-        }
+
         if (intent.getBooleanExtra("stopInputTrace", false)) {
             MiStepInputTrace.stop();
             if (sContext != null) sContext.sendBroadcast(new Intent(MiStepInputTrace.ACTION)
@@ -4602,7 +4591,6 @@ public class HostEntry implements IXposedHookLoadPackage {
     }
 
     private static void log(String msg) {
-        try { RuntimeDiagnosticEvents.fromHostLog(msg); } catch (Throwable ignored) {}
         Log.i(TAG, msg);
         try {
             XposedBridge.log(TAG + ": " + msg);
@@ -4612,7 +4600,4 @@ public class HostEntry implements IXposedHookLoadPackage {
     }
 
 }
-
-
-
 

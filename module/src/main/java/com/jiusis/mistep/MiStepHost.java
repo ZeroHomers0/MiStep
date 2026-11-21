@@ -126,7 +126,12 @@ public final class MiStepHost {
     private Bitmap wallpaperBackdrop;
     private MiStepVideoPane videoPane;
     private Bitmap wellWallpaperBackdrop;
+    private MiStepContentShare contentShare;
+    private final android.graphics.Paint contentSharePaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private Rect contentShareHover;
     private boolean wallpaperBackdropRequested;
+    private boolean wallpaperBackdropDirty;
+    private long wallpaperLoadGeneration;
     private BroadcastReceiver wallpaperReceiver;
     private BroadcastReceiver desktopIconReceiver;
     private BroadcastReceiver liveZoomReceiver;
@@ -252,6 +257,7 @@ public final class MiStepHost {
         MotionEvent bufferedDown;
         long touchTaskEpoch, touchSceneEpoch;
         boolean injecting;
+        int touchAxis;
         volatile boolean promoting;
         boolean launching;
         int retiredTaskId = -1;
@@ -3297,9 +3303,11 @@ public final class MiStepHost {
      * 呼出/退出为 300ms 整屏缩放动画（system_server 侧 2.2.4+ 的 anim 命令）；
      * 动画结束后再写一次稳态续租，避免 4 秒租约把进行中的动画取消。
      */
-    private static final long ZOOM_ANIM_MS = 300L;
+    private static final long ZOOM_ANIM_MS = WorkspaceMotionSpec.DURATION_MS;
     private android.animation.ValueAnimator workspaceAnimator;
     private android.animation.ValueAnimator mainSideAnimator;
+    private float mainSideFrameX = Float.NaN;
+    private WallpaperCropDrawable mainSideBackdrop;
     private long mainSideSwitchGeneration;
     private long workspaceGeneration;
     private float workspaceAlpha = 1f;
@@ -3429,7 +3437,7 @@ public final class MiStepHost {
     private void updateChromeClip() {
         if (layout == null || screenW <= 0 || screenH <= 0) return;
         // Every form factor shares the moving main exclusion.
-        android.graphics.RectF main = workspaceAlpha < 1f
+        android.graphics.RectF main = workspaceAlpha < 1f || mainSideAnimator != null
                 ? workspaceMainHole() : null;
         if (topBar != null) topBar.setWorkspaceMainHole(layout.tabletLandscape ? null : main);
         if (topLiveClip != null) {
@@ -3476,7 +3484,8 @@ public final class MiStepHost {
 
     private android.graphics.RectF workspaceMainHole() {
         float scale = 1f + (layout.mainScale - 1f) * workspaceAlpha;
-        float x = layout.mainOffsetX * workspaceAlpha, y = layout.mainOffsetY * workspaceAlpha;
+        float x = Float.isNaN(mainSideFrameX) ? layout.mainOffsetX * workspaceAlpha : mainSideFrameX;
+        float y = layout.mainOffsetY * workspaceAlpha;
         workspaceHole.set(x, y, x + screenW * scale, y + screenH * scale);
         return workspaceHole;
     }
@@ -3504,12 +3513,6 @@ public final class MiStepHost {
         if (previous != null) previous.cancel();
         final float from = entering ? 0f : workspaceAlpha;
         android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(from, entering ? 1f : 0f);
-        animator.setDuration(ZOOM_ANIM_MS);
-        // Material's emphasized-decelerate spends 88% of its progress in the first 40%
-        // of a 300ms window and then sticks. A 300ms transition needs a real
-        // acceleration phase as well, so both the Host fade and the WM zoom use the
-        // standard ease-in-out curve and therefore share one shape.
-        animator.setInterpolator(new android.view.animation.PathInterpolator(.4f, 0f, .2f, 1f));
         animator.addUpdateListener(value -> {
             if (workspaceAnimator == animator && generation == workspaceGeneration)
                 setWorkspaceAlpha((Float) value.getAnimatedValue());
@@ -3524,14 +3527,7 @@ public final class MiStepHost {
             }
         });
         workspaceAnimator = animator;
-        // Both sides now publish the same monotonic start, so the Host fade waits for
-        // it on every form factor instead of only on tablet landscape.
-        if (workspaceZoomStart > 0L) animator.setStartDelay(Math.max(0L,
-                workspaceZoomStart - SystemClock.uptimeMillis()));
-        animator.start();
-        if (workspaceZoomStart > 0L && SystemClock.uptimeMillis() > workspaceZoomStart)
-            animator.setCurrentPlayTime(Math.min(ZOOM_ANIM_MS,
-                    SystemClock.uptimeMillis() - workspaceZoomStart));
+        WorkspaceMotionSpec.start(animator, workspaceZoomStart, ZOOM_ANIM_MS);
     }
     /** 动画期间宿主不得写普通稳态（会取消动画）；心跳按此时间窗跳过。 */
     private volatile long zoomAnimUntil;
@@ -3549,7 +3545,7 @@ public final class MiStepHost {
         // fade and the WM zoom are driven by different processes; without a shared
         // start the broadcast latency alone let the chrome lead the application by
         // several frames, which is exactly the overlap seen during entry.
-        workspaceZoomStart = SystemClock.uptimeMillis() + 32L;
+        workspaceZoomStart = SystemClock.uptimeMillis() + WorkspaceMotionSpec.LEAD_MS;
         writeZoomLine("anim " + steady + " " + ZOOM_ANIM_MS
                 + (workspaceZoomStart > 0 ? " at=" + workspaceZoomStart : ""));
         // The steady rewrite must land after the published start, not after the
@@ -3685,8 +3681,27 @@ public final class MiStepHost {
             private final android.graphics.Paint divider = new android.graphics.Paint(
                     android.graphics.Paint.ANTI_ALIAS_FLAG);
             @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
+                // A stationary substrate covers both edges while native main geometry
+                // moves. Cell content can leave without taking its wallpaper with it.
+                if (mainSideAnimator != null) {
+                    int backdropSave = canvas.save();
+                    canvas.clipOutRect(workspaceMainHole());
+                    if (mainSideBackdrop != null) {
+                        mainSideBackdrop.setBounds(0, 0, screenW, screenH);
+                        mainSideBackdrop.draw(canvas);
+                    } else canvas.drawColor(HyperOsStyle.page(ctx));
+                    canvas.restoreToCount(backdropSave);
+                }
                 super.dispatchDraw(canvas);
-                if (layout == null || workspaceAlpha <= 0f) return;
+                if (contentShareHover != null) {
+                    contentSharePaint.setStyle(android.graphics.Paint.Style.STROKE);
+                    contentSharePaint.setStrokeWidth(HyperOsStyle.dp(ctx, 2f));
+                    contentSharePaint.setColor(HyperOsStyle.CONTROL_ACCENT);
+                    float inset=HyperOsStyle.dp(ctx, 3f);
+                    canvas.drawRect(contentShareHover.left+inset,contentShareHover.top+inset,
+                            contentShareHover.right-inset,contentShareHover.bottom-inset,contentSharePaint);
+                }
+                if (layout == null || workspaceAlpha <= 0f || mainSideAnimator != null) return;
                 int saved = canvas.save();
                 android.graphics.RectF main = workspaceMainHole();
                 canvas.clipOutRect(main);
@@ -3695,6 +3710,7 @@ public final class MiStepHost {
 
             }
             @Override public boolean dispatchTouchEvent(MotionEvent event) {
+                if (contentShare != null && contentShare.busy()) return true;
                 if (transitionInput != null && transitionInput.consume(event.getActionMasked())) return true;
                 boolean wasCaptured = sideCaptured;
                 if (trackSideScroll(event)) {
@@ -3715,9 +3731,37 @@ public final class MiStepHost {
         }, MiStepHost::log);
         root.setClipChildren(false);
         root.setBackgroundColor(0x00000000);
+        contentShare = new MiStepContentShare(ctx, new MiStepContentShare.Host() {
+            public boolean available() { return canShareContent(); }
+            public MiStepContentShare.Target main() { return shareMainTarget(); }
+            public MiStepContentShare.Target slot(int index) { return shareSideTarget(index); }
+            public MiStepContentShare.Target findSide(MiStepContentShare.Target original) { return findShareSide(original); }
+            public MiStepContentShare.Target at(float x,float y) {
+                if (layout==null || x<layout.cellX || x>=layout.cellX+layout.cellWidth || y<layout.topStrip) return null;
+                for (Slot slot:slots) if(slot!=null && slot.index>SLOT_MAIN && slot.index!=SLOT_TOP
+                        && presentsSlot(slot) && slot.rect!=null && x>=slot.rect[0] && x<slot.rect[2]
+                        && y>=slot.rect[1] && y<slot.rect[3])
+                    return shareSideTarget(slot.index);
+                return null;
+            }
+            public void highlight(MiStepContentShare.Target target) {
+                Slot slot=target==null?null:slots[target.slot];
+                contentShareHover=slot==null||slot.rect==null?null:new Rect(slot.rect[0],slot.rect[1],slot.rect[2],slot.rect[3]);
+                if(root!=null)root.invalidate();
+            }
+            public void exchange(MiStepContentShare.Target source,MiStepContentShare.Target target,Consumer<Boolean> complete) {
+                if(!canShareContent() || !source.same(shareMainTarget()) || !target.same(shareSideTarget(target.slot))) {
+                    complete.accept(false);return;
+                }
+                final long epoch=sceneEpoch;
+                swapWithMain(target.slot);
+                awaitContentShareExchange(source,target,epoch,SystemClock.uptimeMillis()+6500L,complete);
+            }
+        });
+        root.setOnDragListener((view,event)->contentShare!=null && contentShare.onDrag(event));
         root.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             @Override public void onViewAttachedToWindow(View view) { observeSideViewportRoot(view); }
-            @Override public void onViewDetachedFromWindow(View view) {}
+            @Override public void onViewDetachedFromWindow(View view) { if(contentShare!=null)contentShare.cancel(); }
         });
         installHostTouchRegion();
 
@@ -5393,47 +5437,79 @@ public final class MiStepHost {
     }
 
     /** 只取桌面壁纸做高斯模糊底（不使用应用内容），供顶栏/侧栏格子的液态玻璃使用。 */
+    private final Runnable wallpaperRetry = () -> { if (root != null) loadWallpaperBackdrop(); };
+
     private void loadWallpaperBackdrop() {
         if (wallpaperBackdropRequested) return;
-        if (wallpaperBackdrop != null && !wallpaperBackdrop.isRecycled()) {
+        if (!wallpaperBackdropDirty && wallpaperBackdrop != null && !wallpaperBackdrop.isRecycled()) {
             applyWallpaperBackdrops();
             return;
         }
         if (screenW <= 0 || screenH <= 0) return;
+        if (root == null) return;
+        if (!MiStepWallpaperSnapshot.canCapture(ctx)) {
+            main.removeCallbacks(wallpaperRetry);
+            main.postDelayed(wallpaperRetry, 500L);
+            return;
+        }
         wallpaperBackdropRequested = true;
+        final long request = ++wallpaperLoadGeneration;
+        final int width = screenW, height = screenH;
+        final boolean refresh = wallpaperBackdropDirty;
         Thread loader = new Thread(() -> {
             Bitmap ready = null;
             Bitmap wellReady = null;
             try {
-                ready = WorkspaceFrost.finish(MiStepWarmup.wallpaper(ctx, screenW, screenH));
+                ready = WorkspaceFrost.finish(refresh ? HyperOsStyle.blurredWallpaper(ctx, width, height)
+                        : MiStepWarmup.wallpaper(ctx, width, height));
                 // A tiny, extra-blurred texture is shared by all circular wells.
                 // Prepare it off the UI thread; no blur or capture work per frame.
                 if (ready != null) wellReady = HyperOsStyle.blurredBitmap(ready,
-                        Math.max(1, screenW / 6), Math.max(1, screenH / 6));
+                        Math.max(1, width / 6), Math.max(1, height / 6));
             } catch (Throwable error) {
                 log("wallpaper blur failed: " + error);
             }
             final Bitmap bitmap = ready;
             final Bitmap wellBitmap = wellReady;
-            main.post(() -> {
-                wallpaperBackdropRequested = false;
-                if (bitmap == null || bitmap.isRecycled()) {
-                    log("wallpaper blur unavailable");
-                    return;
-                }
-                if (wallpaperBackdrop != null) {
-                    MiStepClipboard.get(ctx).close();
-                    wallpaperBackdrop.recycle();
-                }
-                wallpaperBackdrop = bitmap;
-                if (wellWallpaperBackdrop != null) wellWallpaperBackdrop.recycle();
-                wellWallpaperBackdrop = wellBitmap;
-                log("wallpaper gaussian backdrop ready " + bitmap.getWidth() + "x" + bitmap.getHeight());
-                applyWallpaperBackdrops();
-            });
+            main.post(() -> finishWallpaperLoad(request, width, height, bitmap, wellBitmap));
         }, "MiStepWallpaperBlur");
         loader.start();
     }
+
+    private void finishWallpaperLoad(long request, int width, int height, Bitmap bitmap, Bitmap wellBitmap) {
+        if (request != wallpaperLoadGeneration || root == null || width != screenW || height != screenH
+                || !MiStepWallpaperSnapshot.canCapture(ctx)) {
+            if (bitmap != null) bitmap.recycle();
+            if (wellBitmap != null) wellBitmap.recycle();
+            if (request == wallpaperLoadGeneration) {
+                wallpaperBackdropRequested = false;
+                main.removeCallbacks(wallpaperRetry);
+                if (root != null) main.postDelayed(wallpaperRetry, 500L);
+            }
+            return;
+        }
+        if (bitmap != null && !bitmap.isRecycled()
+                && (mainSideAnimator != null || workspaceAnimator != null || promotion != null || cellMotion != null)) {
+            // Every layer of one transition keeps the same texture until its final frame.
+            main.postDelayed(() -> finishWallpaperLoad(request, width, height, bitmap, wellBitmap), 50L);
+            return;
+        }
+        wallpaperBackdropRequested = false;
+        if (bitmap == null || bitmap.isRecycled()) {
+            log("wallpaper blur unavailable; retain last desktop texture");
+            main.removeCallbacks(wallpaperRetry);
+            main.postDelayed(wallpaperRetry, 1500L);
+            return;
+        }
+        MiStepClipboard.get(ctx).close();
+        // Old drawables/native animations retain their bitmap until their last
+        // frame. Let GC reclaim it after those owners release, never recycle live textures.
+        wallpaperBackdrop = bitmap;
+        wellWallpaperBackdrop = wellBitmap;
+        wallpaperBackdropDirty = false;
+        log("wallpaper gaussian backdrop ready " + bitmap.getWidth() + "x" + bitmap.getHeight());
+        applyWallpaperBackdrops();
+        }
 
     private void applyWallpaperBackdrops() {
         if (root != null && layout != null) {
@@ -5533,8 +5609,8 @@ public final class MiStepHost {
         if (layout == null) return;
         // Wallpaper can arrive during a task handoff; do not rewrite its Surface alpha.
         android.graphics.RectF hole = workspaceMainHole();
-        for (View backing : new View[]{topStripBacking,mainGapBacking})
-            updateWorkspaceBacking(backing, hole);
+        updateWorkspaceBacking(topStripBacking, hole);
+        updateWorkspaceBacking(mainGapBacking, hole);
         for (int i=1;i<SLOT_COUNT;i++) {
             View backing=sideBackingViews[i];
             updateWorkspaceBacking(backing, hole);
@@ -5565,14 +5641,8 @@ public final class MiStepHost {
                 @Override public void onReceive(Context context, Intent intent) {
                     log("wallpaper changed; reloading blur backdrop");
                     MiStepClipboard.get(ctx).close();
-                    if (wallpaperBackdrop != null) {
-                        wallpaperBackdrop.recycle();
-                        wallpaperBackdrop = null;
-                    }
-                    if (wellWallpaperBackdrop != null) {
-                        wellWallpaperBackdrop.recycle();
-                        wellWallpaperBackdrop = null;
-                    }
+                    wallpaperBackdropDirty = true;
+                    ++wallpaperLoadGeneration;
                     wallpaperBackdropRequested = false;
                     loadWallpaperBackdrop();
                 }
@@ -6007,6 +6077,56 @@ public final class MiStepHost {
         }
     }
 
+    private boolean canShareContent() {
+        return root!=null && scene==ACTIVE && screenOn && !keyguardLocked && !suspendRequested
+                && !workspaceEntering && !liveSwapInputBlocked && !taskCellsCovered && promotion==null
+                && !transferBusy && cellMotion==null && sideDismiss==null && !isSideMotionRunning()
+                && mainSideAnimator==null && !sideCaptured && !holdsLiveFlipZoom();
+    }
+
+    private MiStepContentShare.Target shareSideTarget(int index) {
+        if(index<=SLOT_MAIN || index>=slots.length || index==SLOT_TOP) return null;
+        Slot slot=slots[index];
+        if(slot==null || !slot.occupied || slot.parked || slot.frozen || slot.closing || slot.promoting
+                || slot.launching || slot.taskToken==null || slot.pkg==null || slot.controller==null || !presentsSlot(slot)) return null;
+        try {
+            Object info=XposedHelpers.getObjectField(slot.controller,"mTaskInfo");
+            if(!controllerOwns(slot,slot.taskId,slot.taskToken))return null;
+            return new MiStepContentShare.Target(index,slot.taskId,XposedHelpers.getIntField(info,"userId"),
+                    (android.os.IBinder)XposedHelpers.callMethod(slot.taskToken,"asBinder"),slot.pkg);
+        } catch(Throwable stale){return null;}
+    }
+
+    private MiStepContentShare.Target findShareSide(MiStepContentShare.Target original) {
+        for(Slot slot:slots)if(slot!=null && slot.taskId==original.id) {
+            MiStepContentShare.Target candidate=shareSideTarget(slot.index);
+            if(original.same(candidate))return candidate;
+        }
+        return null;
+    }
+
+    private MiStepContentShare.Target shareMainTarget() {
+        try {
+            LiveTask task=findMainTask();if(task==null || task.pkg==null)return null;
+            for(Object info:rootInfos())if(task.matches(info))
+                return new MiStepContentShare.Target(SLOT_MAIN,task.id,XposedHelpers.getIntField(info,"userId"),
+                        (android.os.IBinder)XposedHelpers.callMethod(task.token,"asBinder"),task.pkg);
+        } catch(Throwable stale){log("content share main changed: "+stale);}
+        return null;
+    }
+
+    private void awaitContentShareExchange(MiStepContentShare.Target source,MiStepContentShare.Target target,
+            long epoch,long deadline,Consumer<Boolean> complete) {
+        if(epoch!=sceneEpoch || scene!=ACTIVE || !screenOn || keyguardLocked || suspendRequested || root==null) {
+            complete.accept(false);return;
+        }
+        if(promotion==null && !transferBusy && cellMotion==null && !liveSwapInputBlocked) {
+            complete.accept(target.same(shareMainTarget()) && findShareSide(source)!=null);return;
+        }
+        if(SystemClock.uptimeMillis()>=deadline){complete.accept(false);return;}
+        main.postDelayed(()->awaitContentShareExchange(source,target,epoch,deadline,complete),64L);
+    }
+
     private void launchQuick(QuickApp entry) {
         if (entry == null || entry.component == null || scene != ACTIVE
                 || promotion != null || transferBusy) return;
@@ -6148,8 +6268,10 @@ public final class MiStepHost {
             float dx = event.getX() - sideDownX;
             int slop = ViewConfiguration.get(ctx).getScaledTouchSlop();
             if (Math.max(Math.abs(dx), Math.abs(dy)) <= slop) return false;
+            int axis = MiStepSideGestureAxis.resolve(mainOnRight, dx, dy, slop);
+            if (axis == MiStepSideGestureAxis.UNDECIDED) return false;
             sideArmed = false;
-            if (Math.abs(dy) <= Math.abs(dx)) {
+            if (axis != MiStepSideGestureAxis.SCROLL) {
                 recycleSideVelocity();
                 return false;
             }
@@ -6625,7 +6747,7 @@ public final class MiStepHost {
         android.animation.ValueAnimator animation = android.animation.ValueAnimator.ofFloat(0f, 1f);
         sideScrollAnimator = animation;
         animation.setDuration(240L);
-        animation.setInterpolator(new android.view.animation.PathInterpolator(.22f, .7f, .12f, 1f));
+        animation.setInterpolator(new android.view.animation.PathInterpolator(.4f, 0f, .2f, 1f));
         animation.addUpdateListener(frame -> {
             if (sideScrollAnimator != animation || root != host || sceneEpoch != epoch) return;
             sideCompactionProgress = (float) frame.getAnimatedValue();
@@ -6754,12 +6876,24 @@ public final class MiStepHost {
                 if(slot.view!=null)slot.view.setX(slot.rect[0]+offset);
                 if(slot.hint!=null)slot.hint.setX(slot.rect[0]+offset);
             }
-            if(slot.index<sideBackingViews.length&&sideBackingViews[slot.index]!=null)sideBackingViews[slot.index].setTranslationX(offset);
+            // The wallpaper is screen anchored, not part of the sliding content.
+            if(slot.index<sideBackingViews.length&&sideBackingViews[slot.index]!=null)sideBackingViews[slot.index].setTranslationX(0);
         }
     }
 
+    private void updateMainSideFrame(float offset, float mainX) {
+        mainSideFrameX = mainX;
+        translateSidePresentation(offset);
+        updateWorkspaceBackdropVisibility();
+        updateChromeClip();
+        if (root != null) root.invalidate();
+    }
+
     private void settleMainSidePresentation() {
+        mainSideFrameX = Float.NaN;
+        mainSideBackdrop = null;
         translateSidePresentation(0);
+        updateWorkspaceBackdropVisibility();
         liveSwapInputBlocked=false;transferBusy=false;
         for(Slot slot:slots)if(slot!=null&&slot.index>SLOT_MAIN&&slot.index!=SLOT_TOP)updateTouchRegion(slot);
         if(root!=null){root.requestLayout();root.invalidate();}
@@ -6767,6 +6901,7 @@ public final class MiStepHost {
     }
 
     private void cancelMainSideSwitch() {
+        if(contentShare!=null)contentShare.cancel();
         mainSideSwitchGeneration++;
         android.animation.ValueAnimator previous=mainSideAnimator;mainSideAnimator=null;
         if(previous!=null){previous.cancel();settleMainSidePresentation();}
@@ -6780,26 +6915,29 @@ public final class MiStepHost {
         if(!android.animation.ValueAnimator.areAnimatorsEnabled()){setMainSide(right);return;}
         final long generation=++mainSideSwitchGeneration,epoch=sceneEpoch;
         final float outgoing=layout.mainOnRight?-layout.sideWidth:layout.sideWidth;
+        final float fromMainX=layout.mainOffsetX;
+        mainSideFrameX=fromMainX;
+        if(wallpaperBackdrop!=null&&!wallpaperBackdrop.isRecycled())
+            mainSideBackdrop=new WallpaperCropDrawable(wallpaperBackdrop,screenW,screenH,0,0,HyperOsStyle.topWallpaperTint(ctx));
         liveSwapInputBlocked=true;transferBusy=true;
         android.animation.ValueAnimator exit=android.animation.ValueAnimator.ofFloat(0,1);
-        mainSideAnimator=exit;exit.setDuration(110);
-        exit.addUpdateListener(value->{if(mainSideAnimator==exit&&generation==mainSideSwitchGeneration)translateSidePresentation(outgoing*(Float)value.getAnimatedValue());});
+        mainSideAnimator=exit;
+        exit.addUpdateListener(value->{if(mainSideAnimator==exit&&generation==mainSideSwitchGeneration)updateMainSideFrame(outgoing*(Float)value.getAnimatedValue(),fromMainX);});
         exit.addListener(new android.animation.AnimatorListenerAdapter(){@Override public void onAnimationEnd(android.animation.Animator value){
             if(mainSideAnimator!=exit||generation!=mainSideSwitchGeneration)return;
             if(epoch!=sceneEpoch||scene!=ACTIVE||!screenOn||keyguardLocked||suspendRequested){cancelMainSideSwitch();finishPendingSuspend();return;}
             try{applyMainLayout(makeAdaptiveLayout(right));rememberMainSide();writeZoomAnimated(true);}
             catch(Throwable error){log("animated side layout: "+error);cancelMainSideSwitch();return;}
             final float incoming=layout.mainOnRight?-layout.sideWidth:layout.sideWidth;
-            translateSidePresentation(incoming);
+            final float toMainX=layout.mainOffsetX;
+            updateMainSideFrame(incoming,fromMainX);
             android.animation.ValueAnimator enter=android.animation.ValueAnimator.ofFloat(0,1);mainSideAnimator=enter;
-            enter.setDuration(ZOOM_ANIM_MS);enter.setStartDelay(Math.max(0,workspaceZoomStart-SystemClock.uptimeMillis()));
-            enter.setInterpolator(new android.view.animation.PathInterpolator(.4f,0,.2f,1));
-            enter.addUpdateListener(frame->{if(mainSideAnimator==enter&&generation==mainSideSwitchGeneration)translateSidePresentation(incoming*(1-(Float)frame.getAnimatedValue()));});
+            enter.addUpdateListener(frame->{if(mainSideAnimator==enter&&generation==mainSideSwitchGeneration)updateMainSideFrame(incoming*(1-(Float)frame.getAnimatedValue()),fromMainX+(toMainX-fromMainX)*(Float)frame.getAnimatedValue());});
             enter.addListener(new android.animation.AnimatorListenerAdapter(){@Override public void onAnimationEnd(android.animation.Animator animation){
                 if(mainSideAnimator!=enter||generation!=mainSideSwitchGeneration)return;
                 mainSideAnimator=null;settleMainSidePresentation();refreshVideoPane();finishPendingSuspend();
-            }});enter.start();
-        }});exit.start();
+            }});WorkspaceMotionSpec.start(enter,workspaceZoomStart,ZOOM_ANIM_MS);
+        }});WorkspaceMotionSpec.start(exit,SystemClock.uptimeMillis(),WorkspaceMotionSpec.CELL_EXIT_MS);
     }
 
     private void setMainSide(boolean right) {
@@ -6952,6 +7090,7 @@ public final class MiStepHost {
                 slot.bufferedDown = MotionEvent.obtain(e);
                 slot.touchTaskEpoch = slot.taskEpoch;
                 slot.touchSceneEpoch = sceneEpoch;
+                slot.touchAxis = MiStepSideGestureAxis.UNDECIDED;
                 slot.injecting = false;
                 return true;
             }
@@ -6962,7 +7101,10 @@ public final class MiStepHost {
                     float dy = e.getRawY() - slot.bufferedDown.getRawY();
                     int slop = ViewConfiguration.get(ctx).getScaledTouchSlop();
                     if (Math.abs(dx) > slop || Math.abs(dy) > slop) slot.injecting = true;
-                    if (MiStepSideDismissGesture.starts(mainOnRight, dx, dy, slop)) {
+                    if(slot.touchAxis==MiStepSideGestureAxis.UNDECIDED)
+                        slot.touchAxis=MiStepSideGestureAxis.resolve(mainOnRight,dx,dy,slop);
+                    if (slot.touchAxis==MiStepSideGestureAxis.DISMISS
+                            && MiStepSideDismissGesture.starts(mainOnRight, dx, dy, slop)) {
                         dismissSideToBackground(slot);
                         if (sideDismiss != null && sideDismissSlot == slot) sideDismiss.follow(dx);
                     }
@@ -6984,11 +7126,16 @@ public final class MiStepHost {
                 float dx = current ? e.getRawX() - down.getRawX() : 0;
                 float dy = current ? e.getRawY() - down.getRawY() : 0;
                 int slop = ViewConfiguration.get(ctx).getScaledTouchSlop();
-                boolean dismiss = current && slot.rect != null && MiStepSideDismissGesture.accepts(
+                boolean dismiss = current && slot.rect != null
+                        && (slot.touchAxis==MiStepSideGestureAxis.DISMISS
+                            || slot.touchAxis==MiStepSideGestureAxis.UNDECIDED
+                                && MiStepSideGestureAxis.resolve(mainOnRight,dx,dy,slop)==MiStepSideGestureAxis.DISMISS)
+                        && MiStepSideDismissGesture.accepts(
                         mainOnRight, dx, dy, slot.rect[2] - slot.rect[0],
                         ctx.getResources().getDisplayMetrics().density, slop,
                         e.getEventTime() - down.getEventTime());
-                boolean tap = current && !slot.injecting && Math.abs(dx) <= slop && Math.abs(dy) <= slop;
+                boolean tap = current && !slot.injecting && Math.abs(dx) <= slop && Math.abs(dy) <= slop
+                        && e.getEventTime() - down.getEventTime() <= ViewConfiguration.getLongPressTimeout();
                 recycleBuffered(slot);
                 slot.injecting = false;
                 if (dismiss) {
@@ -10082,7 +10229,6 @@ public final class MiStepHost {
     }
 
     private static void log(String msg) {
-        try { RuntimeDiagnosticEvents.fromHostLog(msg); } catch(Throwable ignored) {}
         android.util.Log.i(TAG, msg);
         try {
             XposedBridge.log(TAG + ": " + msg);

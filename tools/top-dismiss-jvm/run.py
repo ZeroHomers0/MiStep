@@ -19,7 +19,6 @@ public class TopDismissRegression {
  static class View {void invalidate(){}}
  static class Layout {int topStrip=622;boolean tabletLandscape,mainOnRight;}
  static class Roll {boolean rolling;boolean rolling(){return rolling;}}
- static class Pane {}
  static class Info {int id,user;Object token;boolean ordinary=true,side;}
  static class LiveTask {int id;Object token;LiveTask(TopTaskState.Key k){id=k.taskId;token=k.token;}
   boolean matches(Object i){return i instanceof Info f&&f.id==id&&token.equals(f.token);}}
@@ -30,7 +29,6 @@ public class TopDismissRegression {
   Object taskToken=new Object();View view=new View();}
  static class HyperOsStyle {static float dp(Object c,float v){return v*2.75f;}}
  static class MiStepClipboard {static MiStepClipboard get(Object c){return new MiStepClipboard();}void close(){}}
- static class MiStepScanner {static void closeImmediately(){}}
  static class MiStepSideDismiss {
   final BooleanSupplier current;final Consumer<Boolean> complete;float distance,dx;boolean tracking=true,closed;
   MiStepSideDismiss(View r,View v,float d,BooleanSupplier c,Consumer<Boolean> done,Consumer<String> log){distance=d;current=c;complete=done;}

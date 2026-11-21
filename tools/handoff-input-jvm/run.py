@@ -1,6 +1,6 @@
+"""Run the real native-consumer and native status-sampler hooks with transaction probes."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Run the real native-consumer and native status-sampler hooks with transaction probes."""
 from pathlib import Path
 import subprocess, sys
 

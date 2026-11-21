@@ -1,6 +1,6 @@
+"""Run actual MiStepStatusBar/lease with controlled animator and draw callbacks."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Run actual MiStepStatusBar/lease with controlled animator and draw callbacks."""
 from pathlib import Path
 import subprocess
 import sys

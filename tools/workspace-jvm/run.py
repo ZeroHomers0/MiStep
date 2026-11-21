@@ -1,6 +1,6 @@
+"""Execute actual Host entry/exit methods with real-surface and deterministic animator doubles."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Execute actual Host entry/exit methods with real-surface and deterministic animator doubles."""
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +16,7 @@ def member(signature):
  return host[a:i]
 methods='\n'.join(member(s) for s in ['    private void beginWorkspaceEntry(', '    private void awaitWorkspaceFrame(', '    private void setWorkspaceAlpha(', '    private void stageCellPresentation(', '    private Rect workspaceCellCrop(Slot slot)', '    private Rect workspaceCellCrop(int[] rect,', '    private android.graphics.RectF workspaceMainHole(', '    private void updateWorkspaceBacking(', '    private void updateWorkspaceBackdropVisibility(', '    private void updateChromeClip(', '    private void clipChromeBesideMain(', '    private int[] sideBackingBounds(', '    private int sideSegmentTop(', '    private int sideSegmentHeight(', '    private void playWorkspaceFade(', '    private void suspendSession(', '    private void finishPendingSuspend(', '    private boolean ownsCellPresentation(', '    private boolean cellPresentationVisible(', '    private void updateCellSurfaceVisibility('])
 files={
+'android/os/SystemClock.java':'package android.os;public class SystemClock {public static long uptimeMillis(){return 10000;}}',
 'android/animation/Animator.java':'package android.animation;public class Animator {}',
 'android/animation/AnimatorListenerAdapter.java':'package android.animation;public class AnimatorListenerAdapter {public void onAnimationEnd(Animator a){}}',
 'android/animation/ValueAnimator.java':r'''package android.animation;
@@ -78,7 +79,7 @@ public class WorkspaceRegression {
  Layout layout=new Layout();int screenW=3048,screenH=2032;long workspaceZoomStart=10032;
  final android.graphics.RectF workspaceHole=new android.graphics.RectF();
  Object workspaceBackdrop;int backdropAcquires;void prepareWorkspaceBackdrop(long g,int attempt,Runnable ready){backdropAcquires++;ready.run();}
- android.animation.ValueAnimator workspaceAnimator;float workspaceAlpha=1f;
+ android.animation.ValueAnimator workspaceAnimator;float workspaceAlpha=1f;float mainSideFrameX=Float.NaN;Object mainSideAnimator;
  void writeZoomAnimated(boolean on){zoomWrites++;}void writeZoom(boolean on){zoomWrites++;}void setZoomState(boolean on){zoomed=on;}void scheduleMainCropClear(long d){}void publishDesktopSideTasks(){}
  void resetTopForSuspend(){}
  boolean retentionAllowed,retainedOnExit;long retainedExitSourceEpoch=-1;int retainedHides;
@@ -215,6 +216,6 @@ files['com/jiusis/mistep/WorkspaceRegression.java']=files['com/jiusis/mistep/Wor
 for name,text in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(package_dir(root)/'WorkspaceCellReveal.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n)for n in files]+[str(package_dir(root)/'WorkspaceCellReveal.java'),str(package_dir(root)/'WorkspaceMotionSpec.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.WorkspaceRegression'],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.TopControlsCreationRegression'],check=True)

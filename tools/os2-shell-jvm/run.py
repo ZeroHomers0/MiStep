@@ -28,7 +28,6 @@ import java.util.*;import java.util.concurrent.Executor;import android.content.C
 public class Os2ShellRegression {
  static int checks;static void check(boolean b,String m){checks++;if(!b)throw new AssertionError(m);}
  public static class Controller {public String task;public Controller(String t){task=t;}}
- public static class Info {}
  public static class Canonical {}
  public static class NativeTransitions {int starts,type;Object wct,handler;public Object startTransition(int t,Object w,Object h){starts++;type=t;wct=w;handler=h;return new Object();}}
  public static class Os2Transitions extends BindingViews {public List<Object>mPending=new ArrayList<>();public NativeTransitions mTransitions=new NativeTransitions();public void startNextTransition(){if(mPending.isEmpty())return;PendingTransition p=(PendingTransition)mPending.get(0);check(((BindingController)p.mController).mTaskToken!=null,"OS2 CHANGE queued before live task binding");p.mClaimed=mTransitions.startTransition(p.mType,p.mWct,this);}public static class PendingTransition{public int mType;public Object mWct,mController,mClaimed;public PendingTransition(int t,Object w,Object c,Object claim){mType=t;mWct=w;mController=c;mClaimed=claim;}}}

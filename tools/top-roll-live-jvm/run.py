@@ -1,5 +1,5 @@
 """Exercise the real gesture/animation clock, including interrupted and detached live faces."""
-import os, shutil, subprocess, sys
+import os, subprocess, sys
 from pathlib import Path
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 root=Path(__file__).resolve().parents[2]

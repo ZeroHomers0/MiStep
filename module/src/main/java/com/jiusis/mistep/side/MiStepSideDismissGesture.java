@@ -5,9 +5,8 @@ final class MiStepSideDismissGesture {
     private MiStepSideDismissGesture() {}
 
     static boolean starts(boolean sideOnLeft, float dx, float dy, int touchSlop) {
-        float outward = sideOnLeft ? -dx : dx;
-        return Float.isFinite(dx) && Float.isFinite(dy)
-                && outward > touchSlop && outward > Math.abs(dy) * 1.5f;
+        return MiStepSideGestureAxis.resolve(sideOnLeft, dx, dy, touchSlop)
+                == MiStepSideGestureAxis.DISMISS;
     }
 
     static boolean accepts(boolean sideOnLeft, float dx, float dy, float width,

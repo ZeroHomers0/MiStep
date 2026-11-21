@@ -20,7 +20,6 @@ import android.widget.Toolbar;
 /** Workspace settings opened by the native system Settings entry. */
 public final class SettingsActivity extends Activity {
     private WorkspaceSettingsPage settings;
-    private RuntimeLogController runtimeLogs;
     private TextView pageTitle;
     private Resources systemSettingsResources;
     @Override
@@ -64,9 +63,7 @@ public final class SettingsActivity extends Activity {
         setActionBar(toolbar);
         getActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationContentDescription("返回");
-        runtimeLogs = new RuntimeLogController(this, savedInstanceState);
-        settings = new WorkspaceSettingsPage(this, savedInstanceState, runtimeLogs);
-        runtimeLogs.changed = () -> settings.updateLogs();
+        settings = new WorkspaceSettingsPage(this, savedInstanceState);
         page.addView(settings, new LinearLayout.LayoutParams(-1, 0, 1f));
         getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                 android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> {
@@ -134,20 +131,7 @@ public final class SettingsActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle state) {
         settings.save(state);
-        runtimeLogs.save(state);
         super.onSaveInstanceState(state);
-    }
-
-    @Override
-    protected void onActivityResult(int request, int result, android.content.Intent data) {
-        super.onActivityResult(request, result, data);
-        runtimeLogs.onResult(request, result, data);
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (runtimeLogs != null) runtimeLogs.close();
-        super.onDestroy();
     }
 
     @Override

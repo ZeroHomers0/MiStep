@@ -100,14 +100,8 @@ final class HyperOsStyle {
     }
 
     static Bitmap blurredWallpaper(Context context, int i, int i2) throws Exception {
-        Drawable drawable;
-        if (i <= 0 || i2 <= 0 || (drawable = WallpaperManager.getInstance(context).getDrawable()) == null) {
-            return null;
-        }
-        Bitmap bitmapCreateBitmap = Bitmap.createBitmap(i, i2, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmapCreateBitmap);
-        drawable.setBounds(0, 0, i, i2);
-        drawable.draw(canvas);
+        Bitmap bitmapCreateBitmap = MiStepWallpaperSnapshot.capture(context, i, i2);
+        if (bitmapCreateBitmap == null) return null;
         try {
             return blurredBitmap(bitmapCreateBitmap, i, i2);
         } finally {

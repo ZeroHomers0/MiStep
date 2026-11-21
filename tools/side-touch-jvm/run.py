@@ -1,6 +1,6 @@
+"""Execute real side-cell gesture arbitration and the scoped TaskView insets hook."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Execute real side-cell gesture arbitration and the scoped TaskView insets hook."""
 from pathlib import Path
 import subprocess,sys
 root=Path(__file__).resolve().parents[2];src=package_dir(root)
@@ -19,8 +19,8 @@ text='''package com.jiusis.mistep;import java.util.*;
 public class SideTouchRegression {
  static int checks;static void check(boolean v,String m){checks++;if(!v)throw new AssertionError(m);}
  static class MotionEvent {static final int ACTION_DOWN=0,ACTION_UP=1,ACTION_MOVE=2,ACTION_CANCEL=3,ACTION_POINTER_DOWN=5,ACTION_POINTER_UP=6;int a;float x,y;boolean recycled;MotionEvent(int a,float x,float y){this.a=a;this.x=x;this.y=y;}static MotionEvent obtain(MotionEvent e){return new MotionEvent(e.a,e.x,e.y);}int getPointerCount(){return 1;}int getPointerId(int i){return 0;}int getActionMasked(){return a;}float getRawX(){return x;}float getRawY(){return y;}float getX(){return x;}float getY(){return y;}long getEventTime(){return 10000;}void recycle(){recycled=true;}}
- static class ViewConfiguration {static ViewConfiguration get(Object c){return new ViewConfiguration();}int getScaledTouchSlop(){return 8;}}
- static class View {}static class Slot {boolean promoting,launching,closing,frozen,parked,occupied=true,injecting;View view=new View();int[]rect={0,0,100,200};long taskEpoch,touchTaskEpoch,touchSceneEpoch;MotionEvent bufferedDown;}
+ static class ViewConfiguration {static ViewConfiguration get(Object c){return new ViewConfiguration();}int getScaledTouchSlop(){return 8;}static int getLongPressTimeout(){return 500;}}
+ static class View {}static class Slot {int touchAxis;boolean promoting,launching,closing,frozen,parked,occupied=true,injecting;View view=new View();int[]rect={0,0,100,200};long taskEpoch,touchTaskEpoch,touchSceneEpoch;MotionEvent bufferedDown;}
  static class XC_MethodHook {static class MethodHookParam {Object thisObject;boolean returned;void setResult(Object result){returned=true;}}protected void beforeHookedMethod(MethodHookParam p){}}
  static class XposedHelpers {static XC_MethodHook hook;static Class<?>findClass(String n,ClassLoader cl){return Object.class;}static Object findAndHookMethod(Class<?>c,String n,Object...args){hook=(XC_MethodHook)args[args.length-1];return hook;}}
  static SideTouchRegression sInstance;static final int SLOT_MAIN=0,SLOT_COUNT=4,CELL_SLOT_COUNT=4;Slot[]slots={new Slot(),new Slot(),new Slot(),new Slot()};static class Context{Context getResources(){return this;}Context getDisplayMetrics(){return this;}float density=1;}Context ctx=new Context();int taps,transfers,compactions;boolean compactPending;
@@ -51,5 +51,5 @@ public class SideTouchRegression {
 }'''.replace('HOOK',hook).replace('METHODS',methods)
 path=out/'SideTouchRegression.java';path.write_text(text,encoding='utf8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(path),str(src/'MiStepSideDismissGesture.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(path),str(src/'MiStepSideDismissGesture.java'),str(src/'MiStepSideGestureAxis.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideTouchRegression'],check=True)

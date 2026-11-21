@@ -1,9 +1,9 @@
-import os
-import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 """Execute the actual close/reveal methods against deterministic window/frame queues.
 
 This checks ordering and stale callbacks only, not Android rendering or WM ownership.
 """
+import os
+import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
 from pathlib import Path
 import subprocess
 import sys

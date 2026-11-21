@@ -1,6 +1,6 @@
+"""Exercise the actual Host event handler and handback gate, with deterministic callbacks."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Exercise the actual Host event handler and handback gate, with deterministic callbacks."""
 from pathlib import Path
 import subprocess, sys
 root = Path(__file__).resolve().parents[2]
@@ -39,14 +39,14 @@ public class SideDismissRegression {
  Rect liveSideStrip(MiStepLayout g){return new Rect();}Object liveHostRootSurface(){return new Object();}
  void drawLiveEmptyHints(Object c,MiStepLayout a,MiStepLayout b,int mask){}void updateCellSurfaceVisibility(Slot s){}
  Runnable success;Consumer<String> failure;
- static class Slot {
+ static class Slot {int touchAxis;
   int index=1,taskId=42;long taskEpoch=2,touchTaskEpoch,touchSceneEpoch;
   boolean occupied=true,promoting,launching,closing,frozen,parked,injecting,carrier;
   Object taskToken=new Object(),controller=new Object(),view=new Object(),hint=new Object();int[] rect={814,600,1080,1200};MotionEvent bufferedDown;
  }
  static class Metrics{float density=2.75f;}static class Resources{Metrics getDisplayMetrics(){return new Metrics();}}
  static class Context{Resources getResources(){return new Resources();}}
- static class ViewConfiguration{static ViewConfiguration get(Context c){return new ViewConfiguration();}int getScaledTouchSlop(){return 8;}}
+ static class ViewConfiguration{static ViewConfiguration get(Context c){return new ViewConfiguration();}int getScaledTouchSlop(){return 8;}static int getLongPressTimeout(){return 500;}}
  static class MotionEvent{
   static final int ACTION_DOWN=0,ACTION_UP=1,ACTION_MOVE=2,ACTION_CANCEL=3,ACTION_POINTER_DOWN=5,ACTION_POINTER_UP=6;
   int a,n=1,id=0;float x,y;long t;boolean recycled;
@@ -97,6 +97,8 @@ public class SideDismissRegression {
    check(!MiStepSideDismissGesture.accepts(false,bad,0,266,2.75f,8,400),"nonfinite dx rejected");
   check(!MiStepSideDismissGesture.accepts(false,110,0,0,2.75f,8,400),"missing geometry rejected");
   check(!MiStepSideDismissGesture.accepts(false,110,0,266,2.75f,8,-1),"stale clock rejected");
+  h=new SideDismissRegression();h.event(0,940,900,0);h.event(2,950,950,100);h.event(2,1080,950,200);h.event(1,1080,950,300);check(h.returns==0&&h.taps==0,"vertical ownership cannot turn into outward dismissal later");
+  h=new SideDismissRegression();h.event(0,940,900,0);h.event(1,941,900,900);check(h.taps==0,"long press release does not swap");
   System.out.println("actual side-dismiss checks="+checks+" passed");
  }
 }
@@ -106,5 +108,5 @@ files = {'com/jiusis/mistep/SideDismissRegression.java':body,
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/'MiStepSideDismissGesture.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out)]+[str(out/n) for n in files]+[str(src/'MiStepSideDismissGesture.java'),str(src/'MiStepSideGestureAxis.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.SideDismissRegression'],check=True)

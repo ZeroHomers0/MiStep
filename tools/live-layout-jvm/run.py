@@ -1,6 +1,6 @@
+"""Run the actual Host-only layout commit without issuing a WMS zoom write."""
 import os
 import sys as _sys, pathlib as _pathlib; _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parents[1])); from source_paths import package_dir
-"""Run the actual Host-only layout commit without issuing a WMS zoom write."""
 from pathlib import Path
 import subprocess
 import sys

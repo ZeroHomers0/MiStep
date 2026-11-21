@@ -36,8 +36,8 @@ final class SystemSettingsEntry {
                         Object entry = XposedHelpers.newInstance(header);
                         XposedHelpers.setLongField(entry, "id", ID);
                         XposedHelpers.setObjectField(entry, "key", "mistep_settings");
-                        XposedHelpers.setObjectField(entry, "title", "Mi Step");
-                        XposedHelpers.setObjectField(entry, "summary", "按钮显示、主副交换与运行日志");
+                        XposedHelpers.setObjectField(entry, "title", "MiStep");
+                        XposedHelpers.setObjectField(entry, "summary", "窗口、视频与操作设置");
                         XposedHelpers.setObjectField(entry, "intent", intent());
                         int icon = activity.getResources().getIdentifier(
                                 "ic_my_device", "drawable", MiStepPackages.SETTINGS);

@@ -34,7 +34,7 @@ final class WorkspaceOptions {
     WorkspaceOptions withShowLunar(boolean lunar){return new WorkspaceOptions(0,swapMode,entryGesture,keepOnLock,scrollSideTasks,lunar,landscapeVideo,hideSideRecents);}
     WorkspaceOptions withLandscapeVideo(int video){return new WorkspaceOptions(0,swapMode,entryGesture,keepOnLock,scrollSideTasks,showLunar,video,hideSideRecents);}
     WorkspaceOptions withHideSideRecents(boolean hide){return new WorkspaceOptions(0,swapMode,entryGesture,keepOnLock,scrollSideTasks,showLunar,landscapeVideo,hide);}
-    static String videoLabel(int video){return video==VIDEO_TOP?"置顶播放":video==VIDEO_FULLSCREEN?"关闭工作台，全屏播放":"大窗内横屏播放";}
+    static String videoLabel(int video){return video==VIDEO_TOP?"顶部播放":video==VIDEO_FULLSCREEN?"退出 MiStep，全屏播放":"主窗内播放";}
     boolean mainOnRightAfterSwap(boolean currentRight){return swapMode==FIXED_MAIN?currentRight:!currentRight;}
-    static String modeLabel(int mode){return mode==FIXED_MAIN?"固定主区域":"原地放大";}
+    static String modeLabel(int mode){return mode==FIXED_MAIN?"保持主窗位置":"随应用切换位置";}
 }
