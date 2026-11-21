@@ -1,4 +1,4 @@
-#include "../module/src/main/cpp/raw_dispatch_policy.h"
+#include "../app/src/main/cpp/raw_dispatch_policy.h"
 
 #include <cstdio>
 #include <cstdlib>

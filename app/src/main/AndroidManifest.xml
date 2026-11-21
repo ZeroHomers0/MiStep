@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="io.github.zerohomers0.onesteplite" android:versionCode="1000248" android:versionName="1.0.4">
-  <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="37" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="io.github.zerohomers0.onesteplite">
   <application android:hasCode="true" android:extractNativeLibs="false" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:label="OneStepLite">
     <provider android:name=".WorkspaceSettingsProvider" android:authorities="io.github.zerohomers0.onesteplite.settings" android:directBootAware="true" android:exported="true" />
     <activity android:name=".SettingsActivity" android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout" android:exported="true" android:theme="@style/Theme.OneStepLite.Settings" />

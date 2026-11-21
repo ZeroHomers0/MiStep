@@ -248,7 +248,7 @@ OneStepLite 是个人项目，并非小米、锤子科技或上述社区项目�
 <details>
 <summary><strong>给想看源码、一起折腾的朋友</strong></summary>
 
-工作区与系统适配代码位于 `module/src/main/java/`，按功能分为 `top`、`swap`、`workspace`、`video`、`input`、`lock`、`platform` 等子目录；原生输入映射位于 `module/src/main/cpp/`；`tests/`、`tools/` 提供策略测试、生产方法回放和包检查。Windows 下可通过 `build.ps1`、`test.ps1` 完整构建与测试，所需工具及命令见构建说明。
+工作区与系统适配代码位于 `app/src/main/java/`，按功能分为 `top`、`swap`、`workspace`、`video`、`input`、`lock`、`platform` 等子目录；原生输入映射位于 `app/src/main/cpp/`；`tests/`、`tools/` 提供策略测试、生产方法回放和包检查。Windows 下可通过 `build.ps1`、`test.ps1` 完整构建与测试，所需工具及命令见构建说明。
 
 发行页提供 APK、产品源码 ZIP、构建信息及 SHA-256 清单。仓库不包含本机签名私钥、账号凭据、设备日志、个人截图录像或厂商 ROM；文档中的品牌图片是为项目介绍单独提供的素材。
 

@@ -246,7 +246,7 @@ When reporting an issue, include the device, ROM version, OneStepLite version, a
 <details>
 <summary><strong>For anyone who wants to explore the source</strong></summary>
 
-Workspace and system adaptation code lives in `module/src/main/java/`, grouped by function into `top`, `swap`, `workspace`, `video`, `input`, `lock`, `platform` and other sub-directories; native input mapping lives in `module/src/main/cpp/`. `tests/` and `tools/` contain policy checks, production method replays and package checks. On Windows, `build.ps1` and `test.ps1` build and test the complete source. Tools and commands are listed in the build guide.
+Workspace and system adaptation code lives in `app/src/main/java/`, grouped by function into `top`, `swap`, `workspace`, `video`, `input`, `lock`, `platform` and other sub-directories; native input mapping lives in `app/src/main/cpp/`. `tests/` and `tools/` contain policy checks, production method replays and package checks. On Windows, `build.ps1` and `test.ps1` build and test the complete source. Tools and commands are listed in the build guide.
 
 The release includes an APK, product source ZIP, build information and SHA-256 checksums. The repository excludes signing keys, account credentials, device logs, personal screenshots or recordings, and vendor ROMs. The brand images were provided specifically for the project introduction.
 

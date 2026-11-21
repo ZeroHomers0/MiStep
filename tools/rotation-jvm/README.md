@@ -3,7 +3,7 @@
 Run `./run.ps1` after `onestep-host/build_probe.ps1`.
 
 This executes the built `HostEntry` methods against fake WM objects. Local shims
-provide reflection and logging only; they are outside `module/src/main/java` and
+provide reflection and logging only; they are outside `app/src/main/java` and
 must never be packaged in the APK. Android drawing, Binder, Xposed hook dispatch,
 OEM callbacks and input transforms are not simulated.
 

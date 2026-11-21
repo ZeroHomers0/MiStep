@@ -5,14 +5,19 @@ if (-not $SdkPath) { $SdkPath=$env:ANDROID_SDK_ROOT }
 if (-not $JavaHome -or -not $SdkPath) { throw 'Set JAVA_HOME and ANDROID_HOME.' }
 $jdk=Join-Path $JavaHome 'bin'
 $android=Join-Path $SdkPath 'platforms\android-35\android.jar'
+if (-not (Test-Path -LiteralPath $android)) { $android=Join-Path $SdkPath 'platforms\android-37.0\android.jar' }
 $classes=Join-Path $root 'build\classes'
-if (-not (Test-Path -LiteralPath $classes)) { throw 'Run build.ps1 first.' }
+$sources=Join-Path $root 'app\src\main\java'
 $env:ONESTEPLITE_JAVA_BIN=$jdk
 $env:ONESTEPLITE_ANDROID_JAR=$android
 $env:ONESTEPLITE_CLASSES=$classes
 foreach($tool in @('java','javac','javap','jar')) { Set-Item -Path "env:ONESTEPLITE_$($tool.ToUpperInvariant())" -Value (Join-Path $jdk "$tool.exe") }
 $out=Join-Path $root 'build\tests'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
+$production=@(Get-ChildItem -LiteralPath $sources -Recurse -Filter '*.java' | ForEach-Object FullName)
+New-Item -ItemType Directory -Force -Path $classes | Out-Null
+& (Join-Path $jdk 'javac.exe') -encoding UTF-8 -nowarn --release 17 -cp "$android;$(Join-Path $root 'libs\xposed-api-82.jar')" -d $classes @production
+if($LASTEXITCODE -ne 0){throw 'Production compilation failed.'}
 $tests=@(Get-ChildItem -LiteralPath (Join-Path $root 'tests') -Filter '*.java' | ForEach-Object FullName)
 $cp="$classes;$android;$(Join-Path $root 'libs\xposed-api-82.jar')"
 & (Join-Path $jdk 'javac.exe') -encoding UTF-8 --release 17 -d $out (Join-Path $root 'tools\test-stubs\android\graphics\Rect.java')

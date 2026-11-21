@@ -1,11 +1,27 @@
-/build/
+# Gradle
+.gradle/
+build/
+/app/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Build output
 /dist/
 /artifacts/
 /.local/
-/.idea/
-/.vscode/
+
+# Python tooling
 __pycache__/
 *.pyc
+
+# Logs and secrets
 *.log
 *.jks
 *.keystore
@@ -15,8 +31,9 @@ __pycache__/
 *.key
 *.env
 .env*
-local.properties
 keystore.properties
+
+# Binary artifacts
 *.apk
 *.idsig
 *.zip

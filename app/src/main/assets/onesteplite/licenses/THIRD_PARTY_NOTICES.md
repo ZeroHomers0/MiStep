@@ -1,0 +1,36 @@
+# 第三方组件与来源
+
+## Xposed API 82
+
+`libs/xposed-api-82.jar` 是 Xposed API 的编译期依赖，不把 Xposed / LSPosed 框架实现打包进 APK。
+
+- 上游：[rovo89/XposedBridge](https://github.com/rovo89/XposedBridge)
+- API 文档：[api.xposed.info](https://api.xposed.info/)
+- 许可：Apache License 2.0；随附完整许可与上游 NOTICE，见 `libs/licenses/`。
+- 本仓库 JAR 的 SHA-256：`f48c635f1c7469fdec0e00ad2ea0b7a6b2f5b55065784a35b7ca3a84615e8e25`。
+
+## Android 与构建工具
+
+Android SDK、Build Tools、NDK、JDK 和 LSPosed 由使用者另行准备，保留其上游许可，不包含在本源码仓库中。ARM64 库使用 NDK 提供的 C++ 运行库，相关许可见随附 Android NDK libc++ / libc++abi 文本。
+
+构建脚本同时将项目完整许可、本说明和 `libs/licenses/` 内的全部上游许可/NOTICE 原文放入 APK 的 `assets/onesteplite/licenses/`，使单独取得 APK 的接收者也能获取相关声明。该目录内 `SOURCE.txt` 标明项目源码位置；源码 ZIP 另附同样的许可与依赖资料。
+
+本项目包含对系统接口和行为的适配，未上传小米、锤子等厂商 ROM、APK、反编译类或研究采集材料。产品名、服务名与商标属于各自权利人。
+
+## OneStepLite 自有内容
+
+OneStepLite 原创部分采用 [OneStepLite 非商用共享源码许可 1.0](LICENSE)，
+详见 [许可说明](docs/许可说明.md)。该许可不重新授权上述第三方组件，
+不限制第三方许可已授予的权利，也不改变其著作权和商标归属。
+
+## NeXtep 视频窗口接入参考
+
+`VideoDock.java`、`VideoPane.java` 的原生画中画/视频悬浮窗接入流程参考 [NeXtep](https://github.com/lujinxin/NeXtep) 的 `ControlAreaVideoController`、输入隔离与退出归还机制；本项目使用 Java 和 Xposed API 82 重新适配，没有引入其整任务置顶或商业授权代码。
+
+上游采用 Apache License 2.0，许可原文随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。
+
+## NeXtep 跨窗分享与壁纸参考
+
+`ContentShare.java`、`DropPermissions.java` 参考 NeXtep 的 `SlotContentDragController`、`ContentDropShare`、`ContentDropPermissionContract` 和 `ContentDropPermissionHook`，以 Java / Xposed API 82 重新适配至本项目的原生任务注册表；目前仅接入同用户的定向分享。
+
+`WallpaperSnapshot.java` 参考 `WorkspaceWallpaperBackdrop` 的仅捕获壁纸图层、锁屏保护与动态壁纸回退策略。上游 Apache License 2.0 原文已随附于 `libs/licenses/NeXtep-LICENSE.txt`，并随构建打包。

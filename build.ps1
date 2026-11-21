@@ -20,7 +20,7 @@ $xposed = Join-Path $root 'libs\xposed-api-82.jar'
 $version = Get-Content -LiteralPath (Join-Path $root 'version.json') -Raw | ConvertFrom-Json
 $out = Join-Path $root 'build'
 $dist = Join-Path $root 'dist'
-$src = Join-Path $root 'module\src\main'
+$src = Join-Path $root 'app\src\main'
 $apk = Join-Path $dist "OneStepLite-$($version.name).apk"
 if (Test-Path -LiteralPath $apk) { throw 'Preserve the existing APK. Use a fresh checkout for another build.' }
 foreach ($path in @($android,$xposed,(Join-Path $javaBin 'javac.exe'),(Join-Path $bt 'aapt2.exe'))) {
@@ -66,7 +66,7 @@ $native = Join-Path $out 'native\libonesteplite_raw.so'
 if ($LASTEXITCODE -ne 0) { throw 'Native source compilation failed.' }
 & $clang @common (Join-Path $root 'tests\native_raw_input_test.cpp') -ldl -lm -o (Join-Path $out 'native\native-raw-selftest')
 if ($LASTEXITCODE -ne 0) { throw 'Native selftest source compilation failed.' }
-& (Join-Path $bt 'aapt2.exe') compile --dir 'module\src\main\res' -o 'build\resources.zip'
+& (Join-Path $bt 'aapt2.exe') compile --dir 'app\src\main\res' -o 'build\resources.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Resource compilation failed.' }
 $base = Join-Path $out 'base.apk'
 $assetStage = Join-Path $out 'assets'
@@ -75,7 +75,7 @@ New-Item -ItemType Directory -Force -Path $assetStage,$legalStage | Out-Null
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE'),(Join-Path $root 'THIRD_PARTY_NOTICES.md') -Destination $legalStage -Force
 Copy-Item -Path (Join-Path $root 'libs\licenses\*') -Destination $legalStage -Force
 "OneStepLite $($version.name)`nPackage: io.github.zerohomers0.onesteplite`nSource: https://github.com/JIUSIS/OneStepLite`nLicense: LicenseRef-OneStepLite-NC-SA-1.0`nChinese LICENSE text controls. Third-party licenses remain unchanged.`n" | Set-Content -LiteralPath (Join-Path $legalStage 'SOURCE.txt') -Encoding utf8
-& (Join-Path $bt 'aapt2.exe') link -o 'build\base.apk' -I $android --manifest 'module\src\main\AndroidManifest.xml' -A 'module\src\main\assets' --min-sdk-version 34 --target-sdk-version 37 'build\resources.zip'
+& (Join-Path $bt 'aapt2.exe') link -o 'build\base.apk' -I $android --manifest 'app\src\main\AndroidManifest.xml' -A 'app\src\main\assets' --min-sdk-version 34 --target-sdk-version 37 'build\resources.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Resource linking failed.' }
 $jar = Join-Path $out 'classes.jar'
 & (Join-Path $javaBin 'jar.exe') --create --file $jar -C $env:ONESTEPLITE_CLASSES .
