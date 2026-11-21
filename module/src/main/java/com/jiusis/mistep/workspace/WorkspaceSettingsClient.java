@@ -34,7 +34,7 @@ final class WorkspaceSettingsClient {
             context.getContentResolver().registerContentObserver(WorkspaceSettingsStore.URI, false, observer);
             observing = true;
         } catch (Exception error) {
-            android.util.Log.w("MiStepProbe", "workspace settings observer unavailable", error);
+            android.util.Log.w(MiStepTags.PROBE, "workspace settings observer unavailable", error);
         }
         worker.removeCallbacks(load); worker.post(load);
     }

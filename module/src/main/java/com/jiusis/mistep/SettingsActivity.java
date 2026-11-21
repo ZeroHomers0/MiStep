@@ -27,7 +27,7 @@ public final class SettingsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
-            systemSettingsResources = createPackageContext("com.android.settings", 0)
+            systemSettingsResources = createPackageContext(MiStepPackages.SETTINGS, 0)
                     .createConfigurationContext(getResources().getConfiguration()).getResources();
         } catch (android.content.pm.PackageManager.NameNotFoundException ignored) { }
 
@@ -104,7 +104,7 @@ public final class SettingsActivity extends Activity {
     int settingsColor(String name, int fallback) {
         try {
             if (systemSettingsResources != null) {
-                int id = systemSettingsResources.getIdentifier(name, "color", "com.android.settings");
+                int id = systemSettingsResources.getIdentifier(name, "color", MiStepPackages.SETTINGS);
                 if (id != 0) return systemSettingsResources.getColor(id, null);
             }
         } catch (RuntimeException ignored) { }
@@ -114,7 +114,7 @@ public final class SettingsActivity extends Activity {
     int settingsDimension(String name, int fallbackDp) {
         try {
             if (systemSettingsResources != null) {
-                int id = systemSettingsResources.getIdentifier(name, "dimen", "com.android.settings");
+                int id = systemSettingsResources.getIdentifier(name, "dimen", MiStepPackages.SETTINGS);
                 if (id != 0) return systemSettingsResources.getDimensionPixelSize(id);
             }
         } catch (RuntimeException ignored) { }
@@ -124,7 +124,7 @@ public final class SettingsActivity extends Activity {
     Drawable settingsDrawable(String name) {
         try {
             if (systemSettingsResources != null) {
-                int id = systemSettingsResources.getIdentifier(name, "drawable", "com.android.settings");
+                int id = systemSettingsResources.getIdentifier(name, "drawable", MiStepPackages.SETTINGS);
                 if (id != 0) return systemSettingsResources.getDrawable(id, null);
             }
         } catch (RuntimeException ignored) { }

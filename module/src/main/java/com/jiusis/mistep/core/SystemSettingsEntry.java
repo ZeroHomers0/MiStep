@@ -40,11 +40,11 @@ final class SystemSettingsEntry {
                         XposedHelpers.setObjectField(entry, "summary", "按钮显示、主副交换与运行日志");
                         XposedHelpers.setObjectField(entry, "intent", intent());
                         int icon = activity.getResources().getIdentifier(
-                                "ic_my_device", "drawable", "com.android.settings");
+                                "ic_my_device", "drawable", MiStepPackages.SETTINGS);
                         XposedHelpers.setIntField(entry, "iconRes", icon);
                         // A separate native card immediately after the device card.
                         XposedHelpers.setIntField(entry, "groupId", (int) ID);
-                        int device = activity.getResources().getIdentifier("my_device", "id", "com.android.settings");
+                        int device = activity.getResources().getIdentifier("my_device", "id", MiStepPackages.SETTINGS);
                         int position = rows.size();
                         for (int i = 0; i < rows.size(); i++) {
                             if (device != 0 && XposedHelpers.getLongField(rows.get(i), "id") == device) {

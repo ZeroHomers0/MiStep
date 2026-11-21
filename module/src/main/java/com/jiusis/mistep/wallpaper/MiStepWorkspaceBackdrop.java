@@ -33,7 +33,7 @@ final class MiStepWorkspaceBackdrop {
             return rejected("host surface not visible yet");
         Object attrs = XposedHelpers.getObjectField(host, "mAttrs");
         if (!"MiStepHost".contentEquals((CharSequence) XposedHelpers.callMethod(attrs, "getTitle"))
-                || !"com.android.systemui".equals(XposedHelpers.getObjectField(attrs, "packageName"))) return rejected("host identity mismatch");
+                || !MiStepPackages.SYSTEM_UI.equals(XposedHelpers.getObjectField(attrs, "packageName"))) return rejected("host identity mismatch");
         Object controller=XposedHelpers.getObjectField(display,"mWallpaperController");
         Object tokens=XposedHelpers.getObjectField(controller,"mWallpaperTokens");
         if(!(tokens instanceof List<?>))return rejected("wallpaper token list unavailable");

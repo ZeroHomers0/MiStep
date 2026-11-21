@@ -12,7 +12,7 @@ out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 jdk = Path(os.environ['MISTEP_JAVA_BIN'])
 sources = [package_dir(root) / name for name in
-           ('RuntimeLogText.java', 'RuntimeDiagnosticBundle.java', 'RuntimeDiagnosticSources.java', 'RuntimeTraceFormat.java')]
+           ('RuntimeLogText.java', 'RuntimeDiagnosticBundle.java', 'RuntimeDiagnosticSources.java', 'RuntimeTraceFormat.java', 'MiStepPackages.java')]
 tests = [root / 'tests/RuntimeDiagnosticBundleTest.java', root / 'tests/RuntimeLogTextTest.java',
          root / 'tests/InputTraceGateTest.java',root / 'tests/RuntimeTraceFormatTest.java']
 sources.append(package_dir(root)/'InputTraceGate.java')

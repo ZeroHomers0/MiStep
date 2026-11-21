@@ -17,7 +17,7 @@ public final class WorkspaceSettingsProvider extends ContentProvider {
         if (!allowed) {
             String[] packages = getContext().getPackageManager().getPackagesForUid(uid);
             if (packages != null) for (String name : packages)
-                if ("com.android.systemui".equals(name)) allowed = true;
+                if (MiStepPackages.SYSTEM_UI.equals(name)) allowed = true;
         }
         if (!allowed) throw new SecurityException("Settings snapshots are restricted to Mi Step and SystemUI");
         if (!WorkspaceSettingsStore.READ.equals(method)) throw new UnsupportedOperationException("Read only");

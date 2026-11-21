@@ -13,7 +13,7 @@ final class MiStepWindowIdentity {
             if (XposedHelpers.callMethod(window, "getDisplayContent") != display) return false;
             WindowManager.LayoutParams attrs = (WindowManager.LayoutParams)
                     XposedHelpers.getObjectField(window, "mAttrs");
-            if (attrs.type != 2038 || !"com.android.systemui".equals(attrs.packageName)
+            if (attrs.type != 2038 || !MiStepPackages.SYSTEM_UI.equals(attrs.packageName)
                     || !"MiStepHost".contentEquals(attrs.getTitle())
                     || (attrs.flags & WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED) != 0) return false;
             int uid = XposedHelpers.getIntField(window, "mOwnerUid");
@@ -22,7 +22,7 @@ final class MiStepWindowIdentity {
             Object service = XposedHelpers.getObjectField(display, "mWmService");
             Context context = (Context) XposedHelpers.getObjectField(service, "mContext");
             String[] packages = context.getPackageManager().getPackagesForUid(uid);
-            return packages != null && Arrays.asList(packages).contains("com.android.systemui");
+            return packages != null && Arrays.asList(packages).contains(MiStepPackages.SYSTEM_UI);
         } catch (Throwable unavailable) {
             return false; // An unavailable package/session never grants a privileged lease.
         }

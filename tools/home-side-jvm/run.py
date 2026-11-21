@@ -87,5 +87,5 @@ public class HomeAndSideSurfaceRegression {
 """.replace('__METHODS__',methods)
 file=out/'HomeAndSideSurfaceRegression.java';file.write_text(body,encoding='utf8')
 jdk=Path(os.environ["MISTEP_JAVA_BIN"])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskUserPolicy.java'),str(file)],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(src/'TaskUserPolicy.java'),str(src/'MiStepPackages.java'),str(file)],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.HomeAndSideSurfaceRegression'],check=True)

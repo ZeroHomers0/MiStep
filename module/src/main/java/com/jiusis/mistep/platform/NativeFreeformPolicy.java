@@ -6,10 +6,10 @@ final class NativeFreeformPolicy {
         if (displayId != 0) return null;
         if ("[Gesture Monitor] MultiTaskSwitch".equals(name))
             return uid == 1000 || uid >= 10000 && packages != null
-                    && java.util.Arrays.asList(packages).contains("com.android.systemui")
+                    && java.util.Arrays.asList(packages).contains(MiStepPackages.SYSTEM_UI)
                     ? "native-freeform" : null;
         if ("[Gesture Monitor] swipe-up".equals(name))
-            return packages != null && java.util.Arrays.asList(packages).contains("com.miui.home")
+            return packages != null && java.util.Arrays.asList(packages).contains(MiStepPackages.LAUNCHER)
                     ? "swipe-up" : null;
         if ("[Gesture Monitor] miui-gesture".equals(name)
                 || "[Gesture Monitor] edge-swipe".equals(name)) return "return";

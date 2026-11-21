@@ -88,5 +88,5 @@ for rel,text in sources.items():
 j=Path(os.environ["MISTEP_JAVA_BIN"])
 production=package_dir(root)
 subprocess.run([str(j/"javac.exe"),"-encoding","UTF-8","-d",str(out),*files,
- str(production/"MiStepBiometricWindow.java"),str(production/"InputMagnificationPolicy.java")],check=True)
+ str(production/"MiStepBiometricWindow.java"),str(production/"InputMagnificationPolicy.java"),str(production/"MiStepPackages.java")],check=True)
 subprocess.run([str(j/"java.exe"),"-cp",str(out),"com.jiusis.mistep.BiometricWindowRegression"],check=True)

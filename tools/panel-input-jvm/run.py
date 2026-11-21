@@ -40,5 +40,5 @@ public class PanelInputRegression {
   System.out.println("actual native panel sample/trace checks="+checks+" passed");
  }
 }''',encoding='utf8')
-subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(test),str(package_dir(ROOT)/'MiStepPanelInputCoordinates.java')],check=True)
+subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(test),str(package_dir(ROOT)/'MiStepPanelInputCoordinates.java'),str(package_dir(ROOT)/'MiStepPackages.java')],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.PanelInputRegression'],check=True)

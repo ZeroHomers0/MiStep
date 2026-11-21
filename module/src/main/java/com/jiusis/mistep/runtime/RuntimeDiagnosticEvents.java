@@ -16,7 +16,7 @@ final class RuntimeDiagnosticEvents {
     private static boolean pending,initialized;
     static synchronized void loaded(String text) { if(text.startsWith("=== attached to ")){marker=text;flushSoon();} }
     static synchronized void initialize(Context context,boolean server) {
-        if(initialized)return;initialized=true;role=server?"system_server":"com.android.systemui";
+        if(initialized)return;initialized=true;role=server?"system_server":MiStepPackages.SYSTEM_UI;
         directory=server?new File("/data/system/mistep-diagnostics"):new File(context.createDeviceProtectedStorageContext().getFilesDir(),"mistep-diagnostics");
         IO.execute(()->{try{String id=Files.readString(new File("/proc/sys/kernel/random/boot_id").toPath()).trim();synchronized(RuntimeDiagnosticEvents.class){boot=id;flushSoon();}}catch(Exception ignored){}});
         event("PROCESS_CONTEXT_READY");

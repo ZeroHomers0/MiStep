@@ -1,7 +1,7 @@
 package com.jiusis.mistep;
 
 final class DesktopIconLaunchPolicy {
-    private static final String LAUNCHER = "com.miui.home";
+    private static final String LAUNCHER = MiStepPackages.LAUNCHER;
     private static final String ACTION_MAIN = "android.intent.action.MAIN";
 
     private DesktopIconLaunchPolicy() {}

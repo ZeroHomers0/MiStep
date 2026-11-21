@@ -39,7 +39,7 @@ final class MiStepPanelInput {
                         String pkg = attrs.packageName == null ? view.getContext().getPackageName() : attrs.packageName;
                         if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
                             MiStepInputTrace.panelInputGate(attrs.type, display, rotation,
-                                    "com.android.systemui".equals(pkg), null);
+                                    MiStepPackages.SYSTEM_UI.equals(pkg), null);
                         if (!MiStepPanelInputCoordinates.accepts(true, display, attrs.type,
                                 pkg, attrs.getTitle(), rotation)) return;
                         int[] origin = new int[2]; view.getLocationOnScreen(origin);

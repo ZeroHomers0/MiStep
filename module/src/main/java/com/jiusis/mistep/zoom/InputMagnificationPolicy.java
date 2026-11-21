@@ -16,18 +16,18 @@ final class InputMagnificationPolicy {
         if (shouldExcludeFromMagnification(windowType, packageName, title)) return false;
         // OS4's real permission capsule, dot, RemoteViews and touch area share
         // this window. Admit the whole native window, without changing its state.
-        if (windowType == 2017 && "com.android.systemui".equals(packageName)
+        if (windowType == 2017 && MiStepPackages.SYSTEM_UI.equals(packageName)
                 && title != null && "FlaresView".contentEquals(title)) return true;
         // The independent pin icon window must share WM's visual and input
         // transform. Other 2027 gesture windows keep their native policy.
-        if (windowType == 2027 && "com.android.systemui".equals(packageName)
+        if (windowType == 2027 && MiStepPackages.SYSTEM_UI.equals(packageName)
                 && title != null && "MiuiBubbles".contentEquals(title)) return true;
         return shouldForceMagnification(windowType, privateFlags);
     }
 
     static boolean shouldExcludeFromMagnification(int windowType,
             String packageName, CharSequence title) {
-        if (!"com.android.systemui".equals(packageName) || title == null) return false;
+        if (!MiStepPackages.SYSTEM_UI.equals(packageName) || title == null) return false;
         if (windowType == 2018)
             return "gxzw_icon".contentEquals(title) || "gxzw_touch".contentEquals(title);
         if (windowType == 2015) return "gxzw_anim".contentEquals(title);

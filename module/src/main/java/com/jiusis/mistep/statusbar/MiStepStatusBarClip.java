@@ -19,7 +19,7 @@ final class MiStepStatusBarClip {
                 || XposedHelpers.callMethod(window, "getDisplayContent") != display) return;
         Object attrs = XposedHelpers.getObjectField(window, "mAttrs");
         if (XposedHelpers.getIntField(attrs, "type") != 2000
-                || !"com.android.systemui".equals(XposedHelpers.getObjectField(attrs, "packageName"))) return;
+                || !MiStepPackages.SYSTEM_UI.equals(XposedHelpers.getObjectField(attrs, "packageName"))) return;
         Object token = XposedHelpers.getObjectField(window, "mToken");
         if (token == null || XposedHelpers.callMethod(token, "getParent") == null) return;
         Object surface = XposedHelpers.callMethod(token, "getSurfaceControl");

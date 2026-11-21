@@ -218,7 +218,7 @@ for name, source in files.items():
     path.write_text(source, encoding='utf-8')
 jdk = Path(os.environ['MISTEP_JAVA_BIN'])
 production = ['MiStepDesktopLaunchBridge.java', 'DesktopIconLaunchPolicy.java', 'TaskLaunchIdentity.java', 'MiStepSideRoleChange.java',
-              'MiStepImePolicy.java', 'ZoomChannelState.java', 'ZoomCommand.java', 'ZoomAnimCommand.java', 'MiStepActions.java']
+              'MiStepImePolicy.java', 'ZoomChannelState.java', 'ZoomCommand.java', 'ZoomAnimCommand.java', 'MiStepActions.java', 'MiStepPackages.java']
 subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(OUT)]
                + [str(OUT / name) for name in files] + [str(SRC / name) for name in production], check=True)
 subprocess.run([str(jdk / 'java.exe'), '-cp', str(OUT), 'com.jiusis.mistep.RunningTasksTest'], check=True)

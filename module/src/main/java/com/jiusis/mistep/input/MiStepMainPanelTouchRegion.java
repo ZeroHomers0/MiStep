@@ -10,7 +10,7 @@ final class MiStepMainPanelTouchRegion {
     static boolean crop(Object window, Object display, Region region,
             WindowManager.LayoutParams attrs) {
         if (window == null || display == null || region == null || attrs == null
-                || attrs.type != 2040 || !"com.android.systemui".equals(attrs.packageName)
+                || attrs.type != 2040 || !MiStepPackages.SYSTEM_UI.equals(attrs.packageName)
                 || !"NotificationShade".contentEquals(attrs.getTitle())
                 || XposedHelpers.callMethod(window, "getDisplayContent") != display
                 || XposedHelpers.getObjectField(window, "mActivityRecord") != null) return false;

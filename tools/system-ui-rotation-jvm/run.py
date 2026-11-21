@@ -179,6 +179,6 @@ area.write_text('''package com.android.server.wm;public class DisplayArea {publi
 source=package_dir(ROOT)/'MiStepSystemUiRotation.java'
 rect=ROOT/'tools/test-stubs/android/graphics/Rect.java'
 extra=[package_dir(ROOT)/f"{n}.java" for n in
-       ["ZoomChannelState","ZoomCommand","ZoomAnimCommand"]]
+       ["ZoomChannelState","ZoomCommand","ZoomAnimCommand","MiStepPackages"]]
 subprocess.run([str(JDK/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(OUT),str(fake),str(rect),str(test),str(area),str(source),str(package_dir(ROOT)/'MiStepImePolicy.java'),str(package_dir(ROOT)/'MiStepSideRoleChange.java'),*map(str,extra)],check=True)
 subprocess.run([str(JDK/'java.exe'),'-cp',str(OUT),'com.jiusis.mistep.SystemUiRotationRegression'],check=True)

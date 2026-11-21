@@ -40,5 +40,5 @@ public class MainPanelTouchRegression {
 for n,s in files.items():
  f=out/n;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(s,encoding='utf-8')
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(package_dir(root)/'MiStepMainPanelTouchRegion.java'),*[str(out/n) for n in files]],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),str(package_dir(root)/'MiStepMainPanelTouchRegion.java'),str(package_dir(root)/'MiStepPackages.java'),*[str(out/n) for n in files]],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.MainPanelTouchRegression'],check=True)

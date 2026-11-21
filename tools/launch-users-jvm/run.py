@@ -75,5 +75,5 @@ paths=[]
 for name,text in files.items():
     p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text,encoding='utf-8');paths.append(str(p))
 jdk=Path(os.environ['MISTEP_JAVA_BIN'])
-subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths,str(src/'DesktopIconLaunchPolicy.java'),str(src/'TaskLaunchIdentity.java'),str(src/'TaskUserPolicy.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*paths,str(src/'DesktopIconLaunchPolicy.java'),str(src/'TaskLaunchIdentity.java'),str(src/'TaskUserPolicy.java'),str(src/'MiStepPackages.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.LaunchUsersRegression'],check=True)

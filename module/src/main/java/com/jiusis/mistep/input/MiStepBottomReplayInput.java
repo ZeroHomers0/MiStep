@@ -140,7 +140,7 @@ final class MiStepBottomReplayInput {
                 if (swipe.move(e.pointer, e.count, e.x, e.y, e.time, size.x, size.y, rotation,
                         Math.round(58f * density), Math.round(24f * density))) {
                     context.sendBroadcast(new Intent(MiStepActions.DEBUG)
-                            .setPackage("com.android.systemui")
+                            .setPackage(MiStepPackages.SYSTEM_UI)
                             .putExtra("legacyBottomSign", swipe.sign())
                             .putExtra("legacyBottomDown", downTime)
                             .putExtra("legacyBottomTime", e.time));

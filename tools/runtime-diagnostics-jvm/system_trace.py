@@ -37,5 +37,5 @@ System.out.println("Production native capture missing/root-denied/rotated-log/id
     source=package_dir(root)
     subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(folder),
         *[str(folder/name)for name in files],
-        *[str(source/name)for name in ['RuntimeSystemTrace.java','RuntimeTraceFormat.java','RuntimeDiagnosticBundle.java','RuntimeLogText.java']]],check=True)
+        *[str(source/name)for name in ['RuntimeSystemTrace.java','RuntimeTraceFormat.java','RuntimeDiagnosticBundle.java','RuntimeLogText.java','MiStepPackages.java']]],check=True)
     subprocess.run([str(jdk/'java.exe'),'-Dcapture.cache='+str(folder/'cache'),'-cp',str(folder),'com.jiusis.mistep.NativeCaptureFailureTest'],check=True)

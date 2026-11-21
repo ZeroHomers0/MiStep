@@ -221,7 +221,7 @@ final class QuickAppPicker {
             try { next.dismiss(); } catch (RuntimeException ignored) {}
             close();
             Toast.makeText(base, "暂时无法打开应用选择框", Toast.LENGTH_SHORT).show();
-            android.util.Log.w("MiStepProbe", "quick app picker unavailable", unavailable);
+            android.util.Log.w(MiStepTags.PROBE, "quick app picker unavailable", unavailable);
         }
     }
 

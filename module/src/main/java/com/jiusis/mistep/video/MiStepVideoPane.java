@@ -120,7 +120,7 @@ final class MiStepVideoPane extends FrameLayout implements SurfaceHolder.Callbac
         if(releaseToken!=null){Parcel data=Parcel.obtain(),reply=Parcel.obtain();
             try{data.writeInterfaceToken("com.jiusis.mistep.VideoRelease");data.writeStrongBinder(owner);
                 releaseToken.transact(IBinder.FIRST_CALL_TRANSACTION,data,reply,0);reply.readException();}
-            catch(Throwable failure){android.util.Log.w("MiStepProbe","video native release pending",failure);}
+            catch(Throwable failure){android.util.Log.w(MiStepTags.PROBE,"video native release pending",failure);}
             finally{reply.recycle();data.recycle();}}
         publish(false);setEmbedded(false);
     }

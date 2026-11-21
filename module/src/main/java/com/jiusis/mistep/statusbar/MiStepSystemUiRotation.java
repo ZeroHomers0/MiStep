@@ -15,7 +15,7 @@ final class MiStepSystemUiRotation {
     private boolean updating;
 
     static boolean privacyWindow(int type, String pkg, CharSequence title) {
-        return type == 2017 && "com.android.systemui".equals(pkg)
+        return type == 2017 && MiStepPackages.SYSTEM_UI.equals(pkg)
                 && title != null && "FlaresView".contentEquals(title);
     }
     private static boolean imeWindow(Object window) {
@@ -41,7 +41,7 @@ final class MiStepSystemUiRotation {
         Object attrs = XposedHelpers.getObjectField(window, "mAttrs");
         int type = XposedHelpers.getIntField(attrs, "type");
         if (type == 2011 || type == 2012 || imeWindow(window)) return true;
-        if (!"com.android.systemui".equals(XposedHelpers.getObjectField(attrs, "packageName"))) return false;
+        if (!MiStepPackages.SYSTEM_UI.equals(XposedHelpers.getObjectField(attrs, "packageName"))) return false;
         if (type == 2017 && "MiStepQuickAppPicker".contentEquals(
                 (CharSequence) XposedHelpers.callMethod(attrs, "getTitle"))) return false;
         return type == 2000 || type == 2019 || type == 2040 || type == 2008 || type == 2014

@@ -54,6 +54,6 @@ public class RecentsVisibilityRegression {
 }'''
 for name,body in files.items():
  p=out/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
-jdk=Path(os.environ['MISTEP_JAVA_BIN']);production=['MiStepRecents.java','MiStepDesktopLaunchBridge.java','DesktopIconLaunchPolicy.java','MiStepSideRoleChange.java','TaskLaunchIdentity.java','MiStepActions.java']
+jdk=Path(os.environ['MISTEP_JAVA_BIN']);production=['MiStepRecents.java','MiStepDesktopLaunchBridge.java','DesktopIconLaunchPolicy.java','MiStepSideRoleChange.java','TaskLaunchIdentity.java','MiStepActions.java','MiStepPackages.java']
 subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','--release','17','-d',str(out),*[str(out/n) for n in files],*[str(src/n) for n in production]],check=True)
 subprocess.run([str(jdk/'java.exe'),'-cp',str(out),'com.jiusis.mistep.RecentsVisibilityRegression'],check=True)

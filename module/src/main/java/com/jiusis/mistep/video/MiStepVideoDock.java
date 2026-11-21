@@ -188,7 +188,7 @@ final class MiStepVideoDock {
         Rect bounds=bounds(container,pip);return bounds!=null&&bounds.width()>1&&bounds.height()>1;
     }
     private boolean videoPackage(String pkg) {
-        if(pkg==null||pkg.equals("com.android.systemui")||pkg.equals("android"))return false;
+        if(pkg==null||pkg.equals(MiStepPackages.SYSTEM_UI)||pkg.equals("android"))return false;
         for(MediaController player:players)if(pkg.equals(player.getPackageName()))return true;
         if(pkg.equals("tv.danmaku.bili")||pkg.equals("com.google.android.youtube")||pkg.equals("com.phoenix.read"))return true;
         Boolean cached=videoPackages.get(pkg);if(cached!=null)return cached;
@@ -263,15 +263,15 @@ final class MiStepVideoDock {
         Integer playback=playStates.get(pkg);controllable=playback!=null;playing=playback!=null&&playback==PlaybackState.STATE_PLAYING;
         String signature=System.identityHashCode(owner)+":"+sourceId+":"+embedded+":"+playing+":"+controllable;
         if(signature.equals(published))return;published=signature;
-        Intent state=new Intent(STATE).setPackage("com.android.systemui").putExtra("embedded",embedded).putExtra("source",sourceId)
+        Intent state=new Intent(STATE).setPackage(MiStepPackages.SYSTEM_UI).putExtra("embedded",embedded).putExtra("source",sourceId)
                 .putExtra("package",pkg).putExtra("playing",playing).putExtra("controllable",controllable);
         Bundle identity=new Bundle();identity.putBinder("owner",owner);identity.putBinder("release",releaseToken);state.putExtra("identity",identity);
         handler.post(()->context.sendBroadcast(state,PERMISSION));
     }
     private static boolean trusted(Context context,Intent intent){
         PendingIntent proof=intent.getParcelableExtra("identity",PendingIntent.class);
-        if(proof==null||!"com.android.systemui".equals(proof.getCreatorPackage()))return false;
-        try{return proof.getCreatorUid()==context.getPackageManager().getApplicationInfo("com.android.systemui",0).uid;}
+        if(proof==null||!MiStepPackages.SYSTEM_UI.equals(proof.getCreatorPackage()))return false;
+        try{return proof.getCreatorUid()==context.getPackageManager().getApplicationInfo(MiStepPackages.SYSTEM_UI,0).uid;}
         catch(Exception absent){return false;}
     }
     private static SurfaceControl newDock(SurfaceControl parent){

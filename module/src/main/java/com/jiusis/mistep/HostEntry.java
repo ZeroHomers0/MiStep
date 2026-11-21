@@ -51,8 +51,8 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
  */
 public class HostEntry implements IXposedHookLoadPackage {
 
-    private static final String TAG = "MiStepProbe";
-    private static final String SYSTEMUI = "com.android.systemui";
+    private static final String TAG = MiStepTags.PROBE;
+    private static final String SYSTEMUI = MiStepPackages.SYSTEM_UI;
     private static final String DESKTOP_ICON_LAUNCH_ACTION = MiStepActions.DESKTOP_ICON_LAUNCH;
     private static final long LAUNCH_DELAY_MS = 12_000L;   // 等开机稳定
     private static final long AFTER_ADD_MS = 2_500L;       // 等 TaskView 表面就绪再启动
@@ -63,7 +63,7 @@ public class HostEntry implements IXposedHookLoadPackage {
     private static final int BOX_X = 40;
     private static final int BOX_Y = 520;
 
-    private static final String TARGET_PKG = "com.android.settings";
+    private static final String TARGET_PKG = MiStepPackages.SETTINGS;
 
     private static volatile Context sContext;
     private static volatile Object sTaskViewFactory;
@@ -77,7 +77,7 @@ public class HostEntry implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
-        if ("com.android.settings".equals(lpparam.packageName)) {
+        if (MiStepPackages.SETTINGS.equals(lpparam.packageName)) {
             SystemSettingsEntry.install(lpparam.classLoader);
             return;
         }
@@ -2976,7 +2976,7 @@ public class HostEntry implements IXposedHookLoadPackage {
                             String[] packages = context == null ? null : context.getPackageManager()
                                     .getPackagesForUid((Integer) p.args[5]);
                             launcher = packages != null
-                                    && java.util.Arrays.asList(packages).contains("com.miui.home");
+                                    && java.util.Arrays.asList(packages).contains(MiStepPackages.LAUNCHER);
                         } catch (Throwable unavailable) { /* Preserve native queries on lookup failure. */ }
                         sWorkspaceLauncherTaskQuery.set(sZoomed && launcher);
                     }
@@ -3017,7 +3017,7 @@ public class HostEntry implements IXposedHookLoadPackage {
                         String[] packages = context == null ? null : context.getPackageManager()
                                 .getPackagesForUid(Binder.getCallingUid());
                         if (packages == null || !java.util.Arrays.asList(packages)
-                                .contains("com.miui.home")) return;
+                                .contains(MiStepPackages.LAUNCHER)) return;
                         // OS3's shared task cache bypasses RunningTasks.accept and truncates first.
                         // Native traversal preserves caller permissions and our exact lease filter.
                         Object atms = XposedHelpers.getObjectField(p.thisObject, "mAtmService");
@@ -3562,7 +3562,7 @@ public class HostEntry implements IXposedHookLoadPackage {
         String callerPackage = null;
         android.content.Intent launch = null;
         for (Object arg : args) {
-            if (arg instanceof String && "com.miui.home".equals(arg)) {
+            if (arg instanceof String && MiStepPackages.LAUNCHER.equals(arg)) {
                 callerPackage = (String) arg;
             } else if (arg instanceof android.content.Intent) {
                 launch = (android.content.Intent) arg;

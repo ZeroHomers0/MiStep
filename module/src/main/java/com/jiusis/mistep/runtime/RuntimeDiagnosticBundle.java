@@ -120,7 +120,7 @@ final class RuntimeDiagnosticBundle {
         String version = v.find() ? v.group(1) : null;
         boolean complete = version != null;
         report.append("安装版本：").append(version == null ? "UNKNOWN" : version).append('\n');
-        for (String[] key : new String[][]{{"serverPID", "system_server"}, {"systemUiPID", "com.android.systemui"}}) {
+        for (String[] key : new String[][]{{"serverPID", "system_server"}, {"systemUiPID", MiStepPackages.SYSTEM_UI}}) {
             java.util.regex.Matcher p = java.util.regex.Pattern.compile("(?m)^" + key[0] + "=([0-9]+)").matcher(process);
             String pid = p.find() ? p.group(1) : null;
             boolean found = false;

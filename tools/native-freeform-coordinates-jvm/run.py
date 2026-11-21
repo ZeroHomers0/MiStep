@@ -84,7 +84,7 @@ with tempfile.TemporaryDirectory(prefix='mistep-native-coordinates-') as folder:
         file.write_text(content, encoding='utf-8')
         files.append(str(file))
     files += [str(package_dir(root) / (name + '.java'))
-              for name in ('NativeFreeformPolicy', 'NativeFreeformCoordinates')]
+              for name in ('NativeFreeformPolicy', 'NativeFreeformCoordinates', 'MiStepPackages')]
     files.append(str(root / 'tests/NativeFreeformPolicyTest.java'))
     subprocess.run([str(jdk / 'javac.exe'), '-encoding', 'UTF-8', '--release', '17', '-d', str(work), *files], check=True)
     for name in ('NativeFreeformPolicyTest', 'NativeFreeformCoordinatesTest'):

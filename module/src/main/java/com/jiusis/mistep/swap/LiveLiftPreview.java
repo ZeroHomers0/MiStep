@@ -64,7 +64,7 @@ final class LiveLiftPreview {
             XposedHelpers.callMethod(transaction, "setPosition", surface, restore.left, restore.top);
             XposedHelpers.callMethod(transaction, "apply");
         } catch (Throwable error) {
-            android.util.Log.i("MiStepProbe", "live lift restore failed: " + error);
+            android.util.Log.i(MiStepTags.PROBE, "live lift restore failed: " + error);
         } finally {
             if (transaction != null) {
                 try { XposedHelpers.callMethod(transaction, "close"); } catch (Throwable ignored) {}

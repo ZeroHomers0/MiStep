@@ -301,12 +301,12 @@ final class MiStepDesktopLaunchBridge {
         try {
             int uid = Binder.getCallingUid();
             String[] callers = context.getPackageManager().getPackagesForUid(uid);
-            if (callers == null || !Arrays.asList(callers).contains("com.miui.home")) return false;
+            if (callers == null || !Arrays.asList(callers).contains(MiStepPackages.LAUNCHER)) return false;
             Intent launch = null;
             String caller = null;
             for (Object arg : args) {
                 if (arg instanceof Intent) launch = (Intent) arg;
-                else if ("com.miui.home".equals(arg)) caller = (String) arg;
+                else if (MiStepPackages.LAUNCHER.equals(arg)) caller = (String) arg;
             }
             String pkg = DesktopIconLaunchPolicy.packageForLauncherEntry(caller,
                     launch == null ? null : launch.getAction(),
@@ -368,7 +368,7 @@ final class MiStepDesktopLaunchBridge {
         try {
             int uid = Binder.getCallingUid(), taskId = (Integer) args[0];
             String[] callers = context.getPackageManager().getPackagesForUid(uid);
-            if (callers == null || !Arrays.asList(callers).contains("com.miui.home")) return false;
+            if (callers == null || !Arrays.asList(callers).contains(MiStepPackages.LAUNCHER)) return false;
             Registry state;
             synchronized (MiStepDesktopLaunchBridge.class) { state = current; }
             if (state == null || !state.owner.isBinderAlive()) return false;
@@ -411,7 +411,7 @@ final class MiStepDesktopLaunchBridge {
             handoff.putBoolean("hostRoute", true);
             handoff.putBoolean("retainedRoute", state.retained);
             handoff.putLong("deadline", now + 1500L);
-            Intent signal = new Intent(LAUNCH).setPackage("com.android.systemui")
+            Intent signal = new Intent(LAUNCH).setPackage(MiStepPackages.SYSTEM_UI)
                     .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                     .putExtra("package", pkg).putExtra("before", true)
                     .putExtra("binding", handoff);

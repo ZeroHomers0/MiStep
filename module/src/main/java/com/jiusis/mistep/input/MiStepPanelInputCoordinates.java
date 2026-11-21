@@ -5,7 +5,7 @@ final class MiStepPanelInputCoordinates {
     static boolean accepts(boolean active, int display, int type, String pkg,
             CharSequence title, int rotation) {
         return active && display == 0 && rotation >= 0 && rotation < 4
-                && "com.android.systemui".equals(pkg)
+                && MiStepPackages.SYSTEM_UI.equals(pkg)
                 && (type == 2000 || type == 2040 || type == 2017 && title != null
                         && "NotificationModalWindowManager".contentEquals(title));
     }

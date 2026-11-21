@@ -50,7 +50,7 @@ final class MiStepBiometricWindow {
     static boolean identify(WindowManager.LayoutParams attrs) {
         if (attrs == null || attrs.type != 2009) return false;
         // WindowManager fills a null package from this native SystemUI context.
-        if (attrs.packageName != null && !"com.android.systemui".equals(attrs.packageName))
+        if (attrs.packageName != null && !MiStepPackages.SYSTEM_UI.equals(attrs.packageName))
             return false;
         attrs.setTitle(TITLE);
         return true;

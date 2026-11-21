@@ -277,7 +277,7 @@ final class MiStepWarmup {
         synchronized (LOCK) {
             if (failuresRemaining-- <= 0) return;
         }
-        android.util.Log.i("MiStepProbe", "boot warmup " + operation + " unavailable: "
+        android.util.Log.i(MiStepTags.PROBE, "boot warmup " + operation + " unavailable: "
                 + error.getClass().getSimpleName());
     }
 

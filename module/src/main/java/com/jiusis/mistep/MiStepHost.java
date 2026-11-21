@@ -53,7 +53,7 @@ public final class MiStepHost {
 
     private static final String DESKTOP_ICON_LAUNCH_ACTION = MiStepActions.DESKTOP_ICON_LAUNCH;
 
-    private static final String TAG = "MiStepProbe";
+    private static final String TAG = MiStepTags.PROBE;
     private static final int SLOT_MAIN = 0;
     private int CELL_SLOT_COUNT = 1 + MiStepLayout.CELL_COUNT;
     private static final int SLOT_TOP = 1 + MiStepLayout.MAX_CELL_COUNT;
@@ -2483,7 +2483,7 @@ public final class MiStepHost {
                 || !Integer.valueOf(mode).equals(XposedHelpers.callMethod(info, "getWindowingMode"))
                 || !Integer.valueOf(1).equals(XposedHelpers.callMethod(info, "getActivityType"))) return false;
         ComponentName base = (ComponentName) XposedHelpers.getObjectField(info, "baseActivity");
-        return base != null && !"com.miui.home".equals(base.getPackageName());
+        return base != null && !MiStepPackages.LAUNCHER.equals(base.getPackageName());
     }
 
     /** Some associated-profile roots are focused while the ROM reports isVisible=false. */
@@ -8734,7 +8734,7 @@ public final class MiStepHost {
             Object current = XposedHelpers.getObjectField(slot.controller, "mTaskToken");
             if (info != null) {
                 ComponentName base = (ComponentName) XposedHelpers.getObjectField(info, "baseActivity");
-                if (base != null && "com.miui.home".equals(base.getPackageName())) return false;
+                if (base != null && MiStepPackages.LAUNCHER.equals(base.getPackageName())) return false;
             }
             return info != null && current != null
                     && XposedHelpers.getIntField(info, "taskId") == taskId
@@ -9040,7 +9040,7 @@ public final class MiStepHost {
         }
         final String pkg = launch.getComponent() != null
                 ? launch.getComponent().getPackageName() : launch.getPackage();
-        if (pkg == null || "com.miui.home".equals(pkg)) return;
+        if (pkg == null || MiStepPackages.LAUNCHER.equals(pkg)) return;
         for (Slot other : slots) {
             if (other != slot && pkg.equals(other.pkg)
                     && (other.launching || sideTaskMatchesEntry(other, currentUserId(), launch.getComponent()))) {
