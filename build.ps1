@@ -33,8 +33,11 @@ if (-not $Unsigned) {
 }
 [xml]$manifest = Get-Content -LiteralPath (Join-Path $src 'AndroidManifest.xml') -Raw -Encoding UTF8
 $ns = 'http://schemas.android.com/apk/res/android'
-if ($manifest.manifest.GetAttribute('versionName',$ns) -ne $version.name -or
-    $manifest.manifest.GetAttribute('versionCode',$ns) -ne [string]$version.code) { throw 'Version metadata mismatch.' }
+# Gradle owns versionCode/versionName; the manifest only carries them for this reference build.
+if ($manifest.manifest.GetAttribute('versionName',$ns)) {
+    if ($manifest.manifest.GetAttribute('versionName',$ns) -ne $version.name -or
+        $manifest.manifest.GetAttribute('versionCode',$ns) -ne [string]$version.code) { throw 'Version metadata mismatch.' }
+}
 $recommendedScope = @($manifest.manifest.application.'meta-data' | Where-Object {
     $_.GetAttribute('name',$ns) -ceq 'xposedscope'
 })
@@ -72,8 +75,8 @@ $base = Join-Path $out 'base.apk'
 $assetStage = Join-Path $out 'assets'
 $legalStage = Join-Path $assetStage 'onesteplite\licenses'
 New-Item -ItemType Directory -Force -Path $assetStage,$legalStage | Out-Null
-Copy-Item -LiteralPath (Join-Path $root 'LICENSE'),(Join-Path $src 'assets\onesteplite\licenses\THIRD_PARTY_NOTICES.md') -Destination $legalStage -Force
-Copy-Item -Path (Join-Path $root 'libs\licenses\*') -Destination $legalStage -Force
+Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination $legalStage -Force
+Copy-Item -Path (Join-Path $src 'assets\onesteplite\licenses\*') -Destination $legalStage -Force
 "OneStepLite $($version.name)`nPackage: io.github.zerohomers0.onesteplite`nSource: https://github.com/JIUSIS/OneStepLite`nLicense: LicenseRef-OneStepLite-NC-SA-1.0`nChinese LICENSE text controls. Third-party licenses remain unchanged.`n" | Set-Content -LiteralPath (Join-Path $legalStage 'SOURCE.txt') -Encoding utf8
 & (Join-Path $bt 'aapt2.exe') link -o 'build\base.apk' -I $android --manifest 'app\src\main\AndroidManifest.xml' -A 'app\src\main\assets' --min-sdk-version 34 --target-sdk-version 37 'build\resources.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Resource linking failed.' }
