@@ -143,6 +143,9 @@ final class MiStepTopBar extends FrameLayout {
     private final class Header extends FrameLayout {
         final TextView title;
         final MiStepIconButton left,right,settings,expand;
+        /** Scratch arrays: measure and layout run on every frame of a resize. */
+        private final View[] buttons;
+        private final MiStepIconButton[] icons;
         Header(Context context,Runnable tools) {
             super(context);setClipChildren(false);
             title=new TextView(context);title.setText("One Step");title.setGravity(android.view.Gravity.CENTER);
@@ -157,12 +160,14 @@ final class MiStepTopBar extends FrameLayout {
             right=button(MiStepIconButton.SIDE_RIGHT,"小窗放在右侧",()->listener.onSetMainSide(false));
             settings=button(MiStepIconButton.SETTINGS,"系统设置",listener::onOpenSettings);
             expand=button(MiStepIconButton.EXPAND,"放大为全屏并退出工作区",listener::onExit);
+            buttons=new View[]{left,right,settings,expand};
+            icons=new MiStepIconButton[]{left,right,settings,expand};
             updateSelected();
         }
         void updateSelected() {left.setSelected(mainOnRight);right.setSelected(!mainOnRight);}
         void updateColors() {
             int color=HyperOsStyle.textPrimary(getContext());
-            for(MiStepIconButton icon:new MiStepIconButton[]{left,right,settings,expand})icon.setIconColor(color);
+            for(MiStepIconButton icon:icons)icon.setIconColor(color);
             title.setTextColor(color);
         }
         private MiStepIconButton button(int icon,String text,Runnable action) {
@@ -182,7 +187,7 @@ final class MiStepTopBar extends FrameLayout {
             int edge=Math.round(10*getResources().getDisplayMetrics().density);
             int bw=Math.min(h,Math.max(1,(w-2*edge)/6));
             title.measure(MeasureSpec.makeMeasureSpec(Math.max(1,w-2*edge-4*bw),MeasureSpec.EXACTLY),hs);
-            for(View v:new View[]{left,right,settings,expand})v.measure(MeasureSpec.makeMeasureSpec(bw,MeasureSpec.EXACTLY),hs);
+            for(View v:buttons)v.measure(MeasureSpec.makeMeasureSpec(bw,MeasureSpec.EXACTLY),hs);
             setMeasuredDimension(w,h);
         }
         @Override protected void onLayout(boolean changed,int l,int t,int r,int b) {
