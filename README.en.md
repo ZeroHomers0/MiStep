@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Built for HyperOS 4</strong><br>
-  One main area and multiple live tasks. Keep what you are doing in view.
+  One main window and multiple live tasks. Keep what you are doing in view.
 </p>
 
 <p align="center">
@@ -24,114 +24,143 @@
 
 ---
 
-**Version 1.0.4 is now available.** It adds scrollable side tasks, task retention across ordinary workspace exits, and an online donor acknowledgments list. See the [release notes](docs/发行说明-1.0.4.md).
+**Version 1.0.4 is now available.** It adds scrollable side windows and task retention across ordinary workspace exits, and improves rail scrolling and task switching. See the [changelog](docs/更新日志.md) for the full list and the validation scope of each version.
 
-Most hands-on testing for 1.0.4 used a HyperOS 2 / Android 15 phone. See the [validation notes](docs/验证说明-1.0.4.md).
+Most hands-on testing for 1.0.4 used a HyperOS 2 / Android 15 phone; that detail is recorded in the same [changelog](docs/更新日志.md).
 
 ## Multitasking that feels natural again
 
 Keep notes beside your research. Reply to a message while watching a video. Move between several apps while working on the same thing. I wanted a workspace where I could see these tasks and switch between them easily.
 
-**Mi Step takes inspiration from Smartisan's One Step and brings that approach to foreground multitasking on Xiaomi HyperOS 4.** Your current desktop or app stays in the main area, with three side task slots alongside it. Frequent apps, controls, music and tools sit above. Tap the task you want to use to bring it into the main area.
+**Mi Step takes inspiration from Smartisan's One Step and brings that approach to foreground multitasking on Xiaomi HyperOS 4.** Your current desktop or app stays in the main window, with three side window slots alongside it. The clock, the title bar and the frequent app rail sit above. Tap the task you want to use to bring it into the main window.
 
 <p align="center">
-  <img src="docs/assets/workspace-layout.en.svg" width="900" alt="Layout diagram: controls, music and frequent apps above one main area and three side tasks. Tap an empty slot to collect the current app, tap a side task to swap, or swipe it outward to return it to the background.">
-  <br><sub>This is a layout and gesture diagram, not a screenshot. The side tasks can also sit on the left.</sub>
+  <img src="docs/assets/workspace-layout.en.svg" width="900" alt="Layout diagram: a clock, the One Step title bar and a frequent app rail above one main window and three side windows. Tap an empty slot to collect the current app, tap a side window to swap, or swipe it outward to return it to the background.">
+  <br><sub>This is a layout and gesture diagram, not a screenshot. The side windows can also sit on the left.</sub>
 </p>
 
 ## Features
 
-### 01 · One main area, three real side tasks
+### 01 · One main window, three real side windows
 
-The main area keeps your current desktop or app usable. Three task slots sit beside it, so you can keep several apps in view.
+The main window keeps your current desktop or app usable. Three side windows sit beside it, so you can keep several apps in view. In tablet landscape the side area can grow to four slots.
 
-**The ＋ in an empty slot collects the current main app.** Open the app in the main area, then tap an empty slot to place it there. Open another app and repeat to build your workspace. If the main area shows the desktop, you will be prompted to open an app first.
+**The ＋ in an empty slot collects the current main app.** Open the app in the main window, then tap an empty slot to place it there. Open another app and repeat to build your workspace. If the main window shows the desktop, you will be prompted to open an app first.
 
-Side tasks are real system app tasks. Swapping uses the existing tasks and preserves their current pages. Refreshing, process reclamation and playback still depend on the app and Android.
+Side windows hold real system app tasks. Swapping uses the existing tasks and preserves their current pages. Refreshing, process reclamation and playback still depend on the app and Android.
 
-### 02 · Tap to swap; interact in the main area
+### 02 · Tap to swap; interact in the main window
 
-Tap a side task to bring it into the main area. The previous main app moves into the side task area. Tap another task whenever you want to continue there.
+Tap a side window to bring it into the main window. The previous main app moves into the side area. Tap another task whenever you want to continue there.
 
-- **Use the main area for full interaction:** tapping, scrolling, typing and the keyboard.
-- **Use side tasks to choose and manage tasks:** tap to swap or swipe outward.
-- Tapping a frequent app that is already a side task also brings that existing task into the main area.
+- **Use the main window for full interaction:** tapping, scrolling, typing and the keyboard.
+- **Use the side windows to choose and manage tasks:** tap to swap or swipe outward.
+- Tapping a frequent app that is already a side window also brings that existing task into the main window.
 
-The main area keeps input focus. Input is briefly protected during a handoff and restored after the final frame, helping prevent accidental touches or the keyboard following a side task.
+The main window keeps input focus. Input is briefly protected during a handoff and restored after the final frame, helping prevent accidental touches or the keyboard following a side window.
+
+Swapping has two modes, chosen under **Main and side swap behaviour** in the settings page:
+
+| Mode | Behaviour |
+| --- | --- |
+| Follow the app (default) | The side app grows on its own side and the main window moves to the other side |
+| Keep the main window in place | The main window stays where it is and only the apps swap |
+
+A change applies from the next swap and does not move the current tasks immediately.
 
 ### 03 · Swipe outward to make room
 
-Swipe a side task toward its nearest screen edge: left for tasks on the left, right for tasks on the right.
+Swipe a side window toward its nearest screen edge: left for windows on the left, right for windows on the right.
 
 The slot becomes empty, and **the task returns to the system background without being deliberately closed**. You can reopen it through the desktop, recent apps or the frequent app rail.
 
 ### 04 · Frequent apps, within reach
 
-The top rail shows your pinned apps first, followed by apps ordered by foreground usage over the last seven days. If usage statistics are unavailable, app names and other metadata provide a stable fallback order.
+The rail below the title bar shows your pinned apps first, followed by apps ordered by foreground usage over the last seven days. If usage statistics are unavailable, app names and other metadata provide a stable fallback order.
 
 | Gesture | Action |
 | --- | --- |
-| Tap an app icon | Open it in the main area, or swap its existing side task into the main area |
-| Swipe the rail horizontally | Browse icons outside the visible portion |
-| Long press an app icon | Choose custom apps, then tap Done to pin them at the front |
-| Tap the previous or next toolbar arrow | Move to the previous or next frequent app |
+| Tap an app icon | Open it in the main window, or swap its existing side window into the main window |
+| Swipe the rail horizontally | Browse icons outside the visible portion; the rail keeps scrolling after release |
+| Long press an app icon | Choose custom apps with search and multi-select; tap Done to pin them in the chosen order |
+| Long press again and clear a selection | Remove a pinned app; the rest keep the usage order |
 
-### 05 · Controls at the top of your workspace
+Pins are stored per system user and survive leaving the workspace or a normal reboot.
 
-Use common switches and system shortcuts without leaving the workspace. **Swipe the top panel horizontally to switch between controls and music.**
+### 05 · The one-step title bar: clock, title and four buttons
 
-| Control | Action |
+The top of the workspace is, from top to bottom, the clock, the title bar and the frequent app rail. All three derive from one fit factor, so they shrink together on small screens.
+
+| Position | Content |
 | --- | --- |
-| Wi-Fi, mobile data, Bluetooth | Show their status and use the system controls |
-| VPN | Open system VPN settings |
-| Volume | Adjust media volume and show its percentage |
-| Brightness | Adjust brightness and show its percentage |
-| Scan | Choose a WeChat or Alipay scanning entry |
-| Payment code, transit code | Choose the relevant app or system wallet entry |
-| Device name | Show the device name in the center of the panel |
+| Clock | Time and date, with an optional lunar date from the settings page |
+| Title bar | The `One Step` title plus four fixed buttons |
+| Frequent app rail | Pinned apps first, then the usage order |
 
-Scanning, payment and transit shortcuts depend on installed apps and system interfaces. For the WeChat transit code, add the relevant shortcut to the desktop in WeChat first. Mi Step uses that existing shortcut; it does not create payment or transit credentials.
+The four buttons, left to right:
 
-### 06 · Native media controls and synchronized lyrics
-
-The music page uses HyperOS 4's native media controls and follows the media session selected by the system. It shows cover art, title, artist and playback state. Playback, track changes, seeking and output selection use the native controls; the buttons available depend on what the player exposes to Android.
-
-Lyrics follow playback inside the music card, with the current line highlighted and nearby lines visible. Mi Step first checks lyrics supplied by the media session, then tries an online match when needed. Missing matches, instrumental tracks or unavailable services show an appropriate placeholder.
-
-**There is no need to add music players to the module's LSPosed scope.** The current implementation can query NetEase Cloud Music, KuGou, Soda Music and LRCLIB. See [Data and security](docs/数据与安全说明.md) for the song information used by online queries.
-
-### 07 · Text clipboard history
-
-Tap the clipboard icon to see recently copied text. Tap an entry to copy it again, delete individual entries or clear the list.
-
-- Keeps up to **24 entries**, moving duplicates to the front.
-- Stores history only in the current process's memory, without a history file.
-- Skips entries marked sensitive by the source app and does not read the clipboard while the screen is locked.
-- Closes the panel when the screen turns off and clears history when the system user changes.
-
-### 08 · Screenshots, recording and a flashlight
-
-Common tools stay inside the workspace. Button placement adapts to the left or right layout.
-
-| Tool | Action |
+| Button | Action |
 | --- | --- |
-| Exit arrow | Close Mi Step and restore the normal system interface |
-| Gear | Open system settings in the main area |
-| Clipboard | Open or close text history |
-| Screenshot | Call the system screenshot function |
-| Screen recording | Call the system recording function |
-| Flashlight | Toggle the system flashlight |
-| Previous and next arrows | Move between frequent apps |
+| Side windows on the left | Move the side area to the left; the main window moves to the right |
+| Side windows on the right | Move the side area to the right; the main window moves to the left |
+| System settings | Open system settings in the main window |
+| Expand to fullscreen and leave the workspace | Close the workspace and restore the normal system interface |
 
-The workspace uses a blurred version of the desktop wallpaper, rounded corners and a glass effect. Changing the wallpaper updates the background. The blurred image comes from the wallpaper, not the current app's screen.
+The current side is shown as selected. **Long press the title text** to open the top landscape task face.
+
+### 06 · The top landscape task face
+
+The top area can hold one more directly usable app alongside the main window and the three side windows.
+
+- Tap ＋ in the empty top slot to collect the current main app; the window supports single-finger interaction, paging and back.
+- **Drag two fingers vertically in the top area** to switch between the title-bar face and the landscape task face, animated with the real app surface.
+- **Swipe two fingers horizontally** to leave the top app in the background.
+- An app changing orientation does not take over the top area automatically.
+- Tablet landscape has a separate portrait task area; drag two fingers toward the main window to return the original task, and collecting again restores the main task it covered.
+
+### 07 · Video docking and three fullscreen landscape modes
+
+When a landscape fullscreen video starts, you can choose how the workspace makes room. The **Landscape video position** setting offers three modes, each with a diagram:
+
+| Option | Behaviour |
+| --- | --- |
+| Play on top | Supported players can show the video at the top while the main and side windows keep working; unsupported players stay in the main window |
+| Play inside the main window (default) | The video plays landscape inside the main window while the side windows keep working |
+| Leave Mi Step and play fullscreen | Leave Mi Step and use the app's own fullscreen video interface |
+
+Video docking **only takes over a floating video window the player already provides; it never resizes or moves the app task itself**. A change applies from the next landscape fullscreen video.
+
+### 08 · The settings page: appearance, windows and actions, video, lock screen
+
+Open it from **System settings → Mi Step**, listed under "My device". There is no launcher icon. The page uses a consistent HyperOS 4 style and follows the system light or dark theme.
+
+| Group | Settings |
+| --- | --- |
+| Appearance | Show lunar date |
+| Windows and actions | Entry gesture, main and side swap behaviour, scroll side windows, hide side windows from recent apps |
+| Video | Landscape video position |
+| Lock screen | Restore Mi Step after unlocking |
+
+- **Scroll side windows**: drag the side column vertically to reach more side windows.
+- **Hide side windows from recent apps**: applies only while Mi Step is open and never closes the app.
+- **Restore Mi Step after unlocking**: when on, unlocking restores the previous window layout; when off, unlocking returns to the normal fullscreen interface.
+
+Choices are stored on the device and survive leaving the workspace or a reboot.
 
 ### 09 · Left or right layouts and landscape inside Mi Step
 
-Test build 1000021 allows corner entry in portrait while the status bar is normally visible. In immersive fullscreen, first reveal the native status bar without expanding notifications or quick settings, then start a new corner gesture. Entry remains blocked while the status bar is hidden. This rule also applies in landscape; actual landscape game behavior still needs validation. Swipe **right from the upper left corner** for side tasks on the left, or **left from the upper right corner** for side tasks on the right.
+Swipe **right from the upper left corner** for side windows on the left, or **left from the upper right corner** for side windows on the right. You can also switch sides from the title bar at any time.
 
-When an app enters landscape inside the main area, Mi Step coordinates its orientation, touch mapping, task swaps and floating keyboard position. Version 1.0.0 includes fixes for landscape drag direction, keyboard movement limits, rotation ownership during swaps and status bar animations leaving the main area.
+There are two entry gestures, chosen under **Entry gesture** in the settings page:
 
-This means **an app in landscape inside the Mi Step workspace**. App policies, keyboards and ROM versions can still differ. See the [release notes](docs/发行说明-1.0.0.md) for the actual validation scope.
+| Mode | Behaviour |
+| --- | --- |
+| Inward from the status bar (default) | Swipe inward from the left or right end of the status bar |
+| Outward from the bottom | Swipe left or right from anywhere along the bottom edge; requires the system gesture hint line to be hidden first |
+
+In immersive fullscreen, first reveal the native status bar without expanding notifications or quick settings, then start a new corner gesture. Entry remains blocked while the status bar is hidden. This rule also applies in landscape.
+
+When an app enters landscape inside the main window, Mi Step coordinates its orientation, touch mapping, task swaps and floating keyboard position. This means **an app in landscape inside the Mi Step workspace**; app policies, keyboards and ROM versions can still differ.
 
 ## Installation and first steps
 
@@ -139,7 +168,7 @@ This means **an app in landscape inside the Mi Step workspace**. App policies, k
 
 | Item | Current requirement |
 | --- | --- |
-| System | Requires **Android 14 / API 34** or later and targets HyperOS 2 / 3 / 4. See the 1.0.4 validation notes for device coverage. |
+| System | Requires **Android 14 / API 34** or later and targets HyperOS 2 / 3 / 4. See the [changelog](docs/更新日志.md) for device coverage. |
 | Architecture | **ARM64** |
 | Framework | Working **Root + LSPosed** |
 | Development and validation devices | Xiaomi 17 Pro Max, Redmi Note 11T Pro |
@@ -153,21 +182,21 @@ The permanent package name is **`com.jiusis.mistep`**. Future versions will keep
 1. Download `MiStep-1.0.4.apk` from the [1.0.4 release](https://github.com/JIUSIS/MiStep/releases/tag/v1.0.4). Check it against `SHA256SUMS.txt` on that page.
 2. Install it, enable **Mi Step** in LSPosed and select the recommended scope below.
 3. **Reboot normally** so the system processes load the module.
-4. With the phone in portrait, use the upper corner swipe gesture. Open an app in the main area, then tap an empty side slot's ＋ to collect it.
+4. With the phone in portrait, use the upper corner swipe gesture. Open an app in the main window, then tap an empty side slot's ＋ to collect it.
 
 | Scope | Package | Purpose |
 | --- | --- | --- |
-| System framework | `android` | System tasks, main area scaling and input |
-| System UI | `com.android.systemui` | Workspace, toolbar and native controls |
+| System framework | `android` | System tasks, main window scaling and input |
+| System UI | `com.android.systemui` | Workspace, title bar and native controls |
 | Settings | `com.android.settings` | Native homepage entry for Mi Step settings only |
 
-Mi Step recommends the three entries above. Optionally select `com.xiaomi.type` to prevent the Xiaomi keyboard from automatically switching to floating mode in landscape. This remaining keyboard policy is independent of ordinary app layout and input. Settings is used only for the module entry. Douyin and media players need no app scope; the earlier Douyin TOP photo patch has been withdrawn. Previously saved LSPosed selections are not automatically cleared. See the [scope and system adaptation notes](docs/作用域与系统适配.md) (Chinese).
+Optionally select `com.xiaomi.type` to prevent the Xiaomi keyboard from automatically switching to floating mode in landscape. This remaining keyboard policy is independent of ordinary app layout and input. Settings is used only for the module entry; media players need no app scope. Previously saved LSPosed selections are not automatically cleared. See the [scope and system adaptation notes](docs/作用域与系统适配.md) (Chinese).
 
-Open **System settings → Mi Step** for control-center and title-bar button visibility, plus two swap modes: **Grow in place** (default) and **Fixed main area**. Button visibility updates the workspace; the selected swap mode applies to the next swap. Choices persist across restarts. There is no launcher icon. Settings use a consistent HyperOS 4 style with light and dark themes. **Runtime logs** can refresh recent module records and export a diagnostic ZIP for bug reports; reading system-side logs requires granting Mi Step root access. Issue recording lasts up to 60 seconds and can cover screen lock. Enter the workspace through the gestures above. Its gear opens system settings. See the [full usage guide](docs/使用说明.md) for upgrades, signing and recovery. The linked detailed guides are currently in Chinese.
+See the [full usage guide](docs/使用说明.md) for upgrades, signing and recovery. The linked detailed guides are currently in Chinese.
 
 ### Try a small workspace
 
-Open a browser in the main area and tap ＋ to collect it. Open your notes and collect them into a second slot, then return to your chat app. You can now keep your reference material visible while replying. Tap your notes to add a few lines, then tap the chat to return. Swipe a side task outward when you need the slot for something else.
+Open a browser in the main window and tap ＋ to collect it. Open your notes and collect them into a second slot, then return to your chat app. You can now keep your reference material visible while replying. Tap your notes to add a few lines, then tap the chat to return. Swipe a side window outward when you need the slot for something else.
 
 ## A note from a wish-making engineer
 
@@ -204,10 +233,10 @@ Mi Step is a personal project, not an official Xiaomi, Smartisan or community pr
 | Topic | Start here |
 | --- | --- |
 | Installation, gestures, upgrades and recovery | [Usage guide](docs/使用说明.md) |
-| Changes and validation scope in 1.0.0 | [Release notes](docs/发行说明-1.0.0.md) |
+| Changes and validation scope per version | [Changelog](docs/更新日志.md) |
 | Building and running tests | [Build guide](docs/构建说明.md) |
-| Lyrics queries, clipboard and data | [Data and security](docs/数据与安全说明.md) |
-| Release content checks | [Release checks](docs/安全检查-1.0.0.md) |
+| Data scope and security | [Data and security](docs/数据与安全说明.md) |
+| Scope responsibilities and system adaptation | [Scope and system adaptation](docs/作用域与系统适配.md) |
 | Third-party components and licenses | [Third-party notices](THIRD_PARTY_NOTICES.md) |
 | Noncommercial use and modified releases | [License guide](docs/许可说明.md) · [Full license](LICENSE) |
 | Reporting issues and contributing | [Contributing](CONTRIBUTING.md) |
@@ -217,7 +246,7 @@ When reporting an issue, include the device, ROM version, Mi Step version, app o
 <details>
 <summary><strong>For anyone who wants to explore the source</strong></summary>
 
-Workspace and system adaptation code lives in `module/src/main/java/`, and native input mapping in `module/src/main/cpp/`. `tests/` and `tools/` contain policy checks, production method replays and package checks. On Windows, `build.ps1` and `test.ps1` build and test the complete source. Tools and commands are listed in the build guide.
+Workspace and system adaptation code lives in `module/src/main/java/`, grouped by function into `top`, `swap`, `workspace`, `video`, `input`, `lock`, `platform` and other sub-directories; native input mapping lives in `module/src/main/cpp/`. `tests/` and `tools/` contain policy checks, production method replays and package checks. On Windows, `build.ps1` and `test.ps1` build and test the complete source. Tools and commands are listed in the build guide.
 
 The release includes an APK, product source ZIP, build information and SHA-256 checksums. The repository excludes signing keys, account credentials, device logs, personal screenshots or recordings, and vendor ROMs. The brand images were provided specifically for the project introduction.
 
