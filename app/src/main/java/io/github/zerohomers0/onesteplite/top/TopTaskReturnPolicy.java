@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Decides whether the upper task survives a return and when the live centre reveal runs. */
 final class TopTaskReturnPolicy {
     static final float CENTER_START_SCALE = .14f;
 

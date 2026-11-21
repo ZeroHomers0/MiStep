@@ -43,7 +43,7 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 
 /**
- * v1.6.1：核对原生任务/表面绑定，确认脱离后清槽，退出恢复遗留副任务。
+ * v1.6.1：核对原生任务/表面绑定，确认脱离后清槽，退出恢复遗留小窗。
  * 宿主不参与显示缩放，保持正常物理坐标；主区画面与触摸均让给下层系统。
  *
  * 调试广播：io.github.zerohomers0.onesteplite.TOGGLE / io.github.zerohomers0.onesteplite.DEBUG(slot,pkg,swap)。
@@ -1295,7 +1295,7 @@ public final class WorkspaceHost {
         }, delayMs);
     }
 
-    /** 副任务区在滑动起始侧，主区在另一侧：左角滑入 → 主区在右；右角滑入 → 主区在左。 */
+    /** 小窗区在滑动起始侧，主窗在另一侧：左角滑入 → 主窗在右；右角滑入 → 主窗在左。 */
     private static volatile int pendingMainSide = -1;
 
     public static void setPendingMainSide(boolean mainOnRight) {
@@ -7062,7 +7062,7 @@ public final class WorkspaceHost {
     /**
      * 触摸规则（官方OneStepLite语义 + 演示需要）：
      *   主区由系统处理，宿主不接收其触摸；
-     *   副格有任务 → 轻点=与主区交换；滑动取消轻点，始终不操作副任务；
+     *   小窗有任务 → 轻点=与主窗交换；滑动取消轻点，始终不操作小窗；
      *   空槽 → 不消费，交给宿主点击处理。
      */
     private boolean onSlotTouch(int slotIndex, MotionEvent e) {

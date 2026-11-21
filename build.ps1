@@ -72,7 +72,7 @@ $base = Join-Path $out 'base.apk'
 $assetStage = Join-Path $out 'assets'
 $legalStage = Join-Path $assetStage 'onesteplite\licenses'
 New-Item -ItemType Directory -Force -Path $assetStage,$legalStage | Out-Null
-Copy-Item -LiteralPath (Join-Path $root 'LICENSE'),(Join-Path $root 'THIRD_PARTY_NOTICES.md') -Destination $legalStage -Force
+Copy-Item -LiteralPath (Join-Path $root 'LICENSE'),(Join-Path $src 'assets\onesteplite\licenses\THIRD_PARTY_NOTICES.md') -Destination $legalStage -Force
 Copy-Item -Path (Join-Path $root 'libs\licenses\*') -Destination $legalStage -Force
 "OneStepLite $($version.name)`nPackage: io.github.zerohomers0.onesteplite`nSource: https://github.com/JIUSIS/OneStepLite`nLicense: LicenseRef-OneStepLite-NC-SA-1.0`nChinese LICENSE text controls. Third-party licenses remain unchanged.`n" | Set-Content -LiteralPath (Join-Path $legalStage 'SOURCE.txt') -Encoding utf8
 & (Join-Path $bt 'aapt2.exe') link -o 'build\base.apk' -I $android --manifest 'app\src\main\AndroidManifest.xml' -A 'app\src\main\assets' --min-sdk-version 34 --target-sdk-version 37 'build\resources.zip'

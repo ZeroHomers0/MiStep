@@ -5,7 +5,7 @@
     <activity android:name=".SettingsActivity" android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout" android:exported="true" android:theme="@style/Theme.OneStepLite.Settings" />
     <!-- Settings scope provides only the native module settings entry. -->
     <meta-data android:name="xposedmodule" android:value="true" />
-    <meta-data android:name="xposeddescription" android:value="OneStepLite：系统主区域缩放与三个真实副任务。" />
+    <meta-data android:name="xposeddescription" android:value="OneStepLite：系统主窗缩放与三个真实小窗。" />
     <meta-data android:name="xposedminversion" android:value="82" />
     <meta-data android:name="xposedscope" android:value="android;com.android.systemui;com.android.settings" />
   </application>

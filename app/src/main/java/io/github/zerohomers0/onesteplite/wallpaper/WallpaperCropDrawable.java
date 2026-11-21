@@ -8,7 +8,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 
-/* JADX INFO: loaded from: classes.dex */
 final class WallpaperCropDrawable extends Drawable {
     private final int screenHeight;
     private final int screenWidth;

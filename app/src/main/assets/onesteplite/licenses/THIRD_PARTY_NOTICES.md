@@ -19,9 +19,8 @@ Android SDK、Build Tools、NDK、JDK 和 LSPosed 由使用者另行准备，保
 
 ## OneStepLite 自有内容
 
-OneStepLite 原创部分采用 [OneStepLite 非商用共享源码许可 1.0](LICENSE)，
-详见 [许可说明](docs/许可说明.md)。该许可不重新授权上述第三方组件，
-不限制第三方许可已授予的权利，也不改变其著作权和商标归属。
+OneStepLite 原创部分采用 OneStepLite 非商用共享源码许可 1.0（仓库根目录 `LICENSE`），
+该许可不重新授权上述第三方组件，不限制第三方许可已授予的权利，也不改变其著作权和商标归属。
 
 ## NeXtep 视频窗口接入参考
 

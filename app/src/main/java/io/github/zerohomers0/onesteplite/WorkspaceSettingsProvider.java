@@ -8,6 +8,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Process;
 
+/** Serves the settings page and the host the same stored options across processes. */
 public final class WorkspaceSettingsProvider extends ContentProvider {
     @Override public boolean onCreate() { return true; }
 

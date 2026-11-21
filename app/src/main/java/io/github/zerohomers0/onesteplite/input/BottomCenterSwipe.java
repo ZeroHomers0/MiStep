@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Tracks the bottom-centre outward swipe that opens the workspace. */
 final class BottomCenterSwipe {
     private boolean candidate;
     private int pointer, width, height, rotation;

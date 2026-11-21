@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Decides when a retained task may stay as the main pane and when it must be reclaimed. */
 final class RetainedTaskRestorePolicy {
     static boolean preserveAsMain(boolean ordinaryFullscreenRoot, boolean visible, boolean focused) {
         return ordinaryFullscreenRoot && (visible || focused);

@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
 
 /** Release over an occupied preview to open the receiver's normal share UI in the main pane. */
 final class ContentShare {

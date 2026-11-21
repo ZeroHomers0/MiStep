@@ -3,6 +3,7 @@ package io.github.zerohomers0.onesteplite;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
+/** Draws the hairline separators between the main pane and the side cells. */
 final class WorkspaceDividers {
     static void draw(Canvas canvas, WorkspaceLayout layout, float density, float alpha, Paint paint) {
         paint.setColor(0x40FFFFFF);

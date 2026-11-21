@@ -1,9 +1,9 @@
 package io.github.zerohomers0.onesteplite;
 
 import android.content.ClipData;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ComponentName;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -14,8 +14,8 @@ import android.os.Parcel;
 import android.view.DragEvent;
 import java.io.Closeable;
 import java.lang.reflect.Constructor;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;

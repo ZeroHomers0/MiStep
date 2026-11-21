@@ -8,7 +8,7 @@ package io.github.zerohomers0.onesteplite;
  *   官方侧栏容器 273（= 267 格宽 + 6 间隔）、格起始 y=592、格 267×579。
  *   2026-10-16 用户产品指令：**不要圆角**；2026-10-17 用户补充：**要一点缝隙区分窗口**（恢复官方 6px）。
  *
- * 主区和三个副任务均按当前屏幕宽高比等比显示。按三格总高度反求侧栏宽度，
+ * 主窗和三个小窗均按当前屏幕宽高比等比显示。按三格总高度反求侧栏宽度，
  * 间隔按密度换算；顶栏内容适应剩余空间，不再以固定dp高度挤压应用画面。
  */
 public final class WorkspaceLayout {
@@ -24,7 +24,7 @@ public final class WorkspaceLayout {
     public final int height;
     /** The 0.7472 main pane can occupy either side while the cell column stays opposite. */
     public final boolean mainOnRight;
-    /** 侧栏（副任务列）宽度 = 格子宽（无缝）。 */
+    /** 侧栏（小窗列）宽度 = 格子宽（无缝）。 */
     public final int sideWidth;
     /** 顶部横条高度（满宽，含标题栏与快捷栏）；主区与格子都从它的下沿开始。 */
     public final int topStrip;

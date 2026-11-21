@@ -13,7 +13,6 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 
-/* JADX INFO: loaded from: classes.dex */
 final class HyperOsStyle {
     static final int CONTROL_ACCENT = 0xff3482ff;
     private static final int DARK_PAGE = -15592682;

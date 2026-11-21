@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Re-applies an active zoom after a transition transaction has already been built. */
 final class TransitionMagnificationReplay {
     interface Applier {
         void reapply(Object display, Object transaction) throws Throwable;

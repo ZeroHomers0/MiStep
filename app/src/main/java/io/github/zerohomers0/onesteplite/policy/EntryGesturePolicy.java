@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Falls back to the status-bar gesture when the bottom-centre one is unavailable. */
 final class EntryGesturePolicy {
     private EntryGesturePolicy() {}
 

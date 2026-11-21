@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Decides which windows the magnification tree must force into the zoom path. */
 final class InputMagnificationPolicy {
     private static final int PRIVATE_FLAG_EXCLUDE_FROM_MAGNIFICATION = 0x08000000;
 

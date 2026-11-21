@@ -1,5 +1,6 @@
 package io.github.zerohomers0.onesteplite;
 
+/** Decides when an open transition may be clamped to the workspace bounds. */
 final class TransitionAnimationPolicy {
     private static final int TRANSIT_OPEN = 1;
     private static final int MODE_OPEN = 1;

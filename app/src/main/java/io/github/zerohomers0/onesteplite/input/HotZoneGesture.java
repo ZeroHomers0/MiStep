@@ -189,7 +189,7 @@ public final class HotZoneGesture {
                                 || wm.getDefaultDisplay().getRotation() != rotation
                                 || !keepsEntry(current)) { reset(); return; }
                         generation++;
-                        // 主区域跟随水平滑动方向：向右在右，向左在左。
+                        // 主窗跟随水平滑动方向：向右在右，向左在左。
                         boolean mainRight = admittedEntryGesture == WorkspaceOptions.BOTTOM_CENTER_OUTWARD
                                 ? bottomSwipe.sign() > 0 : swipe.sign() > 0;
                         WorkspaceHost.setPendingMainSide(mainRight);

@@ -12,7 +12,7 @@ import android.widget.OverScroller;
 import java.util.Collections;
 import java.util.List;
 
-/* JADX INFO: loaded from: classes.dex */
+/** The horizontally scrolling rail of pinned and recently used applications. */
 final class QuickAppRail extends View {
     private RectF workspaceMain;
 
@@ -234,7 +234,6 @@ final class QuickAppRail extends View {
         setOffset(scrollOffset);
     }
 
-    /* JADX INFO: Access modifiers changed from: private */
     private void openAppPicker() {
         if (!this.down || this.scrolling || this.editing || this.activeIndex < 0) return;
         this.editing = true;

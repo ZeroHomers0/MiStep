@@ -2,6 +2,7 @@ package io.github.zerohomers0.onesteplite;
 
 import java.util.Objects;
 
+/** Compares a side task binding against the one a promotion was started for. */
 final class SidePromotionPolicy {
     private SidePromotionPolicy() {}
 
