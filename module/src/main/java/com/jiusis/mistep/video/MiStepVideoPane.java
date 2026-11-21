@@ -94,8 +94,9 @@ final class MiStepVideoPane extends FrameLayout implements SurfaceHolder.Callbac
             android.graphics.Bitmap bitmap=wellWallpaper;
             if(bitmap!=null&&!bitmap.isRecycled()){
                 owner.getLocationOnScreen(origin);paint.setAlpha(190);
-                android.graphics.Rect src=new android.graphics.Rect(Math.round(origin[0]*bitmap.getWidth()/(float)wallpaperWidth),Math.round(origin[1]*bitmap.getHeight()/(float)wallpaperHeight),Math.round((origin[0]+b.width())*bitmap.getWidth()/(float)wallpaperWidth),Math.round((origin[1]+b.height())*bitmap.getHeight()/(float)wallpaperHeight));
-                canvas.drawBitmap(bitmap,src,new android.graphics.RectF(b),paint);
+                src.set(Math.round(origin[0]*bitmap.getWidth()/(float)wallpaperWidth),Math.round(origin[1]*bitmap.getHeight()/(float)wallpaperHeight),Math.round((origin[0]+b.width())*bitmap.getWidth()/(float)wallpaperWidth),Math.round((origin[1]+b.height())*bitmap.getHeight()/(float)wallpaperHeight));
+                dst.set(b);
+                canvas.drawBitmap(bitmap,src,dst,paint);
             }
             paint.setColor(WorkspaceCellStyle.WELL_COLOR);canvas.drawCircle(b.exactCenterX(),b.exactCenterY(),radius,paint);canvas.restoreToCount(saved);
         }
